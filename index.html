@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHUB AC Fleet — Preventive Maintenance</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" href="#0b3d91">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        /* --- Reusing the exact CSS design from the Generator App --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        body { background: linear-gradient(135deg, #eef4fa 0%, #f5f7fa 100%); padding: 24px 16px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body::before { content: 'CHUB AC MAINTENANCE'; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: clamp(24px, 4vw, 72px); font-weight: 900; color: rgba(30, 74, 109, 0.12); letter-spacing: 6px; pointer-events: none; user-select: none; white-space: nowrap; z-index: 50; text-align: center; width: 100%; }
+        .app-container { max-width: 1300px; width: 100%; background: white; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); padding: 32px 28px; margin-bottom: 30px; }
+        
+        /* Hero & Subhead */
+        .title-hero { text-align: center; padding: 22px 20px 30px 20px; margin-bottom: 24px; background: linear-gradient(135deg, #0b3b5c 0%, #1e4a6d 50%, #2a6b96 100%); border-radius: 24px; position: relative; overflow: hidden; box-shadow: 0 14px 30px -10px rgba(15, 56, 82, 0.5); }
+        .title-hero h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; z-index: 2; text-shadow: 0 3px 12px rgba(0,0,0,0.25); }
+        .title-hero h1 .title-accent { background: linear-gradient(90deg, #7fc8ff, #b3e0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 900; }
+        .title-hero .title-sub { margin-top: 12px; font-size: 1rem; color: #cbe4f7; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .title-hero .title-sub .dot-sep { width: 5px; height: 5px; border-radius: 50%; background: #7fc8ff; display: inline-block; }
+        
+        .subhead { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; background: #eef6fc; padding: 16px 24px; border-radius: 24px; margin-bottom: 24px; border: 1px solid #d8e8f4; gap: 14px; }
+        .tech-info { display: flex; align-items: center; gap: 14px; font-size: 1.05rem; color: #0b3b5c; font-weight: 500; }
+        .workdate-tag { background: #fff3cd; color: #7a5300; padding: 8px 22px; border-radius: 40px; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 8px; border: 1px solid #f4d97a; }
+        .sync-status { background: #e2f0e6; color: #1b6b3f; padding: 6px 16px; border-radius: 40px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #b8dfc3; }
+        .sync-status.offline { background: #fff3cd; color: #7a5300; border-color: #f4d97a; }
+        .sync-status.error { background: #ffe6e6; color: #b33a3a; border-color: #f0b8b8; }
+
+        /* Selector & Banner */
+        .generator-selector { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; background: #f9fcff; padding: 18px 24px; border-radius: 24px; border: 1.5px solid #cfdfeb; margin-bottom: 20px; }
+        .chub-logo { flex: 1 1 180px; max-width: 320px; height: auto; margin-left: 15px; margin-right: 15px; vertical-align: middle; object-fit: contain; }
+        .generator-selector label { font-weight: 600; color: #1e4a6d; font-size: 1.05rem; white-space: nowrap; }
+        select, input[type="date"] { padding: 14px 24px; border-radius: 40px; border: 1.5px solid #bdd3e6; background: white; font-size: 1rem; font-weight: 600; color: #0a2a3f; min-width: 200px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.02); font-family: inherit; }
+        select:hover { border-color: #1e4a6d; background: #f4faff; }
+
+        .generator-banner { background: linear-gradient(90deg, #1e4a6d 0%, #2a6b96 100%); color: white; padding: 18px 28px; border-radius: 20px; margin-bottom: 30px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 8px 20px -8px rgba(30,74,109,0.5); position: relative; overflow: hidden; }
+        .generator-banner .gen-icon { font-size: 1.8rem; background: rgba(255,255,255,0.15); width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 2; }
+        .generator-banner .gen-text { position: relative; z-index: 2; flex: 1; min-width: 200px; }
+        .generator-banner .gen-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; }
+        .generator-banner .gen-sub { font-size: 0.92rem; color: #cbe4f7; margin-top: 4px; letter-spacing: 0.3px; font-weight: 500; }
+        .generator-banner .gen-badge { background: rgba(255,255,255,0.2); color: white; padding: 6px 16px; border-radius: 40px; font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; z-index: 2; }
+
+        /* Grids and Cards */
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
+        .grid-3-wide { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+        .card { background: #fff; border-radius: 24px; border: 1px solid #e2eaf1; box-shadow: 0 6px 14px rgba(0,0,0,0.02); overflow: hidden; }
+        .card-header { background: #f0f6fc; padding: 16px 22px; font-weight: 600; font-size: 1.15rem; color: #12405e; border-bottom: 1px solid #d4e3ef; display: flex; align-items: center; gap: 10px; }
+        .card-body { padding: 20px 22px; }
+
+        /* Checklist Items */
+        .check-item { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+        .check-item:last-child { margin-bottom: 0; }
+        .check-item input[type="checkbox"] { width: 22px; height: 22px; margin-top: 2px; accent-color: #1e4a6d; cursor: pointer; flex-shrink: 0; }
+        .check-item label { font-weight: 500; color: #1f3c54; font-size: 0.98rem; line-height: 1.4; cursor: pointer; }
+        .remark-input { margin-top: 8px; width: 100%; padding: 10px 14px; border-radius: 16px; border: 1px solid #cfdfeb; font-size: 0.9rem; background: #fbfdff; transition: 0.2s; }
+        .remark-input:focus { outline: none; border-color: #1e4a6d; background: white; box-shadow: 0 0 0 3px rgba(30,74,109,0.1); }
+        .rating-block { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 8px; }
+        .rating-option { display: flex; align-items: center; gap: 6px; }
+        .rating-option input[type="radio"] { accent-color: #1e4a6d; width: 18px; height: 18px; }
+
+        /* Field Groups & Inputs */
+        .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+        .field-group:last-child { margin-bottom: 0; }
+        .field-group label { font-weight: 600; color: #1f3c54; font-size: 0.95rem; }
+        .field-group input[type="number"], .field-group input[type="text"], .field-group input[type="date"], .field-group select { padding: 12px 16px; border-radius: 16px; border: 1.5px solid #cfdfeb; background: #fbfdff; font-size: 0.95rem; color: #0a2a3f; transition: 0.2s; width: 100%; font-family: inherit; }
+        .field-group input:focus, .field-group select:focus { outline: none; border-color: #1e4a6d; background: white; box-shadow: 0 0 0 3px rgba(30,74,109,0.1); }
+
+        /* Buttons */
+        .btn-primary { background: #1e4a6d; color: white; border: none; padding: 16px 36px; border-radius: 40px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 10px 18px -8px rgba(20,60,100,0.3); }
+        .btn-primary:hover { background: #0f3852; transform: scale(1.01); }
+        .btn-pdf { background: #b33a3a; color: white; border: none; padding: 16px 36px; border-radius: 40px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 10px 18px -8px rgba(150,40,40,0.3); }
+        .btn-pdf:hover { background: #8f2929; transform: scale(1.01); }
+        .btn-sync { background: #2a6b96; color: white; border: none; padding: 12px 26px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-sync:hover { background: #1e4a6d; }
+        .btn-secondary { background: white; border: 1.5px solid #b8cfdf; color: #1e4a6d; padding: 12px 26px; border-radius: 40px; font-weight: 500; cursor: pointer; transition: 0.15s; }
+        .btn-secondary:hover { background: #e7f0f8; }
+        .btn-add { background: #1b6b3f; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-add:hover { background: #155231; }
+
+        /* Signoff */
+        .signoff-section { background: #f0f6fc; border-radius: 24px; padding: 26px 28px; margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border: 1px solid #cfe0ee; gap: 20px; }
+        .signoff-left { display: flex; flex-direction: column; gap: 6px; }
+        .signoff-left .label { font-weight: 600; color: #12405e; font-size: 1rem; letter-spacing: 0.3px; }
+        .signoff-left .tech { font-size: 1.6rem; font-weight: 700; color: #0a2a3f; line-height: 1.2; }
+        .signoff-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+        .signature-pad { background: white; border-radius: 40px; padding: 8px 22px; border: 2px dashed #9cb9d0; display: flex; align-items: center; justify-content: center; min-width: 160px; min-height: 55px; font-family: 'Segoe UI', cursive; font-size: 1.3rem; color: #1e4a6d; font-weight: 500; letter-spacing: 1px; white-space: nowrap; }
+
+        /* Modals & Overlays */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 30, 50, 0.55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: white; border-radius: 24px; padding: 32px 28px; max-width: 500px; width: 100%; box-shadow: 0 25px 60px -12px rgba(0,0,0,0.4); max-height: 90vh; overflow-y: auto; }
+        .modal-box h2 { font-size: 1.35rem; color: #12405e; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .modal-box p { font-size: 0.9rem; color: #5b7b96; margin-bottom: 22px; }
+        .modal-box .field-group { margin-bottom: 16px; }
+        .modal-box .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+        .modal-box .modal-actions button { padding: 12px 24px; border-radius: 40px; font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none; transition: 0.15s; }
+        .modal-box .btn-cancel { background: #e7f0f8; color: #1e4a6d; }
+        .modal-box .btn-go { background: #1e4a6d; color: white; }
+        
+        .action-buttons { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 24px; justify-content: center; }
+        .status-message { margin-top: 20px; padding: 14px 24px; border-radius: 40px; background: #e2f0e6; color: #1b6b3f; font-weight: 500; display: none; align-items: center; gap: 10px; }
+        .status-message.show { display: flex; }
+        .footer-note { font-size: 0.85rem; color: #5b7b96; text-align: center; margin-top: 12px; }
+        
+        @media (max-width: 700px) {
+            .grid-3-wide { grid-template-columns: 1fr; }
+            .title-hero h1 { font-size: 1.5rem; }
+            .app-container { padding: 20px 16px; }
+            select, input[type="date"] { min-width: 100%; }
+            .generator-selector { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="title-hero">
+            <h1>
+                <span class="title-ornament">❄️</span>
+                AC Fleet
+                <span class="title-accent">— Preventive Maintenance</span>
+            </h1>
+            <div class="title-sub">
+                <span>CHUB Site</span>
+                <span class="dot-sep"></span>
+                <span>Split Units</span>
+                <span class="dot-sep"></span>
+                <span>Planned PM Schedule</span>
+            </div>
+        </div>
+
+        <div class="subhead">
+            <div class="tech-info">
+                <span>👨‍🔧 Technician:</span>
+                <span class="sync-status" style="background:#e2f0e6; color:#1b6b3f; border-color:#b8dfc3; padding: 8px 20px; font-size: 1rem;">
+                    🔒 <span id="lockedTechName">—</span>
+                </span>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <div class="sync-status" id="loggedInUser" style="background:#1e4a6d; color:white; border-color:#1e4a6d;">
+                    <span>👤</span> <span id="loggedInUserName">—</span>
+                </div>
+                <button id="logoutBtn" class="btn-secondary" style="padding: 8px 18px; font-size: 0.85rem;">🚪 Logout</button>
+                <div class="workdate-tag">
+                    <span>📅</span> Work date: <strong id="workDateDisplay">—</strong>
+                </div>
+                <div class="sync-status" id="syncStatus">
+                    <span>●</span> <span id="syncStatusText">Ready</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="generator-selector">
+            <div class="field-group" style="margin-bottom:0; min-width: 240px;">
+                <label for="workDate">📅 Work date (auto-selected)</label>
+                <input type="date" id="workDate">
+            </div>
+            <label for="acSelect" style="margin-left: 10px;">🔽 Select AC Unit:</label>
+            <select id="acSelect" style="min-width: 350px; flex: 1;">
+                <!-- Populated via JavaScript -->
+            </select>
+            <button id="addAcBtn" class="btn-add">➕ Add New AC</button>
+            <img src="chub-logo.png" alt="CHUB Logo" class="chub-logo" onerror="this.style.display='none'">
+        </div>
+
+        <div class="generator-banner" id="acBanner">
+            <div class="gen-icon">❄️</div>
+            <div class="gen-text">
+                <div class="gen-title" id="acTitle">Select an AC Unit</div>
+                <div class="gen-sub" id="acSub">Location · Brand · Model · Serial</div>
+            </div>
+            <div class="gen-badge">Active</div>
+        </div>
+
+        <!-- ======================== OPERATIONAL DATA ======================== -->
+        <div class="section-title" style="font-size: 1.3rem; font-weight: 600; color: #12405e; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <span>🌡️</span> Operational Data & Predictive Servicing
+        </div>
+        <div class="grid-3-wide" style="margin-bottom: 32px;">
+            <div class="card">
+                <div class="card-header"><span>📊</span> HVAC Measurements</div>
+                <div class="card-body">
+                    <div class="field-group">
+                        <label for="supplyTemp">Supply Air Temp (°C)</label>
+                        <input type="number" id="supplyTemp" step="0.1" placeholder="e.g. 12.5">
+                    </div>
+                    <div class="field-group">
+                        <label for="returnTemp">Return Air Temp (°C)</label>
+                        <input type="number" id="returnTemp" step="0.1" placeholder="e.g. 24.0">
+                    </div>
+                    <div class="field-group">
+                        <label for="deltaT">Delta T (Calculated)</label>
+                        <input type="text" id="deltaT" readonly placeholder="—" style="background:#f0f6fc; font-weight:bold;">
+                    </div>
+                    <div class="field-group">
+                        <label for="suctionPressure">Suction Pressure (PSI/Bar)</label>
+                        <input type="number" id="suctionPressure" step="0.1" placeholder="e.g. 65">
+                    </div>
+                    <div class="field-group">
+                        <label for="dischargePressure">Discharge Pressure (PSI/Bar)</label>
+                        <input type="number" id="dischargePressure" step="0.1" placeholder="e.g. 250">
+                    </div>
+                    <div class="field-group">
+                        <label for="compressorAmps">Compressor Amps (A)</label>
+                        <input type="number" id="compressorAmps" step="0.1" placeholder="e.g. 8.5">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><span>📋</span> Planned & Predictive Servicing</div>
+                <div class="card-body">
+                    <div class="field-group">
+                        <label for="lastServiceDate">Last PM Date</label>
+                        <input type="date" id="lastServiceDate">
+                    </div>
+                    <div class="field-group">
+                        <label for="nextServiceDate">Next Planned PM Date (from sheet)</label>
+                        <input type="date" id="nextServiceDate" readonly style="background:#f0f6fc;">
+                    </div>
+                    <div class="field-group">
+                        <label>Days Remaining</label>
+                        <div style="font-size: 1.4rem; font-weight: 800; color:#1b6b3f;" id="predDaysRemaining">—</div>
+                    </div>
+                    <div class="field-group">
+                        <label>Status</label>
+                        <div id="predictionStatus" style="padding: 14px 18px; border-radius: 16px; background: #e2f0e6; color: #1b6b3f; font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 10px; border: 1.5px solid #b8dfc3;">
+                            <span style="font-size:1.4rem;">✅</span>
+                            <span id="predictionStatusText">OK — Service on track</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================== INSPECTION CHECKLIST ======================== -->
+        <div class="section-title" style="font-size: 1.3rem; font-weight: 600; color: #12405e; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <span>🔍</span> Inspection Checklist
+        </div>
+        <div class="grid-3">
+            <!-- Card 1: Filters, Coils & Airflow -->
+            <div class="card">
+                <div class="card-header"><span>🌬️</span> Filters, Coils & Airflow</div>
+                <div class="card-body">
+                    <div class="check-item"><input type="checkbox" id="check1" class="check-ac"><label for="check1">Inspect, clean, or replace filters</label></div>
+                    <div class="check-item"><input type="checkbox" id="check2" class="check-ac"><label for="check2">Clean indoor evaporator coil</label></div>
+                    <div class="check-item"><input type="checkbox" id="check3" class="check-ac"><label for="check3">Clean outdoor condenser coil</label></div>
+                    <div class="check-item"><input type="checkbox" id="check4" class="check-ac"><label for="check4">Check blower motor and wheel</label></div>
+                    <div class="check-item"><input type="checkbox" id="check5" class="check-ac"><label for="check5">Verify proper airflow across unit</label></div>
+                    <div style="margin-top: 18px;">
+                        <label style="font-weight: 500; color: #1f3c54;">📝 Remarks</label>
+                        <input type="text" class="remark-input" id="remarkAirflow" placeholder="e.g. filters heavily soiled...">
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <span style="font-weight: 500; color: #1f3c54; display: block; margin-bottom: 8px;">Condition:</span>
+                        <div class="rating-block">
+                            <div class="rating-option"><input type="radio" name="ratingAirflow" value="good" checked> <label>Good</label></div>
+                            <div class="rating-option"><input type="radio" name="ratingAirflow" value="fair"> <label>Fair</label></div>
+                            <div class="rating-option"><input type="radio" name="ratingAirflow" value="attention"> <label>Needs attention</label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Electrical & Refrigerant -->
+            <div class="card">
+                <div class="card-header"><span>⚡</span> Electrical & Refrigerant</div>
+                <div class="card-body">
+                    <div class="check-item"><input type="checkbox" id="check6" class="check-ac"><label for="check6">Verify correct refrigerant charge (superheat/subcooling)</label></div>
+                    <div class="check-item"><input type="checkbox" id="check7" class="check-ac"><label for="check7">Tighten and inspect electrical connections</label></div>
+                    <div class="check-item"><input type="checkbox" id="check8" class="check-ac"><label for="check8">Test relays, contactors, and capacitors</label></div>
+                    <div class="check-item"><input type="checkbox" id="check9" class="check-ac"><label for="check9">Measure compressor and fan motor amps</label></div>
+                    <div class="check-item"><input type="checkbox" id="check10" class="check-ac"><label for="check10">Inspect wiring for frays or heat damage</label></div>
+                    <div style="margin-top: 18px;">
+                        <label style="font-weight: 500; color: #1f3c54;">📝 Remarks</label>
+                        <input type="text" class="remark-input" id="remarkElectrical" placeholder="e.g. contactor pitted...">
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <span style="font-weight: 500; color: #1f3c54; display: block; margin-bottom: 8px;">Status:</span>
+                        <div class="rating-block">
+                            <div class="rating-option"><input type="radio" name="ratingElectrical" value="good" checked> <label>All functional</label></div>
+                            <div class="rating-option"><input type="radio" name="ratingElectrical" value="partial"> <label>Partially tested</label></div>
+                            <div class="rating-option"><input type="radio" name="ratingElectrical" value="fault"> <label>Fault found</label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Drainage, Controls & Performance -->
+            <div class="card">
+                <div class="card-header"><span>💧</span> Drainage & Performance</div>
+                <div class="card-body">
+                    <div class="check-item"><input type="checkbox" id="check11" class="check-ac"><label for="check11">Clear condensate drain line and pan</label></div>
+                    <div class="check-item"><input type="checkbox" id="check12" class="check-ac"><label for="check12">Check thermostat calibration and controls</label></div>
+                    <div class="check-item"><input type="checkbox" id="check13" class="check-ac"><label for="check13">Measure supply/return air temperatures (Delta T)</label></div>
+                    <div class="check-item"><input type="checkbox" id="check14" class="check-ac"><label for="check14">Verify overall system efficiency</label></div>
+                    <div class="check-item"><input type="checkbox" id="check15" class="check-ac"><label for="check15">Inspect ductwork for leaks (visible)</label></div>
+                    <div style="margin-top: 18px;">
+                        <label style="font-weight: 500; color: #1f3c54;">📝 Remarks</label>
+                        <input type="text" class="remark-input" id="remarkDrainage" placeholder="e.g. drain trap cleaned...">
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <span style="font-weight: 500; color: #1f3c54; display: block; margin-bottom: 8px;">Performance:</span>
+                        <div class="rating-block">
+                            <div class="rating-option"><input type="radio" name="ratingDrainage" value="good" checked> <label>Smooth</label></div>
+                            <div class="rating-option"><input type="radio" name="ratingDrainage" value="delay"> <label>Delayed</label></div>
+                            <div class="rating-option"><input type="radio" name="ratingDrainage" value="issue"> <label>Issue</label></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="signoff-section">
+            <div class="signoff-left">
+                <span class="label">✅ SIGN-OFF · AC PM completed by</span>
+                <span class="tech" id="signoffTechName">—</span>
+                <span style="font-size: 0.9rem; color: #3a6583;">Site: CHUB · Work date: <strong id="signoffWorkDate">—</strong></span>
+            </div>
+            <div class="signoff-right">
+                <div class="signature-pad" id="signaturePad">—</div>
+                <button class="btn-primary" id="signOffBtn"><span>✍️</span> Sign-off & Save to Sheet</button>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-pdf" id="pdfBtn"><span>📄</span> Export Current as PDF</button>
+            <button class="btn-sync" id="syncBtn"><span>🔄</span> Sync pending (<span id="pendingCount">0</span>)</button>
+            <button class="btn-secondary" id="resetBtn">⟲ Reset form</button>
+        </div>
+
+        <div class="status-message" id="statusMessage">
+            <span>✅</span> <span id="statusText">Checklist signed off successfully!</span>
+        </div>
+
+        <div class="flex-row" style="margin-top: 24px; justify-content: center;">
+            <span class="footer-note">All checks performed on schedule · CHUB site · System © 2026 Hillaly KUBWIMANA — All rights reserved</span>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div class="modal-overlay show" id="loginModal">
+        <div class="modal-box" style="max-width: 420px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 12px;">🔐</div>
+            <h2 style="justify-content: center;">Technician Login</h2>
+            <p style="margin-bottom: 22px;">Select your name and enter your PIN to continue.</p>
+
+            <div class="field-group" style="text-align: left;">
+                <label for="loginTechSelect">Your name</label>
+                <select id="loginTechSelect" style="width: 100%;">
+                    <option value="">— Choose your name —</option>
+                    <option value="Hillaly KUBWIMANA">Hillaly KUBWIMANA</option>
+                    <option value="YANDEREYE Felecien">YANDEREYE Felecien</option>
+                    <option value="HIRWA Jean Deluce">HIRWA Jean Deluce</option>
+                    <option value="HABARUREMA Jean Claude">HABARUREMA Jean Claude</option>
+                    <option value="GATANGANWA Raissa">GATANGANWA Raissa</option>
+                </select>
+            </div>
+
+            <div class="field-group" style="text-align: left;">
+                <label for="loginPinInput">Your PIN</label>
+                <input type="password" id="loginPinInput" inputmode="numeric" maxlength="8" placeholder="••••" style="text-align: center; font-size: 1.5rem; letter-spacing: 8px;" onkeypress="if(event.key==='Enter'){document.getElementById('loginBtn').click();}">
+            </div>
+
+            <div id="loginError" style="color: #b33a3a; font-size: 0.9rem; margin-top: 6px; min-height: 20px;"></div>
+
+            <button class="btn-primary" id="loginBtn" style="width: 100%; justify-content: center; margin-top: 14px;">
+                🔓 Unlock &amp; Continue
+            </button>
+        </div>
+    </div>
+
+    <!-- ADD NEW AC MODAL -->
+    <div class="modal-overlay" id="addAcModal">
+        <div class="modal-box">
+            <h2>➕ Add New AC Unit</h2>
+            <p>Enter the details of the new air conditioner. It will be saved locally for future use.</p>
+            
+            <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="field-group">
+                    <label for="newAcTag">Tag Number / ID *</label>
+                    <input type="text" id="newAcTag" placeholder="e.g. CHUB/6MCH NBM/280">
+                </div>
+                <div class="field-group">
+                    <label for="newAcDept">Department</label>
+                    <input type="text" id="newAcDept" placeholder="e.g. Laboratory" value="Laboratory">
+                </div>
+            </div>
+            
+            <div class="field-group">
+                <label for="newAcLocation">Location *</label>
+                <input type="text" id="newAcLocation" placeholder="e.g. Genetics Room 2">
+            </div>
+
+            <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="field-group">
+                    <label for="newAcBrand">Brand *</label>
+                    <input type="text" id="newAcBrand" placeholder="e.g. LG, Samsung">
+                </div>
+                <div class="field-group">
+                    <label for="newAcModel">Model *</label>
+                    <input type="text" id="newAcModel" placeholder="e.g. TSUC1865ML2">
+                </div>
+            </div>
+
+            <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="field-group">
+                    <label for="newAcType">AC Type</label>
+                    <select id="newAcType">
+                        <option value="Split">Split</option>
+                        <option value="Cassette">Cassette</option>
+                        <option value="Window">Window</option>
+                        <option value="Portable">Portable</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label for="newAcSerial">Serial Number</label>
+                    <input type="text" id="newAcSerial" placeholder="e.g. 303HAERCE084">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" id="addAcCancel">Cancel</button>
+                <button class="btn-go" id="addAcSave">💾 Save AC</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // 🔗 REPLACE THIS WITH YOUR NEW GOOGLE APPS SCRIPT URL
+            const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzq9Np0rhHJl0W9T4IhMaazb_5JHyUBfYmhWMLL2ny3HuQtRE-XkFZFcRskvHUA9Q6D/exec';
+
+            // ============================================================
+            // 🔐 TECHNICIAN PINs
+            // ============================================================
+            const TECHNICIAN_PINS = {
+                'Hillaly KUBWIMANA':      '0806',
+                'YANDEREYE Felecien':     '1723',
+                'HIRWA Jean Deluce':      '2451',
+                'HABARUREMA Jean Claude': '3904',
+                'GATANGANWA Raissa':      '0401'
+            };
+
+            // ============================================================
+            // 📋 DEFAULT AC INVENTORY (from your images)
+            // ============================================================
+            const DEFAULT_AC_INVENTORY = [
+                { tag: 'CHUB/6MCH NBM/262', dept: 'Laboratory', loc: 'Stock Consumables', type: 'Split', brand: 'Kanion', model: 'KCC-18R4100CF', serial: '340B408220308280170001' },
+                { tag: 'CHUB/6MCH NBM/263', dept: 'Laboratory', loc: 'Genetics', type: 'Split', brand: 'LG', model: 'S4-024K23CA', serial: '303HAERCE084' },
+                { tag: 'CHUB/6MCH NBM/265', dept: 'Laboratory', loc: 'TB', type: 'Split', brand: 'LG', model: 'TSUC1865ML2', serial: 'N/A' },
+                { tag: 'CHUB/6MCH NBM/266', dept: 'Laboratory', loc: 'TB', type: 'Split', brand: 'LG', model: 'TSUC1865ML2', serial: 'N/A' },
+                { tag: 'CHUB/6MCH NBM/267', dept: 'Laboratory', loc: 'Sterilization', type: 'Split', brand: 'LG', model: 'T24SMH', serial: '209CTEA05012' },
+                { tag: 'CHUB/6MCH NBM/276', dept: 'Laboratory', loc: 'Molecular Pre-PCR', type: 'Split', brand: 'LG', model: 'TSUC1865ML2', serial: 'N/A' },
+                { tag: 'CHUB/6MCH NBM/269', dept: 'Laboratory', loc: 'Hematology', type: 'Split', brand: 'LG', model: 'ATUQ30GPLA4', serial: '203TAZFG4277' },
+                { tag: 'CHUB/6MCH NBM/270', dept: 'Laboratory', loc: 'Doctor\'s Office – Pathology', type: 'Split', brand: 'LG', model: 'TSUC1865ML2', serial: 'N/A' },
+                { tag: 'CHUB/6MCH NBM/272', dept: 'Laboratory', loc: 'Biochemistry', type: 'Split', brand: 'LG', model: '2G1M00W1', serial: '206TAQPDP788' },
+                { tag: 'CHUB/6MCH NBM/268', dept: 'Laboratory', loc: 'Parasitology', type: 'Split', brand: 'LG', model: 'TSUC1865ML2', serial: 'N/A' },
+                { tag: 'CHUB/6MCH NBM/277', dept: 'Laboratory', loc: 'Molecular Pre-PCR', type: 'Split', brand: 'LG', model: 'T24SMH', serial: '209CTXM05354' },
+                { tag: 'CHUB/6MCH NBM/275', dept: 'Laboratory', loc: 'Molecular Post-PCR', type: 'Split', brand: 'LG', model: '2E1M00HG', serial: '203TAYVG4274' },
+                { tag: 'CHUB/6MCH NBM/264', dept: 'Laboratory', loc: 'TB', type: 'Split', brand: 'LG', model: 'T24SMH', serial: '209CTET05355' },
+                { tag: 'CHUB/6MCH NBM/278', dept: 'Laboratory', loc: 'Lab UPS Room', type: 'Split', brand: 'Super General', model: 'SGCA2400SE', serial: '340A535130205150030' },
+                { tag: 'CHUB/6MCH NBM/273', dept: 'Laboratory', loc: 'Immunology', type: 'Split', brand: 'Daikin', model: 'RNV50BV1', serial: 'K003361' },
+                { tag: 'N/A', dept: 'Laboratory', loc: 'Direct Examination', type: 'Split', brand: 'Samsung', model: 'AR24CQHGAWKX', serial: 'BVQQP9CX500689M' },
+                { tag: 'N/A', dept: 'Laboratory', loc: 'Culture Media', type: 'Split', brand: 'Samsung', model: 'AR24CQHGAWKX', serial: 'BVQQP9CX500843M' },
+                { tag: 'N/A', dept: 'Laboratory', loc: 'Grossing Room', type: 'Split', brand: 'Samsung', model: 'AR24CQHGAWKX', serial: 'BVQQP9CX501021K' },
+                { tag: 'N/A', dept: 'Laboratory', loc: 'Embedding Room', type: 'Split', brand: 'Samsung', model: 'AR24CQHGAWKX', serial: 'BVQQP9CX500829X' },
+                { tag: 'N/A', dept: 'Laboratory', loc: 'Staining Room', type: 'Split', brand: 'Samsung', model: 'AR24CQHGAWKX', serial: 'BVQQP9CX501060X' },
+                { tag: 'N/A', dept: 'Laboratory', loc: 'Refrigerators Room', type: 'Split', brand: 'Samsung', model: 'AR24CQHGAWKX', serial: 'BVQQP9CX500839A' },
+                { tag: 'N/A', dept: 'Laboratory', loc: 'Hematology', type: 'Split', brand: 'Carrier', model: '38QHG024D85', serial: '54CQ6164440649120120061' }
+            ];
+
+            // ============================================================
+            // 💾 LOCAL STORAGE FOR AC INVENTORY
+            // ============================================================
+            const INVENTORY_KEY = 'chub_ac_inventory';
+            
+            function loadInventory() {
+                try {
+                    const saved = localStorage.getItem(INVENTORY_KEY);
+                    if (saved) return JSON.parse(saved);
+                } catch(e) { console.warn('Failed to load inventory'); }
+                // If nothing saved, return default and save it
+                saveInventory(DEFAULT_AC_INVENTORY);
+                return DEFAULT_AC_INVENTORY;
+            }
+
+            function saveInventory(inv) {
+                localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv));
+            }
+
+            let AC_INVENTORY = loadInventory();
+
+            // ============================================================
+            // 🛠️ HELPERS
+            // ============================================================
+            function safeStr(val) { return (val === null || val === undefined) ? '' : String(val); }
+            function showStatus(msg, isSuccess = true) {
+                const statusMessage = document.getElementById('statusMessage');
+                const statusText = document.getElementById('statusText');
+                statusText.textContent = msg;
+                statusMessage.style.background = isSuccess ? '#e2f0e6' : '#ffe6e6';
+                statusMessage.style.color = isSuccess ? '#1b6b3f' : '#b33a3a';
+                statusMessage.classList.add('show');
+                setTimeout(() => statusMessage.classList.remove('show'), 6000);
+            }
+
+            // ============================================================
+            // 🏷️ POPULATE AC SELECTOR
+            // ============================================================
+            const acSelect = document.getElementById('acSelect');
+            const acTitle = document.getElementById('acTitle');
+            const acSub = document.getElementById('acSub');
+
+            function renderAcSelector() {
+                acSelect.innerHTML = '';
+                AC_INVENTORY.forEach((ac, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.textContent = `${ac.tag} | ${ac.loc} | ${ac.brand}`;
+                    acSelect.appendChild(opt);
+                });
+                updateAcBanner();
+            }
+
+            function updateAcBanner() {
+                const idx = acSelect.value;
+                if (idx === '' || !AC_INVENTORY[idx]) return;
+                const ac = AC_INVENTORY[idx];
+                acTitle.textContent = `${ac.tag} — ${ac.loc}`;
+                acSub.textContent = `${ac.dept} · ${ac.type} · ${ac.brand} · ${ac.model} · SN: ${ac.serial || 'N/A'}`;
+                
+                // Pre-fill Next PM Date
+                const nextPmInput = document.getElementById('nextServiceDate');
+                if (!nextPmInput.value) {
+                    nextPmInput.value = '2026-09-20'; 
+                }
+                updatePrediction();
+            }
+            acSelect.addEventListener('change', updateAcBanner);
+
+            // ============================================================
+            // ➕ ADD NEW AC LOGIC
+            // ============================================================
+            const addAcModal = document.getElementById('addAcModal');
+            document.getElementById('addAcBtn').addEventListener('click', () => {
+                addAcModal.classList.add('show');
+            });
+            document.getElementById('addAcCancel').addEventListener('click', () => {
+                addAcModal.classList.remove('show');
+            });
+
+            document.getElementById('addAcSave').addEventListener('click', () => {
+                const tag = document.getElementById('newAcTag').value.trim();
+                const dept = document.getElementById('newAcDept').value.trim() || 'Laboratory';
+                const loc = document.getElementById('newAcLocation').value.trim();
+                const brand = document.getElementById('newAcBrand').value.trim();
+                const model = document.getElementById('newAcModel').value.trim();
+                const type = document.getElementById('newAcType').value;
+                const serial = document.getElementById('newAcSerial').value.trim() || 'N/A';
+
+                if (!tag || !loc || !brand || !model) {
+                    alert('Please fill in all required fields marked with *');
+                    return;
+                }
+
+                const newAc = { tag, dept, loc, type, brand, model, serial };
+                AC_INVENTORY.push(newAc);
+                saveInventory(AC_INVENTORY);
+                
+                // Re-render and select the new one
+                renderAcSelector();
+                acSelect.value = AC_INVENTORY.length - 1;
+                updateAcBanner();
+
+                // Clear form and close modal
+                document.getElementById('newAcTag').value = '';
+                document.getElementById('newAcLocation').value = '';
+                document.getElementById('newAcBrand').value = '';
+                document.getElementById('newAcModel').value = '';
+                document.getElementById('newAcSerial').value = '';
+                addAcModal.classList.remove('show');
+                
+                showStatus('✅ New AC Unit added successfully!', true);
+            });
+
+            // ============================================================
+            // 👨‍🔧 TECHNICIAN DISPLAY
+            // ============================================================
+            const technicianSelect = document.getElementById('technicianSelect');
+            function updateTechnicianDisplay() {
+                const name = technicianSelect.value;
+                document.getElementById('signoffTechName').textContent = name;
+                const initials = name ? name.split(' ').map(p => p[0]).join('') + '.' : '—';
+                document.getElementById('signaturePad').textContent = initials;
+            }
+
+            // ============================================================
+            // 📅 WORK DATE & PREDICTIVE SERVICING
+            // ============================================================
+            function setAutoWorkDate() {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                document.getElementById('workDate').value = `${yyyy}-${mm}-${dd}`;
+                updateWorkDateDisplay();
+            }
+
+            function updateWorkDateDisplay() {
+                const val = document.getElementById('workDate').value;
+                if (!val) return;
+                const d = new Date(val + 'T00:00:00');
+                const formatted = d.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+                document.getElementById('workDateDisplay').textContent = formatted;
+                document.getElementById('signoffWorkDate').textContent = formatted;
+            }
+
+            function updatePrediction() {
+                const lastDate = document.getElementById('lastServiceDate').value;
+                const nextDate = document.getElementById('nextServiceDate').value;
+                const predStatus = document.getElementById('predictionStatus');
+                const predText = document.getElementById('predictionStatusText');
+                const daysRem = document.getElementById('predDaysRemaining');
+
+                if (!lastDate || !nextDate) {
+                    predStatus.style.background = '#e7f0f8';
+                    predStatus.style.color = '#1e4a6d';
+                    predStatus.style.borderColor = '#cfdfeb';
+                    predStatus.querySelector('span:first-child').textContent = 'ℹ️';
+                    predText.textContent = 'Fill in Last PM Date to see prediction';
+                    daysRem.textContent = '—';
+                    return;
+                }
+
+                const now = new Date();
+                const next = new Date(nextDate + 'T00:00:00');
+                const diffTime = next - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                daysRem.textContent = diffDays + ' days';
+
+                if (diffDays < 0) {
+                    predStatus.style.background = '#ffe6e6'; predStatus.style.color = '#b33a3a'; predStatus.style.borderColor = '#f0b8b8';
+                    predStatus.querySelector('span:first-child').textContent = '🚨';
+                    predText.textContent = `OVERDUE — ${Math.abs(diffDays)} days past due`;
+                } else if (diffDays <= 14) {
+                    predStatus.style.background = '#ffe6e6'; predStatus.style.color = '#b33a3a'; predStatus.style.borderColor = '#f0b8b8';
+                    predStatus.querySelector('span:first-child').textContent = '⚠️';
+                    predText.textContent = `DUE SOON — ${diffDays} days left`;
+                } else if (diffDays <= 30) {
+                    predStatus.style.background = '#fff3cd'; predStatus.style.color = '#7a5300'; predStatus.style.borderColor = '#f4d97a';
+                    predStatus.querySelector('span:first-child').textContent = '🔔';
+                    predText.textContent = `Plan PM — ${diffDays} days remaining`;
+                } else {
+                    predStatus.style.background = '#e2f0e6'; predStatus.style.color = '#1b6b3f'; predStatus.style.borderColor = '#b8dfc3';
+                    predStatus.querySelector('span:first-child').textContent = '✅';
+                    predText.textContent = `OK — ${diffDays} days until next PM`;
+                }
+            }
+
+            document.getElementById('lastServiceDate').addEventListener('change', updatePrediction);
+            document.getElementById('nextServiceDate').addEventListener('change', updatePrediction);
+
+            // Delta T Calculation
+            const supplyTemp = document.getElementById('supplyTemp');
+            const returnTemp = document.getElementById('returnTemp');
+            const deltaT = document.getElementById('deltaT');
+
+            function calculateDeltaT() {
+                const s = parseFloat(supplyTemp.value);
+                const r = parseFloat(returnTemp.value);
+                if (!isNaN(s) && !isNaN(r)) {
+                    deltaT.value = (r - s).toFixed(1) + ' °C';
+                } else {
+                    deltaT.value = '—';
+                }
+            }
+            supplyTemp.addEventListener('input', calculateDeltaT);
+            returnTemp.addEventListener('input', calculateDeltaT);
+
+            // ============================================================
+            // 💾 LOCAL QUEUE & GOOGLE SHEETS SYNC
+            // ============================================================
+            const QUEUE_KEY = 'chub_ac_queue';
+            function getQueue() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e) { return []; } }
+            function saveQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updatePendingCount(); }
+            function updatePendingCount() { document.getElementById('pendingCount').textContent = getQueue().length; }
+            function setSyncStatus(state, text) {
+                const el = document.getElementById('syncStatus');
+                el.className = 'sync-status' + (state ? ' ' + state : '');
+                document.getElementById('syncStatusText').textContent = text;
+            }
+
+            async function sendToSheet(data) {
+                try {
+                    await fetch(GOOGLE_SHEET_URL, {
+                        method: 'POST', mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(data)
+                    });
+                    return true;
+                } catch (err) { return false; }
+            }
+
+            async function flushQueue() {
+                const q = getQueue();
+                if (q.length === 0) { setSyncStatus('', 'All synced'); return; }
+                setSyncStatus('', 'Syncing...');
+                const remaining = [];
+                let sent = 0;
+                for (const item of q) {
+                    const ok = await sendToSheet(item);
+                    if (ok) sent++; else remaining.push(item);
+                }
+                saveQueue(remaining);
+                if (remaining.length === 0) {
+                    setSyncStatus('', 'All synced ✓');
+                    showStatus('✅ ' + sent + ' record(s) synced.', true);
+                } else {
+                    setSyncStatus('error', remaining.length + ' pending');
+                    showStatus('⚠️ ' + sent + ' synced, ' + remaining.length + ' pending.', false);
+                }
+            }
+
+            async function queueAndSend(data) {
+                setSyncStatus('', 'Sending...');
+                const ok = await sendToSheet(data);
+                if (ok) {
+                    setSyncStatus('', 'Saved ✓');
+                    showStatus('✅ Signed off & saved to Google Sheet.', true);
+                    return true;
+                } else {
+                    const q = getQueue(); q.push(data); saveQueue(q);
+                    setSyncStatus('offline', 'Offline — queued');
+                    showStatus('📥 Saved locally — will sync when online.', false);
+                    return false;
+                }
+            }
+
+            // ============================================================
+            // 📝 DATA COLLECTION
+            // ============================================================
+            function collectFormData() {
+                const idx = acSelect.value;
+                const ac = AC_INVENTORY[idx];
+                const now = new Date();
+                const timestamp = now.toLocaleString('en-GB', { hour12: false, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                
+                const getChecked = (className) => document.querySelectorAll('.' + className + ':checked').length;
+                const getTickedItems = (prefix, max) => {
+                    const items = [];
+                    for (let i = 1; i <= max; i++) {
+                        const cb = document.getElementById(prefix + i);
+                        if (cb && cb.checked) items.push(String(i));
+                    }
+                    return items;
+                };
+
+                return {
+                    acTag: ac.tag,
+                    acLocation: ac.loc,
+                    acDept: ac.dept,
+                    acType: ac.type,
+                    acBrand: ac.brand,
+                    acModel: ac.model,
+                    acSerial: ac.serial,
+                    technician: technicianSelect.value,
+                    site: 'CHUB',
+                    workDate: document.getElementById('workDate').value,
+                    generatedAt: timestamp,
+                    supplyTemp: supplyTemp.value || '—',
+                    returnTemp: returnTemp.value || '—',
+                    deltaT: deltaT.value || '—',
+                    suctionPressure: document.getElementById('suctionPressure').value || '—',
+                    dischargePressure: document.getElementById('dischargePressure').value || '—',
+                    compressorAmps: document.getElementById('compressorAmps').value || '—',
+                    lastServiceDate: document.getElementById('lastServiceDate').value || '—',
+                    nextServiceDate: document.getElementById('nextServiceDate').value || '—',
+                    daysRemaining: document.getElementById('predDaysRemaining').textContent || '—',
+                    predictionStatus: document.getElementById('predictionStatusText').textContent || '—',
+                    // Checklists
+                    airflowItems: getTickedItems('check', 5).join('|'),
+                    airflowRemark: document.getElementById('remarkAirflow').value.trim() || '—',
+                    airflowRating: document.querySelector('input[name="ratingAirflow"]:checked')?.value || '—',
+                    
+                    electricalItems: getTickedItems('check', 10).join('|'),
+                    electricalRemark: document.getElementById('remarkElectrical').value.trim() || '—',
+                    electricalRating: document.querySelector('input[name="ratingElectrical"]:checked')?.value || '—',
+                    
+                    drainageItems: getTickedItems('check', 15).join('|'),
+                    drainageRemark: document.getElementById('remarkDrainage').value.trim() || '—',
+                    drainageRating: document.querySelector('input[name="ratingDrainage"]:checked')?.value || '—'
+                };
+            }
+
+            // ============================================================
+            // ✍️ SIGN-OFF
+            // ============================================================
+            document.getElementById('signOffBtn').addEventListener('click', async function() {
+                this.disabled = true;
+                const orig = this.innerHTML;
+                this.innerHTML = '<span>⏳</span> Sending...';
+                const data = collectFormData();
+                const success = await queueAndSend(data);
+                this.disabled = false;
+                this.innerHTML = orig;
+                if (success) {
+                    setTimeout(() => resetForm(false), 1500);
+                }
+            });
+
+            // ============================================================
+            // 🔄 RESET
+            // ============================================================
+            function resetForm(showMsg) {
+                document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                document.querySelectorAll('input[type="text"], input[type="number"]').forEach(inp => inp.value = '');
+                document.querySelectorAll('input[type="radio"]').forEach(rb => rb.checked = false);
+                document.querySelectorAll('input[type="radio"][value="good"]').forEach(rb => rb.checked = true);
+                document.getElementById('lastServiceDate').value = '';
+                document.getElementById('nextServiceDate').value = '';
+                acSelect.selectedIndex = 0;
+                updateAcBanner();
+                updateTechnicianDisplay();
+                setAutoWorkDate();
+                updatePrediction();
+                if (showMsg) showStatus('Form has been reset.', true);
+            }
+
+            document.getElementById('resetBtn').addEventListener('click', () => resetForm(true));
+
+            // ============================================================
+            // 📄 PDF EXPORT (Single Record)
+            // ============================================================
+            document.getElementById('pdfBtn').addEventListener('click', function() {
+                const data = collectFormData();
+                this.disabled = true;
+                const orig = this.innerHTML;
+                this.innerHTML = '<span>⏳</span> Preparing PDF...';
+
+                const reportHTML = buildReportHTML(data);
+                const iframe = document.createElement('iframe');
+                iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;';
+                document.body.appendChild(iframe);
+
+                iframe.onload = function() {
+                    try {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                        showStatus('📄 PDF dialog opened — choose "Save as PDF".', true);
+                    } catch(e) {
+                        showStatus('⚠️ Could not open print dialog.', false);
+                    }
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                        document.getElementById('pdfBtn').disabled = false;
+                        document.getElementById('pdfBtn').innerHTML = orig;
+                    }, 1500);
+                };
+                iframe.srcdoc = reportHTML;
+            });
+
+            function buildReportHTML(data) {
+                const initials = data.technician.split(' ').map(p => p[0]).join('') + '.';
+                const checkList = (ids, allItems) => {
+                    return allItems.map((item, idx) => {
+                        const isChecked = ids.indexOf(String(idx + 1)) !== -1;
+                        const mark = isChecked ? 'v' : 'x';
+                        const color = isChecked ? '#1b6b3f' : '#b33a3a';
+                        return '<li style="padding:4px 0;color:#1f3c54;font-size:0.92rem;"><span style="display:inline-block;width:18px;font-weight:700;color:' + color + ';">' + mark + '</span>' + item + '</li>';
+                    }).join('');
+                };
+
+                return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>CHUB AC PM Report</title>
+<style>
+@page { size: A4; margin: 10mm 10mm; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a2e45; background: white; padding: 0 4px; font-size: 10pt; line-height: 1.35; }
+.header { border-bottom: 3px solid #1e4a6d; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 8px; }
+.header h1 { font-size: 1.25rem; color: #12405e; letter-spacing: -0.3px; }
+.header .sub { font-size: 0.85rem; color: #3a6583; margin-top: 3px; }
+.header .meta { font-size: 0.8rem; color: #5b7b96; text-align: right; line-height: 1.4; }
+.gen-banner { background: linear-gradient(90deg, #1e4a6d 0%, #2a6b96 100%); color: white; padding: 10px 16px; border-radius: 8px; margin-bottom: 12px; }
+.gen-banner .gen-name { font-size: 1.1rem; font-weight: 800; }
+.gen-banner .gen-sub { font-size: 0.8rem; color: #cbe4f7; margin-top: 2px; }
+.section-title { font-size: 0.98rem; font-weight: 700; color: #12405e; margin: 12px 0 6px 0; padding-bottom: 3px; border-bottom: 2px solid #d4e3ef; }
+.info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.info-box { background: #f9fcff; border: 1px solid #d4e3ef; border-radius: 8px; padding: 8px 10px; }
+.info-box .label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.5px; color: #5b7b96; font-weight: 700; margin-bottom: 3px; }
+.info-box .value { font-size: 0.92rem; font-weight: 700; color: #12405e; }
+.rating-tag { display: inline-block; background: #e7f0f8; color: #12405e; padding: 2px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; margin-bottom: 6px; text-transform: capitalize; }
+ul.check-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 1px 20px; margin-bottom: 4px; }
+ul.check-list li { padding: 2px 0; color: #1f3c54; font-size: 0.85rem; }
+.remark-box { background: #fbfdff; border-left: 3px solid #9cb9d0; padding: 6px 10px; border-radius: 4px; font-size: 0.8rem; color: #3a6583; margin-bottom: 6px; font-style: italic; }
+.signoff-block { margin-top: 14px; padding: 12px 16px; background: #f0f6fc; border-radius: 10px; border: 1px solid #cfe0ee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; page-break-inside: avoid; }
+.signoff-block .tech-name { font-size: 1.05rem; font-weight: 700; color: #0a2a3f; }
+.signature { font-family: 'Segoe UI', cursive; font-size: 1.1rem; color: #1e4a6d; border-bottom: 2px dashed #9cb9d0; padding: 0 16px 3px 16px; }
+.footer { margin-top: 12px; padding-top: 8px; border-top: 1px solid #d4e3ef; text-align: center; font-size: 0.7rem; color: #5b7b96; page-break-before: avoid; }
+</style></head><body>
+<div class="header">
+  <div>
+    <h1>❄️ CHUB AC Fleet — Preventive Maintenance Report</h1>
+    <div class="sub">Site: CHUB · Split Units · PM Checklist</div>
+  </div>
+  <div class="meta">
+    <div><strong>Work date:</strong> ${data.workDate}</div>
+    <div><strong>Technician:</strong> ${data.technician}</div>
+    <div><strong>Generated:</strong> ${data.generatedAt}</div>
+  </div>
+</div>
+
+<div class="gen-banner">
+  <div class="gen-name">${data.acTag} — ${data.acLocation}</div>
+  <div class="gen-sub">${data.acBrand} · ${data.acModel} · SN: ${data.acSerial}</div>
+</div>
+
+<div class="section-title">🌡️ Operational Data & Predictive Servicing</div>
+<div class="info-grid">
+  <div class="info-box"><div class="label">Supply Temp</div><div class="value">${data.supplyTemp} °C</div></div>
+  <div class="info-box"><div class="label">Return Temp</div><div class="value">${data.returnTemp} °C</div></div>
+  <div class="info-box"><div class="label">Delta T</div><div class="value">${data.deltaT}</div></div>
+  <div class="info-box"><div class="label">Compressor Amps</div><div class="value">${data.compressorAmps} A</div></div>
+</div>
+<div class="info-grid">
+  <div class="info-box"><div class="label">Suction Pressure</div><div class="value">${data.suctionPressure}</div></div>
+  <div class="info-box"><div class="label">Discharge Pressure</div><div class="value">${data.dischargePressure}</div></div>
+  <div class="info-box"><div class="label">Last PM Date</div><div class="value">${data.lastServiceDate}</div></div>
+  <div class="info-box"><div class="label">Next PM Date</div><div class="value">${data.nextServiceDate}</div></div>
+</div>
+
+<div class="section-title">🌬️ Filters, Coils & Airflow</div>
+<div class="rating-tag">Condition: ${data.airflowRating}</div>
+<ul class="check-list">
+${checkList(data.airflowItems.split('|'), [
+    'Inspect, clean, or replace filters',
+    'Clean indoor evaporator coil',
+    'Clean outdoor condenser coil',
+    'Check blower motor and wheel',
+    'Verify proper airflow across unit'
+])}
+</ul>
+${data.airflowRemark !== '—' ? '<div class="remark-box">📝 ' + data.airflowRemark + '</div>' : ''}
+
+<div class="section-title">⚡ Electrical & Refrigerant</div>
+<div class="rating-tag">Status: ${data.electricalRating}</div>
+<ul class="check-list">
+${checkList(data.electricalItems.split('|'), [
+    'Verify correct refrigerant charge (superheat/subcooling)',
+    'Tighten and inspect electrical connections',
+    'Test relays, contactors, and capacitors',
+    'Measure compressor and fan motor amps',
+    'Inspect wiring for frays or heat damage'
+])}
+</ul>
+${data.electricalRemark !== '—' ? '<div class="remark-box">📝 ' + data.electricalRemark + '</div>' : ''}
+
+<div class="section-title">💧 Drainage, Controls & Performance</div>
+<div class="rating-tag">Performance: ${data.drainageRating}</div>
+<ul class="check-list">
+${checkList(data.drainageItems.split('|'), [
+    'Clear condensate drain line and pan',
+    'Check thermostat calibration and controls',
+    'Measure supply/return air temperatures',
+    'Verify overall system efficiency',
+    'Inspect ductwork for leaks (visible)'
+])}
+</ul>
+${data.drainageRemark !== '—' ? '<div class="remark-box">📝 ' + data.drainageRemark + '</div>' : ''}
+
+<div class="signoff-block">
+  <div>
+    <div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.5px; color:#5b7b96; font-weight:700; margin-bottom:4px;">Signed off by</div>
+    <div class="tech-name">${data.technician}</div>
+    <div style="font-size:0.82rem; color:#3a6583;">CHUB Site · Work date: ${data.workDate}</div>
+  </div>
+  <div class="signature">${initials}</div>
+</div>
+
+<div class="footer">
+  This report was generated automatically from the CHUB AC Fleet Preventive Maintenance System · ${data.generatedAt}
+</div>
+</body></html>`;
+            }
+
+            // ============================================================
+            // 🔐 PIN AUTHENTICATION
+            // ============================================================
+            const SESSION_KEY = 'chub_ac_session';
+            function saveSession(name) { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ name: name, time: Date.now() })); } catch(e) {} }
+            function loadSession() {
+                try {
+                    const raw = sessionStorage.getItem(SESSION_KEY);
+                    if (!raw) return null;
+                    const s = JSON.parse(raw);
+                    if (Date.now() - s.time > 12 * 60 * 60 * 1000) { sessionStorage.removeItem(SESSION_KEY); return null; }
+                    return s.name;
+                } catch(e) { return null; }
+            }
+            function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {} }
+
+            function unlockApp(name) {
+                technicianSelect.value = name;
+                document.getElementById('loggedInUserName').textContent = name;
+                document.getElementById('lockedTechName').textContent = name;
+                updateTechnicianDisplay();
+                document.getElementById('loginModal').classList.remove('show');
+            }
+            function lockApp() {
+                clearSession();
+                document.getElementById('loginModal').classList.add('show');
+                document.getElementById('loginPinInput').value = '';
+                document.getElementById('loginError').textContent = '';
+                document.getElementById('loginTechSelect').value = '';
+                document.getElementById('loginTechSelect').focus();
+            }
+
+            document.getElementById('loginBtn').addEventListener('click', function() {
+                const name = document.getElementById('loginTechSelect').value;
+                const pin = document.getElementById('loginPinInput').value.trim();
+                const errorEl = document.getElementById('loginError');
+                errorEl.textContent = '';
+
+                if (!name) { errorEl.textContent = '⚠️ Please select your name.'; return; }
+                if (!pin) { errorEl.textContent = '⚠️ Please enter your PIN.'; return; }
+                if (TECHNICIAN_PINS[name] !== pin) {
+                    errorEl.textContent = '❌ Wrong PIN for ' + name;
+                    document.getElementById('loginPinInput').value = '';
+                    document.getElementById('loginPinInput').focus();
+                    return;
+                }
+                saveSession(name);
+                unlockApp(name);
+                showStatus('✅ Welcome, ' + name + '!', true);
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                if (confirm('Log out and lock the app?')) { lockApp(); showStatus('🔒 Logged out.', true); }
+            });
+
+            const existingSession = loadSession();
+            if (existingSession && TECHNICIAN_PINS[existingSession]) { unlockApp(existingSession); } else { lockApp(); }
+
+            // ============================================================
+            // 🚀 INIT
+            // ============================================================
+            document.getElementById('workDate').addEventListener('change', updateWorkDateDisplay);
+            document.getElementById('syncBtn').addEventListener('click', flushQueue);
+            document.getElementById('logoutBtn').addEventListener('click', () => { clearSession(); lockApp(); });
+
+            setAutoWorkDate();
+            renderAcSelector();
+            updateTechnicianDisplay();
+            updatePendingCount();
+            setTimeout(() => { if (getQueue().length > 0) flushQueue(); }, 1200);
+
+        })();
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js?v=4')
+                    .then(reg => console.log('✅ Service Worker registered:', reg.scope))
+                    .catch(err => console.warn('⚠️ Service Worker failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
