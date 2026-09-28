@@ -282,7 +282,6 @@
             <span>🔍</span> Inspection Checklist
         </div>
         <div class="grid-3">
-            <!-- Card 1: Cleaning & Hygiene -->
             <div class="card">
                 <div class="card-header"><span>🧼</span> Cleaning &amp; Hygiene</div>
                 <div class="card-body">
@@ -306,7 +305,6 @@
                 </div>
             </div>
 
-            <!-- Card 2: Temperature & Performance -->
             <div class="card">
                 <div class="card-header"><span>🌡️</span> Temperature &amp; Performance</div>
                 <div class="card-body">
@@ -330,7 +328,6 @@
                 </div>
             </div>
 
-            <!-- Card 3: Door, Seals & Function -->
             <div class="card">
                 <div class="card-header"><span>🚪</span> Door, Seals &amp; Function</div>
                 <div class="card-body">
@@ -513,9 +510,6 @@
 
     <script>
         (function() {
-          
-            // with "Execute as: Me" and "Access: Anyone").
-            // ============================================================
             const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyc-xhUZaHszJA2EW-81Cc7H-pkis3EYLkXcF43HEb1xlMYPerEBIUzPhqgpo6hFwY/exec';
 
             const TECHNICIAN_PINS = {
@@ -569,11 +563,6 @@
 
             const DEFAULT_LIST_OWNER = 'Hillaly KUBWIMANA';
 
-            // ============================================================
-            // ⭐ DEFAULT REFRIGERATOR INVENTORY
-            // (Auto-loaded only for the DEFAULT_LIST_OWNER the first time
-            //  if their cloud list is empty. Edit or replace as needed.)
-            // ============================================================
             const DEFAULT_FRIDGE_INVENTORY = [
                 { tag: 'CHUB/FRG/001', dept: 'Laboratory', loc: 'Sample Storage Room 1', type: 'Lab Fridge',        brand: 'LG',        model: 'GN-B422',   serial: 'N/A' },
                 { tag: 'CHUB/FRG/002', dept: 'Laboratory', loc: 'Sample Storage Room 1', type: 'Fridge-Freezer',   brand: 'Samsung',   model: 'RT38',      serial: 'N/A' },
@@ -583,7 +572,7 @@
                 { tag: 'CHUB/FRG/006', dept: 'Laboratory', loc: 'Freezer Bay',          type: 'Chest Freezer',    brand: 'Haier',     model: 'HCF-219',   serial: 'N/A' }
             ];
 
-            let AC_INVENTORY = [];  // (kept variable name for compatibility)
+            let AC_INVENTORY = [];
             const USER_PM_KEYS = new Set();
 
             const CACHE_KEY_PREFIX = 'chub_refrigerator_cache_v1_';
@@ -783,7 +772,6 @@
 
             const technicianSelect = document.getElementById('technicianSelect');
 
-            // ---- CERT STATE ----
             const CERT_STATE = {
                 certificate: null, privateKey: null,
                 subject: '', issuer: '', serial: '',
@@ -813,7 +801,6 @@
                 }
             }
 
-            // ==================== COMBINED MODAL ====================
             const signatureModal = document.getElementById('signatureModal');
             const sigFileInput = document.getElementById('sigFileInput');
             const pfxFileInput = document.getElementById('pfxFileInput');
@@ -961,7 +948,6 @@
                 showStatus('✅ Signature and certificate saved.', true);
             });
 
-            // ---- PKCS#7 detached signature ----
             function signCanonical(canonicalString) {
                 if (!isCertLoaded()) return null;
                 try {
@@ -1116,7 +1102,6 @@
                     acBrand: ac.brand, acModel: ac.model, acSerial: ac.serial,
                     technician: technicianSelect.value, site: 'CHUB',
                     workDate: document.getElementById('workDate').value, generatedAt: timestamp,
-                    // mapped to canonical field names used by PDF
                     airflowItems: getTickedItems(1, 5).join('|'),
                     airflowRemark: document.getElementById('remarkClean').value.trim() || '—',
                     airflowRating: document.querySelector('input[name="ratingClean"]:checked')?.value || '—',
@@ -1224,6 +1209,25 @@
                 const contentWidth = pageWidth - margin * 2;
 
                 const allSignatures = loadSignatures();
+
+                // ⭐ Preload logo as base64 so jsPDF never has to fetch it
+                let LOGO_DATA_URL = '';
+                try {
+                    const res = await fetch('chub-logo.png');
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        LOGO_DATA_URL = await new Promise((resolve, reject) => {
+                            const r = new FileReader();
+                            r.onload = () => resolve(r.result);
+                            r.onerror = reject;
+                            r.readAsDataURL(blob);
+                        });
+                    }
+                } catch (e) {
+                    console.warn('Logo not available — using text fallback:', e.message);
+                    LOGO_DATA_URL = '';
+                }
+
                 const sigDimensions = {};
                 for (const [techName, dataUrl] of Object.entries(allSignatures)) {
                     if (dataUrl) {
@@ -1233,9 +1237,15 @@
                 }
 
                 function addHeader(data) {
-                    try {
-                        doc.addImage('chub-logo.png', 'PNG', margin, margin - 2, 24, 11);
-                    } catch (e) {
+                    if (LOGO_DATA_URL) {
+                        try {
+                            doc.addImage(LOGO_DATA_URL, 'PNG', margin, margin - 2, 24, 11);
+                        } catch (e) {
+                            doc.setFontSize(14); doc.setFont('helvetica', 'bolditalic');
+                            doc.setTextColor(106, 141, 176);
+                            doc.text('CHUB', margin, margin + 6);
+                        }
+                    } else {
                         doc.setFontSize(14); doc.setFont('helvetica', 'bolditalic');
                         doc.setTextColor(106, 141, 176);
                         doc.text('CHUB', margin, margin + 6);
@@ -1283,7 +1293,6 @@
                     doc.text('P.O Box: 254 Butare  |  Email: info@chub.rw  |  Hotline: 2030', pageWidth / 2, footerY + 1, { align: 'center' });
                 }
 
-                // Refrigerator checklists (must match UI labels)
                 const section1Texts = [
                     'Clean interior shelves, walls and drawers',
                     'Clean door gaskets and seals',
@@ -1312,7 +1321,6 @@
 
                     let y = addHeader(data);
 
-                    // ---- UNIT BANNER ----
                     const deptLabel = sanitizeForPDF(data.acDept || 'Laboratory');
                     doc.setFillColor(30, 74, 109);
                     doc.rect(margin, y, contentWidth, 15, 'F');
@@ -1323,7 +1331,6 @@
                     doc.text(sanitizeForPDF(`Department: ${deptLabel}  |  ${data.acType}  |  ${data.acBrand}  |  ${data.acModel}  |  SN: ${data.acSerial}`), margin + 4, y + 12);
                     y += 19;
 
-                    // Legend
                     doc.setFillColor(248, 250, 252); doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.2);
                     doc.roundedRect(margin, y, contentWidth, 7, 1.5, 1.5, 'FD');
                     doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(27, 107, 63);
@@ -1390,7 +1397,6 @@
                     drawSection('Temperature & Performance', 'Status', data.electricalRating, items2, data.electricalRemark);
                     drawSection('Door, Seals & Function', 'Performance', data.drainageRating, items3, data.drainageRemark);
 
-                    // ==================== SIGN-OFF BLOCKS ====================
                     const boxHeight = 46;
                     if (y > pageHeight - 70) { addFooter(); doc.addPage(); y = addHeader(data); }
 
@@ -1399,7 +1405,6 @@
                     const leftBoxX = margin;
                     const rightBoxX = margin + halfWidth + gap;
 
-                    // ---- LEFT: TECHNICIAN ----
                     doc.setFillColor(240, 246, 252); doc.setDrawColor(207, 224, 238); doc.setLineWidth(0.3);
                     doc.roundedRect(leftBoxX, y, halfWidth, boxHeight, 2, 2, 'FD');
 
@@ -1413,7 +1418,6 @@
                     doc.text(`Date: ${formatDateForPDF(data.workDate)}`, leftBoxX + 3, y + 15.5);
                     doc.text(`Next PM: ${nextPmForPDF(data.workDate)}`, leftBoxX + 3, y + 19.5);
 
-                    // RIGHT-SIDE VISUAL SIGNATURE AREA
                     const sigAreaX = leftBoxX + (halfWidth / 2) + 2;
                     const sigAreaW = (halfWidth / 2) - 5;
                     const sigAreaY = y + 7;
@@ -1471,7 +1475,6 @@
                     doc.setFontSize(6.5); doc.setFont('helvetica', 'italic'); doc.setTextColor(91, 123, 150);
                     doc.text(data.signatureSubject ? 'Signature + PKCS#7 digital seal' : 'Signature', leftBoxX + 3, y + 42);
 
-                    // ---- RIGHT: DEPT IN-CHARGE ----
                     doc.setFillColor(255, 251, 235); doc.setDrawColor(244, 217, 122); doc.setLineWidth(0.3);
                     doc.roundedRect(rightBoxX, y, halfWidth, boxHeight, 2, 2, 'FD');
 
@@ -1673,7 +1676,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=27')
+                navigator.serviceWorker.register('sw.js?v=28')
                     .then(reg => console.log('✅ Service Worker registered:', reg.scope))
                     .catch(err => console.warn('⚠️ Service Worker failed:', err));
             });
