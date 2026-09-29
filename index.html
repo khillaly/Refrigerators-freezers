@@ -521,11 +521,59 @@
             };
 
             // ============================================================
+            // ⭐ ROBUST FETCH HELPER — diagnoses CORS / redirect / HTML errors
+            // ============================================================
+            async function fetchJSONFromSheet(queryString) {
+                const url = GOOGLE_SHEET_URL + '?' + queryString + '&_ts=' + Date.now();
+                console.log('[CHUB] GET →', url);
+
+                let res;
+                try {
+                    res = await fetch(url, {
+                        method: 'GET',
+                        redirect: 'follow',
+                        cache: 'no-store',
+                        headers: { 'Accept': 'application/json, text/plain, */*' }
+                    });
+                } catch (netErr) {
+                    // Network / CORS / DNS level failure
+                    console.error('[CHUB] fetch() rejected:', netErr);
+                    throw new Error(
+                        'Network/CORS failure: ' + (netErr.message || 'fetch rejected') +
+                        ' — check the Apps Script deployment ("Anyone" access) and internet connection.'
+                    );
+                }
+
+                console.log('[CHUB] ← status', res.status, res.statusText);
+                if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+
+                const text = await res.text();
+                if (!text || !text.trim()) throw new Error('Empty response from server.');
+
+                // Apps Script login / error pages come back as HTML
+                const head = text.trim().slice(0, 200).toLowerCase();
+                if (head.startsWith('<')) {
+                    throw new Error(
+                        'Server returned HTML, not JSON. The Apps Script is probably not deployed as a Web App with "Anyone" access, or the /exec URL is stale.'
+                    );
+                }
+
+                let json;
+                try { json = JSON.parse(text); }
+                catch (e) {
+                    throw new Error('Invalid JSON from server: ' + text.slice(0, 120));
+                }
+
+                if (json && json.status === 'error') {
+                    throw new Error(json.message || 'Server returned an error.');
+                }
+                return json;
+            }
+
+            // ============================================================
             // ⭐ VISUAL SIGNATURE STORAGE (PNG) — per technician
             // ============================================================
-            const DEFAULT_TECHNICIAN_SIGNATURES = {
-                // 'Hillaly KUBWIMANA': 'data:image/png;base64,PASTE_YOUR_BASE64_HERE',
-            };
+            const DEFAULT_TECHNICIAN_SIGNATURES = {};
             const SIG_STORAGE_KEY = 'chub_refrigerator_signatures_v1';
 
             function loadSignatures() {
@@ -581,9 +629,7 @@
             function loadCachedInventory(techName) { try { const raw = localStorage.getItem(getCacheKey(techName)); return raw ? JSON.parse(raw) : null; } catch(e) { return null; } }
 
             async function fetchInventoryFromCloud(techName) {
-                const res = await fetch(GOOGLE_SHEET_URL + '?type=inventory&tech=' + encodeURIComponent(techName), { method: 'GET' });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const json = await res.json();
+                const json = await fetchJSONFromSheet('type=inventory&tech=' + encodeURIComponent(techName));
                 return json.records || [];
             }
             async function pushInventoryToCloud(techName, inv) {
@@ -622,10 +668,7 @@
 
             async function checkRemoteDuplicate(acIdentity, workDate) {
                 try {
-                    const url = GOOGLE_SHEET_URL + '?type=logs&_ts=' + Date.now();
-                    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-                    if (!res.ok) return { checked: false, error: 'HTTP ' + res.status };
-                    const json = await res.json();
+                    const json = await fetchJSONFromSheet('type=logs');
                     if (!json.records || !Array.isArray(json.records)) return { checked: true, duplicate: false };
                     const targetDate = normalizeDateForCompare(workDate);
                     const found = json.records.find(r => {
@@ -633,22 +676,23 @@
                         return rIdentity === acIdentity && normalizeDateForCompare(r.workDate) === targetDate;
                     });
                     return { checked: true, duplicate: !!found, record: found || null };
-                } catch (e) { console.warn('Remote duplicate check failed:', e); return { checked: false, error: e.message }; }
+                } catch (e) {
+                    console.warn('[CHUB] Remote duplicate check failed:', e);
+                    return { checked: false, error: e.message };
+                }
             }
 
             async function fetchUserPMs(techName) {
                 USER_PM_KEYS.clear();
                 try {
-                    const url = GOOGLE_SHEET_URL + '?type=logs&_ts=' + Date.now();
-                    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-                    const json = await res.json();
+                    const json = await fetchJSONFromSheet('type=logs');
                     if (json.records && Array.isArray(json.records)) {
                         json.records.forEach(r => {
                             const identity = buildAcIdentity({ acTag: r.acTag, acLocation: r.acLocation, acSerial: r.acSerial, acModel: r.acModel });
                             USER_PM_KEYS.add(identity + '||' + normalizeDateForCompare(r.workDate));
                         });
                     }
-                } catch (e) { console.warn('Could not fetch PM logs for duplicate check:', e); }
+                } catch (e) { console.warn('[CHUB] Could not fetch PM logs for duplicate check:', e); }
             }
 
             function showStatus(msg, isSuccess = true) {
@@ -658,7 +702,7 @@
                 statusMessage.style.background = isSuccess ? '#e2f0e6' : '#ffe6e6';
                 statusMessage.style.color = isSuccess ? '#1b6b3f' : '#b33a3a';
                 statusMessage.classList.add('show');
-                setTimeout(() => statusMessage.classList.remove('show'), 7000);
+                setTimeout(() => statusMessage.classList.remove('show'), 8000);
             }
 
             const acSelect = document.getElementById('acSelect');
@@ -1149,7 +1193,7 @@
                     this.disabled = false; this.innerHTML = orig; return;
                 }
                 if (!remote.checked) {
-                    if (!confirm('⚠️ Could not verify with Google Sheet. Save anyway? (Local check passed.)')) {
+                    if (!confirm('⚠️ Could not verify with Google Sheet (' + (remote.error || 'unknown') + '). Save anyway? (Local check passed.)')) {
                         this.disabled = false; this.innerHTML = orig; return;
                     }
                 }
@@ -1210,7 +1254,6 @@
 
                 const allSignatures = loadSignatures();
 
-                // ⭐ Preload logo as base64 so jsPDF never has to fetch it
                 let LOGO_DATA_URL = '';
                 try {
                     const res = await fetch('chub-logo.png');
@@ -1538,10 +1581,7 @@
                     const currentTech = technicianSelect.value;
                     if (!currentTech) { showStatus('⚠️ You must be logged in.', false); this.disabled = false; this.innerHTML = orig; return; }
 
-                    const res = await fetch(GOOGLE_SHEET_URL + '?type=logs&_ts=' + Date.now(), { cache: 'no-store' });
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    const json = await res.json();
-                    if (json.status === 'error') throw new Error(json.message);
+                    const json = await fetchJSONFromSheet('type=logs');
                     if (!json.records || json.records.length === 0) { showStatus('📭 No records in the Google Sheet.', false); this.disabled = false; this.innerHTML = orig; return; }
 
                     const uniqueRecords = [];
@@ -1602,7 +1642,7 @@
                     let inv = await fetchInventoryFromCloud(name);
                     if (inv.length === 0 && name === DEFAULT_LIST_OWNER) {
                         inv = DEFAULT_FRIDGE_INVENTORY.slice();
-                        await pushInventoryToCloud(name, inv);
+                        try { await pushInventoryToCloud(name, inv); } catch(e) { console.warn('Seed push failed:', e); }
                     }
                     AC_INVENTORY = inv;
                     cacheInventoryLocally(name, inv);
@@ -1610,12 +1650,21 @@
                     await fetchUserPMs(name);
                     showStatus('✅ Welcome, ' + name + '! ' + inv.length + ' refrigerator(s) loaded.', true);
                 } catch (err) {
-                    console.warn('Cloud load failed, using local cache:', err);
-                    const cached = loadCachedInventory(name) || [];
-                    AC_INVENTORY = cached;
+                    console.warn('[CHUB] Cloud load failed:', err);
+                    let cached = loadCachedInventory(name);
+                    if ((!cached || cached.length === 0) && name === DEFAULT_LIST_OWNER) {
+                        cached = DEFAULT_FRIDGE_INVENTORY.slice();
+                    }
+                    AC_INVENTORY = cached || [];
+                    cacheInventoryLocally(name, AC_INVENTORY);
                     renderAcSelector();
-                    if (cached.length > 0) showStatus('📥 Offline — loaded ' + cached.length + ' refrigerator(s) from cache.', false);
-                    else showStatus('⚠️ Could not load refrigerator list. Check your connection.', false);
+                    if (AC_INVENTORY.length > 0) {
+                        showStatus('📥 Offline — ' + AC_INVENTORY.length + ' fridge(s). Reason: ' + err.message, false);
+                    } else {
+                        showStatus('⚠️ Could not load list: ' + err.message, false);
+                    }
+                    // still try PM keys for duplicate checks
+                    try { await fetchUserPMs(name); } catch(e) {}
                 }
             }
 
