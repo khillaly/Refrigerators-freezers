@@ -833,6 +833,15 @@
     <script>
         (function() {
             const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyc-xhUZaHszJA2EW-81Cc7H-pkis3EYLkXcF43HEb1xlMYPerEBIUzPhqgpo6hFwY/exec';
+            const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyc-xhUZaHszJA2EW-81Cc7H-pkis3EYLkXcF43HEb1xlMYPerEBIUzPhqgpo6hFwY/exec';
+
+// Fire-and-forget warmup — eliminates Apps Script cold start on first real call
+(function warmupAppsScript() {
+    try {
+        fetch(GOOGLE_SHEET_URL + '?type=ping&_ts=' + Date.now(), { method: 'GET', cache: 'no-store' })
+            .catch(() => {});
+    } catch (e) {}
+})();
             const RECORDING_START = '03 Jul 2026';
 
             const PM_INTERVAL_MONTHS = 6;
