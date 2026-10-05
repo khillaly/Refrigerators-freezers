@@ -1912,10 +1912,7 @@
                 wrapper.style.margin = '0 auto';
                 wrapper.appendChild(buildStickerHtml(ac, 180));
                 content.appendChild(wrapper);
-                const urlLine = document.createElement('div');
-                urlLine.style.cssText = 'text-align:center; font-size:0.75rem; color:#5b7b96; margin-top:12px; word-break:break-all;';
-                urlLine.textContent = 'URL: ' + buildAcInfoUrl(ac);
-                content.appendChild(urlLine);
+               
                 document.getElementById('qrModal').classList.add('show');
                 document.getElementById('qrModal')._stickerHtml = wrapper.innerHTML;
                 document.getElementById('qrModal')._stickerTitle = 'CHUB Refrigerator QR Sticker — ' + ac.tag;
