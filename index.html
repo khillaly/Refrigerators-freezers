@@ -891,18 +891,20 @@
 
             const DEFAULT_LIST_OWNER = 'Hillaly KUBWIMANA';
 
-            const INCHARGE_PINS = {
-                'Laboratory In-Charge':        '2201',
-                'Operating Theatre In-Charge': '2202',
-                'Pharmacy In-Charge':          '2203',
-                'Radiology In-Charge':         '2204',
-                'Administration In-Charge':    '2205',
-                'Cancer Center In-Charge':     '2206',
-                'Simulation Center In-Charge': '2207',
-                'I.M OPD In-Charge':           '2208',
-                'Gynecology In-Charge':        '2209',
-                'Surgery In-Charge':           '2210'
+                      const DEFAULT_INCHARGE_PINS = {
+                'Laboratory In-Charge':        { pin: '2201', dept: 'Laboratory' },
+                'Operating Theatre In-Charge': { pin: '2202', dept: 'Operating Theatre' },
+                'Pharmacy In-Charge':          { pin: '2203', dept: 'Pharmacy' },
+                'Radiology In-Charge':         { pin: '2204', dept: 'Radiology' },
+                'Administration In-Charge':    { pin: '2205', dept: 'Administration' },
+                'Cancer Center In-Charge':     { pin: '2206', dept: 'Cancer Center' },
+                'Simulation Center In-Charge': { pin: '2207', dept: 'Simulation Center' },
+                'I.M OPD In-Charge':           { pin: '2208', dept: 'I.M OPD' },
+                'Gynecology In-Charge':        { pin: '2209', dept: 'Gynecology' },
+                'Surgery In-Charge':           { pin: '2210', dept: 'Surgery' }
             };
+            let INCHARGE_PINS = JSON.parse(JSON.stringify(DEFAULT_INCHARGE_PINS));
+            const INCHARGE_REGISTRY_KEY = 'CHUB_INCHARGE_PINS_V1';
 
             const TECHNICIAN_PINS = {
                 'Hillaly KUBWIMANA':      '0806',
@@ -3731,7 +3733,7 @@
                     loginPinInput.value = ''; loginPinInput.focus();
                     return;
                 }
-                }
+                
                 saveSession({ name: iname, dept: inDept, role: 'incharge' });
                 unlockApp({ name: iname, dept: inDept, role: 'incharge' });
             });
@@ -3751,7 +3753,7 @@
                     await ensureDepartmentsLoaded();
                     await loadInchargeRegistry();
                     const existingSession = loadSession();
-                    ...
+            
                     if (existingSession && (TECHNICIAN_PINS[existingSession.name] || existingSession.role === 'incharge' || existingSession.name === SUPERVISOR_NAME)) {
                         unlockApp(existingSession);
                     } else {
