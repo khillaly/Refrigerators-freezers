@@ -154,11 +154,9 @@
         .status-badge.overdue { background: #ffe6e6; color: #b33a3a; border: 1px solid #f0b8b8; }
         .status-badge.never { background: #e7f0f8; color: #5b7b96; border: 1px solid #cfdfeb; }
 
-        .dept-editor-row { display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; align-items: start; padding: 14px; background: #fbfdff; border: 1px solid #d4e3ef; border-radius: 14px; margin-bottom: 10px; }
-        .dept-editor-row input { padding: 10px 14px; border-radius: 12px; border: 1px solid #cfdfeb; font-size: 0.9rem; font-family: inherit; }
-        .dept-editor-row textarea { padding: 10px 14px; border-radius: 12px; border: 1px solid #cfdfeb; font-size: 0.9rem; font-family: inherit; min-height: 70px; resize: vertical; }
-        .dept-editor-row .actions { display: flex; gap: 6px; }
-        .dept-services-tag { display: inline-block; background: #eef6fc; color: #12405e; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; margin: 2px; }
+        .kpi-card { border-radius:14px; padding:14px; text-align:center; }
+        .kpi-card .kpi-label { font-size:0.72rem; font-weight:700; letter-spacing:0.5px; }
+        .kpi-card .kpi-value { font-size:1.7rem; font-weight:800; margin-top:4px; }
 
         /* ============ QR STICKER PRINT SHEET ============ */
         .qr-sticker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 8px; }
@@ -170,7 +168,7 @@
         .qr-sticker .sticker-brand { font-size: 0.65rem; color: #5b7b96; margin-bottom: 4px; }
         .qr-sticker .sticker-hint { font-size: 0.6rem; color: #1e4a6d; font-weight: 700; letter-spacing: 0.4px; }
 
-        /* ============ PUBLIC INFO PAGE (no login) ============ */
+        /* ============ PUBLIC INFO PAGE ============ */
         #acInfoPage { position: fixed; inset: 0; background: linear-gradient(135deg, #eef4fa 0%, #f5f7fa 100%); z-index: 5000; overflow-y: auto; padding: 18px 12px; display: none; }
         #acInfoPage.show { display: block; }
         .info-wrap { max-width: 720px; margin: 0 auto; }
@@ -223,7 +221,6 @@
             .pending-row { flex-direction: column; align-items: stretch; }
             .inv-table { font-size: 0.75rem; }
             .inv-table th, .inv-table td { padding: 6px 8px; }
-            .dept-editor-row { grid-template-columns: 1fr; }
             .qr-sticker-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media print {
@@ -491,31 +488,31 @@
             </div>
         </div>
 
-        <!-- SUPERVISOR SECTION -->
+        <!-- MANAGER / SUPERVISOR SECTION — read-only fleet overview -->
         <div id="supervisorSection" style="display:none;">
-            <div class="card" style="margin-bottom: 28px; border: 2px solid #7a4c9c;">
-                <div class="card-header" style="background:#f3e8ff; color:#5d3578;">
-                    <span>🏢</span> Department Management
-                    <span style="margin-left:auto; font-size:0.78rem; background:#7a4c9c; color:white; padding: 3px 12px; border-radius: 20px; font-weight:700;">Supervisor Only</span>
+
+            <!-- KPI OVERVIEW -->
+            <div class="card" style="margin-bottom: 24px; border: 2px solid #0b3d91;">
+                <div class="card-header" style="background:#e8f1fb; color:#0b3d91;">
+                    <span>📊</span> Fleet Overview — All Departments
+                    <span style="margin-left:auto; font-size:0.78rem; background:#0b3d91; color:white; padding: 3px 12px; border-radius: 20px; font-weight:700;">Manager View · Read-only</span>
                 </div>
                 <div class="card-body">
-                    <p style="font-size: 0.88rem; color: #5b7b96; margin-bottom: 14px;">
-                        Add, edit, or remove departments and their service locations. Changes sync to the cloud for all users.
-                    </p>
-                    <div id="deptEditorList" style="margin-bottom: 16px;"></div>
-                    <button class="btn-add" id="addDeptBtn" style="margin-top: 8px;">➕ Add New Department</button>
-                    <button class="btn-primary" id="saveDeptsBtn" style="margin-top: 8px; padding: 12px 24px; font-size: 0.95rem;">💾 Save All Changes to Cloud</button>
+                    <div id="supervisorKpiGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px;">
+                        <div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">Loading…</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card" style="margin-bottom: 28px;">
+            <!-- ALL REFRIGERATORS -->
+            <div class="card" style="margin-bottom: 24px;">
                 <div class="card-header">
-                    <span>🌐</span> All Refrigerators — All Departments
+                    <span>🌐</span> All Refrigerators &amp; Freezers
                     <span id="supervisorInvCount" style="margin-left:auto; background:#eef6fc; color:#12405e; padding: 3px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">—</span>
                 </div>
                 <div class="card-body">
                     <p style="font-size: 0.88rem; color: #3a6583; margin-bottom: 14px;">
-                        Full inventory across every department with real-time maintenance status (last PM, next PM, overdue).
+                        Read-only status of every refrigerator in the fleet. Filter by department or status. Checklist details are not shown here — use the analysis reports below.
                     </p>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 12px;">
                         <select id="supervisorDeptFilter" style="padding:10px 16px; border-radius:40px; border:1.5px solid #cfdfeb; font-weight:600;">
@@ -540,39 +537,35 @@
                                     <th>Last PM</th>
                                     <th>Next PM</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="supervisorInventoryTableBody">
-                                <tr><td colspan="8" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>
+                                <tr><td colspan="7" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>
                             </tbody>
                         </table>
                     </div>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;">
-                        <button class="btn-qr" id="supervisorQrAllBtn"><span>🔳</span> Print All QR Stickers (Fleet)</button>
-                    </div>
                 </div>
             </div>
 
-            <div class="card" id="supervisorPendingCard" style="margin-bottom: 28px; border: 2px solid #1b6b3f;">
-                <div class="card-header" style="background:#e2f0e6; color:#1b6b3f;">
-                    <span>✅</span> All Pending Co-Signatures (All Departments)
-                    <span id="supervisorPendingCount" style="margin-left:auto; background:#1b6b3f; color:white; padding: 3px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">0</span>
+            <!-- ANALYSIS DOWNLOADS -->
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-header">
+                    <span>📥</span> Download Analysis Reports
                 </div>
                 <div class="card-body">
-                    <div class="pending-list" id="supervisorPendingList">
-                        <div style="text-align:center; color:#5b7b96; font-style:italic; padding: 12px;">Loading…</div>
-                    </div>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 14px;">
-                        <button class="btn-secondary" id="supervisorRefreshPendingBtn" style="padding: 10px 20px; font-size: 0.88rem;">🔄 Refresh</button>
+                    <p style="font-size: 0.88rem; color: #3a6583; margin-bottom: 14px;">
+                        Executive-summary reports only — KPIs, breakdown by department, technician, and anomalies. No raw checklist items.
+                    </p>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <select id="supervisorAnalysisDept" style="padding:10px 16px; border-radius:40px; border:1.5px solid #cfdfeb; font-weight:600; min-width: 220px;">
+                            <option value="">— Pick a department —</option>
+                        </select>
+                        <button class="btn-pdf" id="supervisorDownloadDeptAnalysisBtn"><span>📊</span> Download Selected Department Analysis</button>
+                        <button class="btn-pdf-all" id="supervisorDownloadAllAnalysisBtn"><span>📊</span> Download Full Fleet Analysis</button>
                     </div>
                 </div>
             </div>
 
-            <div class="action-buttons" style="margin-bottom: 20px;">
-                <button class="btn-pdf-all" id="supervisorDownloadAllBtn"><span>📚</span> Download ALL PMs (All Departments)</button>
-                <button class="btn-pdf" id="supervisorDownloadAnalysisBtn"><span>📊</span> Download Full Fleet Analysis</button>
-            </div>
         </div>
 
         <div class="action-buttons" id="technicianActionButtons">
@@ -764,6 +757,17 @@
                 </div>
             </div>
 
+            <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="field-group">
+                    <label for="newAcLastPm">Last PM date <span style="font-weight:400;color:#5b7b96;">(optional)</span></label>
+                    <input type="date" id="newAcLastPm">
+                </div>
+                <div class="field-group">
+                    <label for="newAcNextPm">Next PM date <span style="font-weight:400;color:#5b7b96;">(auto-filled, editable)</span></label>
+                    <input type="date" id="newAcNextPm">
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button class="btn-cancel" id="addAcCancel">Cancel</button>
                 <button class="btn-go" id="addAcSave">💾 Save Refrigerator to Cloud</button>
@@ -817,6 +821,16 @@
                     <input type="text" id="editAcSerial">
                 </div>
             </div>
+            <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="field-group">
+                    <label for="editAcLastPm">Last PM date</label>
+                    <input type="date" id="editAcLastPm">
+                </div>
+                <div class="field-group">
+                    <label for="editAcNextPm">Next PM date (auto-filled, editable)</label>
+                    <input type="date" id="editAcNextPm">
+                </div>
+            </div>
             <div class="modal-actions">
                 <button class="btn-cancel" id="editAcCancel">Cancel</button>
                 <button class="btn-go" id="editAcSave">💾 Save Changes</button>
@@ -844,9 +858,54 @@
         (function() {
             const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyc-xhUZaHszJA2EW-81Cc7H-pkis3EYLkXcF43HEb1xlMYPerEBIUzPhqgpo6hFwY/exec';
             const RECORDING_START = '03 Jul 2026';
-            const PM_INTERVAL_MONTHS = 6;
+
+            // ================= QUARTERLY PM SCHEDULE =================
+            const PM_INTERVAL_MONTHS = 6;                     // not used for refrigerators
+            const REF_QUARTER_MONTHS = [2, 5, 8, 11];         // 0-indexed → Mar, Jun, Sep, Dec
+            const REF_QUARTER_DAY    = 15;
+
+            function getNextRefPmDate_(dateVal) {
+                const d = (function(v){
+                    if (!v) return null;
+                    if (v instanceof Date) return v;
+                    let s = String(v).trim();
+                    if (s.indexOf('T') !== -1) s = s.split('T')[0];
+                    const dd = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T00:00:00') : new Date(s);
+                    return isNaN(dd.getTime()) ? null : dd;
+                })(dateVal);
+                if (!d) return null;
+                const y = d.getFullYear();
+                for (let i = 0; i < REF_QUARTER_MONTHS.length; i++) {
+                    const c = new Date(y, REF_QUARTER_MONTHS[i], REF_QUARTER_DAY);
+                    if (c.getTime() > d.getTime()) return c;
+                }
+                return new Date(y + 1, REF_QUARTER_MONTHS[0], REF_QUARTER_DAY);
+            }
+
+            function toIsoDate_(d) {
+                if (!d) return '';
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${dd}`;
+            }
+
             const DEFAULT_LIST_OWNER = 'Hillaly KUBWIMANA';
-            const INCHARGE_PIN = '55555';
+
+            // ================= IN-CHARGE PINs (per person) =================
+            // Key = exact name that the In-Charge types at login (case-sensitive).
+            const INCHARGE_PINS = {
+                'Laboratory In-Charge':        '2201',
+                'Operating Theatre In-Charge': '2202',
+                'Pharmacy In-Charge':          '2203',
+                'Radiology In-Charge':         '2204',
+                'Administration In-Charge':    '2205',
+                'Cancer Center In-Charge':     '2206',
+                'Simulation Center In-Charge': '2207',
+                'I.M OPD In-Charge':           '2208',
+                'Gynecology In-Charge':        '2209',
+                'Surgery In-Charge':           '2210'
+            };
 
             const TECHNICIAN_PINS = {
                 'Hillaly KUBWIMANA':      '0806',
@@ -985,7 +1044,10 @@
                 return d;
             }
             function formatPmDate(d) { return d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'; }
-            function nextPmForPDF(dateVal) { return formatPmDate(addMonths(dateVal, PM_INTERVAL_MONTHS)); }
+            function nextPmForPDF(dateVal) {
+                const d = getNextRefPmDate_(dateVal);
+                return d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+            }
             function recordTime(rec) { const raw = rec['Timestamp'] || rec.timestamp || rec.workDate; const t = new Date(raw).getTime(); return isNaN(t) ? 0 : t; }
             function normalizeText(val) {
                 if (val === null || val === undefined) return '';
@@ -1397,7 +1459,7 @@
             function updateNextPmDisplay() {
                 const workDate = workDateInput.value;
                 const label = nextPmForPDF(workDate);
-                if (acNextPm) acNextPm.textContent = '📅 Next PM due: ' + label + ' (' + PM_INTERVAL_MONTHS + ' months)';
+                if (acNextPm) acNextPm.textContent = '📅 Next PM due: ' + label + ' (quarterly — 15 Mar / 15 Jun / 15 Sep / 15 Dec)';
                 if (signoffNextPm) signoffNextPm.textContent = label;
             }
 
@@ -1510,6 +1572,16 @@
             });
             document.getElementById('addAcCancel').addEventListener('click', () => { addAcModal.classList.remove('show'); });
 
+            // Auto-fill Next PM when Last PM changes
+            document.getElementById('newAcLastPm')?.addEventListener('change', function() {
+                const nd = getNextRefPmDate_(this.value);
+                if (nd) document.getElementById('newAcNextPm').value = toIsoDate_(nd);
+            });
+            document.getElementById('editAcLastPm')?.addEventListener('change', function() {
+                const nd = getNextRefPmDate_(this.value);
+                if (nd) document.getElementById('editAcNextPm').value = toIsoDate_(nd);
+            });
+
             document.getElementById('addAcSave').addEventListener('click', async () => {
                 const tag = document.getElementById('newAcTag').value.trim();
                 const dept = newAcDeptSelect.value;
@@ -1518,6 +1590,8 @@
                 const model = document.getElementById('newAcModel').value.trim();
                 const type = document.getElementById('newAcType').value;
                 const serial = document.getElementById('newAcSerial').value.trim() || 'N/A';
+                const lastPmDate = document.getElementById('newAcLastPm').value || '';
+                const nextPmDate = document.getElementById('newAcNextPm').value || '';
 
                 if (!tag || !dept || !loc || !brand || !model) { alert('Please fill in all required fields marked with *'); return; }
                 const ownerTech = technicianSelect.value;
@@ -1527,7 +1601,7 @@
                 saveBtn.disabled = true;
                 saveBtn.innerHTML = '⏳ Saving...';
 
-                const newAc = { tag, dept, loc, type, brand, model, serial };
+                const newAc = { tag, dept, loc, type, brand, model, serial, lastPmDate, nextPmDate };
                 AC_INVENTORY.push(newAc);
 
                 try {
@@ -1546,6 +1620,8 @@
                 document.getElementById('newAcBrand').value = '';
                 document.getElementById('newAcModel').value = '';
                 document.getElementById('newAcSerial').value = '';
+                document.getElementById('newAcLastPm').value = '';
+                document.getElementById('newAcNextPm').value = '';
                 addAcModal.classList.remove('show');
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '💾 Save Refrigerator to Cloud';
@@ -1603,7 +1679,7 @@
                 const roleLabel = document.getElementById('roleLabel');
                 if (isSupervisor) {
                     roleIcon.textContent = '👑';
-                    roleLabel.textContent = 'Supervisor:';
+                    roleLabel.textContent = 'Manager:';
                 } else if (isIncharge) {
                     roleIcon.textContent = '👔';
                     roleLabel.textContent = 'In-Charge:';
@@ -1617,9 +1693,8 @@
                     loadDepartmentInventory();
                 }
                 if (isSupervisor) {
-                    renderDeptEditor();
+                    populateSupervisorDeptFilter();
                     refreshSupervisorInventory();
-                    refreshSupervisorPending();
                 }
             }
 
@@ -1828,22 +1903,6 @@
                 document.getElementById('qrModal')._stickerTitle = 'CHUB Refrigerator QR Stickers — ' + dept;
             });
 
-            document.getElementById('supervisorQrAllBtn')?.addEventListener('click', async () => {
-                showStatus('⏳ Loading inventory…', true);
-                let allInv = await fetchAllInventory();
-                if (!allInv || allInv.length === 0) { try { allInv = await fetchInventoryFromCloud(DEFAULT_LIST_OWNER); } catch(e) { allInv = []; } }
-                if (allInv.length === 0) allInv = DEFAULT_REF_INVENTORY.slice();
-                const content = document.getElementById('qrModalContent');
-                content.innerHTML = '';
-                const wrapper = document.createElement('div');
-                wrapper.className = 'qr-sticker-grid';
-                allInv.forEach(ac => wrapper.appendChild(buildStickerHtml(ac, 130)));
-                content.appendChild(wrapper);
-                document.getElementById('qrModal').classList.add('show');
-                document.getElementById('qrModal')._stickerHtml = wrapper.innerHTML;
-                document.getElementById('qrModal')._stickerTitle = 'CHUB Refrigerator QR Stickers — Full Fleet (' + allInv.length + ')';
-            });
-
             document.getElementById('qrModalClose')?.addEventListener('click', () => {
                 document.getElementById('qrModal').classList.remove('show');
             });
@@ -1913,7 +1972,7 @@
                     type: latest['Type'] || 'Fridge'
                 };
                 const lastWorkDate = latest['Work Date'] || latest['Timestamp'] || '';
-                const nextDate = addMonths(lastWorkDate, PM_INTERVAL_MONTHS);
+                const nextDate = getNextRefPmDate_(lastWorkDate);   // quarterly
                 const now = new Date();
                 const daysUntil = nextDate ? Math.round((nextDate - now) / 86400000) : 9999;
                 let status = 'maintained';
@@ -2142,19 +2201,39 @@
                     return rid === myId;
                 }).sort((a, b) => recordTime(b) - recordTime(a));
 
-                if (myRecords.length === 0) {
-                    return { status: 'never', lastPm: null, nextPm: null };
+                // 1) Real PM logs are the source of truth
+                if (myRecords.length > 0) {
+                    const lastPm = myRecords[0];
+                    const lastDate = safeStr(lastPm['Work Date'] || lastPm.workDate);
+                    const nextDate = getNextRefPmDate_(lastDate);   // quarterly
+                    const nextDateStr = nextDate ? nextDate.toISOString().slice(0, 10) : '';
+                    const daysUntil = nextDate ? Math.round((nextDate - now) / 86400000) : 9999;
+                    let status;
+                    if (daysUntil < 0) status = 'overdue';
+                    else if (daysUntil <= 30) status = 'pending';
+                    else status = 'maintained';
+                    return { status, lastPm: lastDate, nextPm: nextDateStr, source: 'log' };
                 }
-                const lastPm = myRecords[0];
-                const lastDate = safeStr(lastPm['Work Date'] || lastPm.workDate);
-                const nextDate = addMonths(lastDate, PM_INTERVAL_MONTHS);
-                const nextDateStr = nextDate ? nextDate.toISOString().slice(0, 10) : '';
-                const daysUntil = nextDate ? Math.round((nextDate - now) / 86400000) : 9999;
-                let status;
-                if (daysUntil < 0) status = 'overdue';
-                else if (daysUntil <= 30) status = 'pending';
-                else status = 'maintained';
-                return { status, lastPm: lastDate, nextPm: nextDateStr };
+
+                // 2) Fallback: technician-entered dates from inventory
+                if (ac.lastPmDate || ac.nextPmDate) {
+                    const lastDate = ac.lastPmDate || '';
+                    const nextDate = ac.nextPmDate || '';
+                    let status = 'never';
+                    if (nextDate) {
+                        const nd = parseToDate(nextDate);
+                        if (nd) {
+                            const daysUntil = Math.round((nd - now) / 86400000);
+                            if (daysUntil < 0) status = 'overdue';
+                            else if (daysUntil <= 30) status = 'pending';
+                            else status = 'maintained';
+                        }
+                    }
+                    return { status, lastPm: lastDate, nextPm: nextDate, source: 'inventory' };
+                }
+
+                // 3) Nothing
+                return { status: 'never', lastPm: null, nextPm: null, source: 'none' };
             }
 
             async function loadDepartmentInventory() {
@@ -2262,105 +2341,30 @@
                 this.disabled = false; this.innerHTML = orig;
             });
 
-            // ================= SUPERVISOR FUNCTIONS =================
-            function renderDeptEditor() {
-                const wrap = document.getElementById('deptEditorList');
-                if (!wrap) return;
-                wrap.innerHTML = '';
-                const depts = Object.keys(DEPARTMENTS);
-                if (depts.length === 0) {
-                    wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">No departments. Click "Add New Department".</div>';
-                    return;
-                }
-                depts.forEach(d => {
-                    const services = DEPARTMENTS[d].services || [];
-                    const incharge = DEPARTMENTS[d].defaultIncharge || '';
-                    const row = document.createElement('div');
-                    row.className = 'dept-editor-row';
-                    row.innerHTML = `
-                        <div>
-                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700;">DEPARTMENT</label>
-                            <input type="text" data-orig-dept="${escapeHtml(d)}" class="dept-name-input" value="${escapeHtml(d)}" style="width:100%; font-weight:700;">
-                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700; margin-top:8px; display:block;">DEFAULT IN-CHARGE</label>
-                            <input type="text" class="dept-incharge-input" value="${escapeHtml(incharge)}" style="width:100%;">
-                        </div>
-                        <div>
-                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700;">SERVICES (one per line)</label>
-                            <textarea class="dept-services-input" data-orig-dept="${escapeHtml(d)}" style="width:100%;">${escapeHtml(services.join('\n'))}</textarea>
-                        </div>
-                        <div class="actions">
-                            <button type="button" class="btn-danger" data-del-dept="${escapeHtml(d)}">🗑️</button>
-                        </div>
-                    `;
-                    wrap.appendChild(row);
-                });
-                wrap.querySelectorAll('[data-del-dept]').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const dn = this.getAttribute('data-del-dept');
-                        if (!confirm('Delete department "' + dn + '"? This cannot be undone.')) return;
-                        delete DEPARTMENTS[dn];
-                        renderDeptEditor();
-                    });
-                });
-            }
-
-            document.getElementById('addDeptBtn')?.addEventListener('click', () => {
-                const name = prompt('New department name (e.g. "Maternity"):');
-                if (!name) return;
-                const trimmed = name.trim();
-                if (!trimmed) return;
-                if (DEPARTMENTS[trimmed]) { alert('Department already exists.'); return; }
-                DEPARTMENTS[trimmed] = { defaultIncharge: trimmed + ' In-Charge', services: ['Main Room'] };
-                renderDeptEditor();
-                showStatus('➕ Department added locally. Click "Save All Changes to Cloud" to publish.', true);
-            });
-
-            document.getElementById('saveDeptsBtn')?.addEventListener('click', async function() {
-                const rows = document.querySelectorAll('#deptEditorList .dept-editor-row');
-                const newDepts = {};
-                rows.forEach(row => {
-                    const nameInput = row.querySelector('.dept-name-input');
-                    const inchargeInput = row.querySelector('.dept-incharge-input');
-                    const servicesInput = row.querySelector('.dept-services-input');
-                    const newName = (nameInput.value || '').trim();
-                    if (!newName) return;
-                    const services = (servicesInput.value || '').split('\n').map(s => s.trim()).filter(Boolean);
-                    newDepts[newName] = {
-                        defaultIncharge: (inchargeInput.value || '').trim() || (newName + ' In-Charge'),
-                        services: services.length ? services : ['Main Room']
-                    };
-                });
-                if (Object.keys(newDepts).length === 0) { alert('At least one department is required.'); return; }
-                this.disabled = true;
-                const orig = this.innerHTML;
-                this.innerHTML = '⏳ Saving...';
-                DEPARTMENTS = newDepts;
-                cacheDepartmentsLocally(newDepts);
-                try {
-                    await pushDepartmentsToCloud(newDepts);
-                    showStatus('✅ Departments saved to cloud.', true);
-                } catch(e) {
-                    showStatus('⚠️ Saved locally, cloud sync failed.', false);
-                }
-                populateLoginDepartmentSelect();
-                populateDepartmentSelect();
-                populateSupervisorDeptFilter();
-                renderDeptEditor();
-                this.disabled = false;
-                this.innerHTML = orig;
-            });
-
+            // ================= MANAGER / SUPERVISOR FUNCTIONS (read-only) =================
             function populateSupervisorDeptFilter() {
                 const sel = document.getElementById('supervisorDeptFilter');
-                if (!sel) return;
-                const current = sel.value || 'all';
-                sel.innerHTML = '<option value="all">🏢 All Departments</option>';
-                Object.keys(DEPARTMENTS).forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d; opt.textContent = d;
-                    sel.appendChild(opt);
-                });
-                sel.value = current;
+                const sel2 = document.getElementById('supervisorAnalysisDept');
+                if (sel) {
+                    const current = sel.value || 'all';
+                    sel.innerHTML = '<option value="all">🏢 All Departments</option>';
+                    Object.keys(DEPARTMENTS).forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d; opt.textContent = d;
+                        sel.appendChild(opt);
+                    });
+                    sel.value = current;
+                }
+                if (sel2) {
+                    const current2 = sel2.value || '';
+                    sel2.innerHTML = '<option value="">— Pick a department —</option>';
+                    Object.keys(DEPARTMENTS).forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d; opt.textContent = d;
+                        sel2.appendChild(opt);
+                    });
+                    sel2.value = current2;
+                }
             }
 
             document.querySelectorAll('#supervisorStatusFilterBar .filter-chip').forEach(chip => {
@@ -2376,211 +2380,111 @@
             async function refreshSupervisorInventory() {
                 const tbody = document.getElementById('supervisorInventoryTableBody');
                 const countBadge = document.getElementById('supervisorInvCount');
+                const kpiGrid = document.getElementById('supervisorKpiGrid');
                 if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>';
 
                 let allInv = await fetchAllInventory();
                 if (!allInv || allInv.length === 0) {
                     try { allInv = await fetchInventoryFromCloud(DEFAULT_LIST_OWNER); } catch(e) { allInv = []; }
                 }
-                if (!allInv || allInv.length === 0) {
-                    allInv = DEFAULT_REF_INVENTORY.slice();
-                }
+                if (!allInv || allInv.length === 0) allInv = DEFAULT_REF_INVENTORY.slice();
+
                 const records = await fetchAllLogs();
                 const now = new Date();
 
-                const deptFilter = document.getElementById('supervisorDeptFilter')?.value || 'all';
-                const rows = allInv.map(ac => {
-                    const info = computeAcStatus(ac, records, now);
-                    return { ac, ...info };
-                }).filter(r => deptFilter === 'all' || normalizeText(r.ac.dept) === normalizeText(deptFilter))
-                  .filter(r => supervisorStatusFilter === 'all' || r.status === supervisorStatusFilter);
+                // Build status for every fridge once
+                const allRows = allInv.map(ac => ({ ac, ...computeAcStatus(ac, records, now) }));
 
-                countBadge.textContent = rows.length + ' units';
+                // KPI grid (uses full set, not filtered)
+                const kpi = {
+                    total: allRows.length,
+                    maintained: allRows.filter(r => r.status === 'maintained').length,
+                    pending: allRows.filter(r => r.status === 'pending').length,
+                    overdue: allRows.filter(r => r.status === 'overdue').length,
+                    never: allRows.filter(r => r.status === 'never').length,
+                    depts: new Set(allRows.map(r => (r.ac.dept || '').trim()).filter(Boolean)).size,
+                    pms: records.length
+                };
+                if (kpiGrid) {
+                    kpiGrid.innerHTML = `
+                        <div class="kpi-card" style="background:#eef6fc;">
+                            <div class="kpi-label" style="color:#5b7b96;">TOTAL UNITS</div>
+                            <div class="kpi-value" style="color:#0b3d91;">${kpi.total}</div>
+                        </div>
+                        <div class="kpi-card" style="background:#e2f0e6;">
+                            <div class="kpi-label" style="color:#1b6b3f;">✅ MAINTAINED</div>
+                            <div class="kpi-value" style="color:#1b6b3f;">${kpi.maintained}</div>
+                        </div>
+                        <div class="kpi-card" style="background:#fff3cd;">
+                            <div class="kpi-label" style="color:#7a5300;">⏳ PENDING</div>
+                            <div class="kpi-value" style="color:#7a5300;">${kpi.pending}</div>
+                        </div>
+                        <div class="kpi-card" style="background:#ffe6e6;">
+                            <div class="kpi-label" style="color:#b33a3a;">🚨 OVERDUE</div>
+                            <div class="kpi-value" style="color:#b33a3a;">${kpi.overdue}</div>
+                        </div>
+                        <div class="kpi-card" style="background:#e7f0f8;">
+                            <div class="kpi-label" style="color:#5b7b96;">⚪ NEVER SERVICED</div>
+                            <div class="kpi-value" style="color:#5b7b96;">${kpi.never}</div>
+                        </div>
+                        <div class="kpi-card" style="background:#f3e8ff;">
+                            <div class="kpi-label" style="color:#5d3578;">DEPARTMENTS</div>
+                            <div class="kpi-value" style="color:#5d3578;">${kpi.depts}</div>
+                        </div>
+                        <div class="kpi-card" style="background:#e8f1fb;">
+                            <div class="kpi-label" style="color:#0b3d91;">PM RECORDS</div>
+                            <div class="kpi-value" style="color:#0b3d91;">${kpi.pms}</div>
+                        </div>
+                    `;
+                }
+
+                // Table (respects filters)
+                const deptFilter = document.getElementById('supervisorDeptFilter')?.value || 'all';
+                const rows = allRows
+                    .filter(r => deptFilter === 'all' || normalizeText(r.ac.dept) === normalizeText(deptFilter))
+                    .filter(r => supervisorStatusFilter === 'all' || r.status === supervisorStatusFilter);
+
+                countBadge.textContent = rows.length + ' shown / ' + allRows.length + ' total';
 
                 if (rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match filters.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match filters.</td></tr>';
                     return;
                 }
+
                 const statusLabels = { maintained: '✅ Maintained', pending: '⏳ Pending', overdue: '🚨 Overdue', never: '⚪ Never serviced' };
                 tbody.innerHTML = rows.map(r => {
                     const ac = r.ac;
-                    const acJson = JSON.stringify(ac).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
                     return `<tr>
                         <td><strong>${escapeHtml(ac.tag)}</strong></td>
                         <td>${escapeHtml(ac.dept)}</td>
                         <td>${escapeHtml(ac.loc)}</td>
-                        <td>${escapeHtml(ac.brand + ' ' + ac.model)}</td>
+                        <td>${escapeHtml((ac.brand || '') + ' ' + (ac.model || ''))}</td>
                         <td>${r.lastPm ? formatDateOnly(r.lastPm) : '—'}</td>
                         <td>${r.nextPm ? formatDateOnly(r.nextPm) : '—'}</td>
                         <td><span class="status-badge ${r.status}">${statusLabels[r.status]}</span></td>
-                        <td>
-                            <button class="btn-edit" data-edit-ac='${acJson}'>✏️</button>
-                            <button class="btn-danger" data-del-ac='${acJson}'>🗑️</button>
-                        </td>
                     </tr>`;
                 }).join('');
-
-                tbody.querySelectorAll('[data-edit-ac]').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const ac = JSON.parse(this.getAttribute('data-edit-ac').replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
-                        openEditAcModal(ac);
-                    });
-                });
-                tbody.querySelectorAll('[data-del-ac]').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const ac = JSON.parse(this.getAttribute('data-del-ac').replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
-                        if (!confirm('Delete refrigerator "' + ac.tag + ' — ' + ac.loc + '"?')) return;
-                        await deleteAcFromAll(ac);
-                    });
-                });
             }
 
-            async function deleteAcFromAll(ac) {
-                const allInv = await fetchAllInventory();
-                const targetId = buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model });
-                const remaining = allInv.filter(x => buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model }) !== targetId);
-                const ownerTech = technicianSelect.value;
-                await pushInventoryToCloud(ownerTech, remaining);
-                showStatus('🗑️ Refrigerator deleted from cloud.', true);
-                refreshSupervisorInventory();
-            }
-
-            // ================= EDIT REF MODAL =================
-            const editAcModal = document.getElementById('editAcModal');
-            const editAcDeptSelect = document.getElementById('editAcDept');
-            const editAcLocationSelect = document.getElementById('editAcLocation');
-
-            function populateEditAcDeptSelect() {
-                if (!editAcDeptSelect) return;
-                editAcDeptSelect.innerHTML = '';
-                Object.keys(DEPARTMENTS).forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d; opt.textContent = d;
-                    editAcDeptSelect.appendChild(opt);
-                });
-            }
-            function populateEditAcServiceSelect() {
-                const dept = editAcDeptSelect.value;
-                const services = (DEPARTMENTS[dept] && DEPARTMENTS[dept].services) || [];
-                editAcLocationSelect.innerHTML = '';
-                services.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s; opt.textContent = s;
-                    editAcLocationSelect.appendChild(opt);
-                });
-            }
-            editAcDeptSelect?.addEventListener('change', populateEditAcServiceSelect);
-
-            function openEditAcModal(ac) {
-                populateEditAcDeptSelect();
-                document.getElementById('editAcTag').value = ac.tag || '';
-                document.getElementById('editAcDept').value = ac.dept || Object.keys(DEPARTMENTS)[0] || '';
-                populateEditAcServiceSelect();
-                document.getElementById('editAcLocation').value = ac.loc || '';
-                document.getElementById('editAcBrand').value = ac.brand || '';
-                document.getElementById('editAcModel').value = ac.model || '';
-                document.getElementById('editAcType').value = ac.type || 'Fridge';
-                document.getElementById('editAcSerial').value = ac.serial || '';
-                editAcModal._originalAc = ac;
-                editAcModal.classList.add('show');
-            }
-
-            document.getElementById('editAcCancel')?.addEventListener('click', () => editAcModal.classList.remove('show'));
-
-            document.getElementById('editAcSave')?.addEventListener('click', async function() {
-                const original = editAcModal._originalAc;
-                if (!original) return;
-                const updated = {
-                    tag: document.getElementById('editAcTag').value.trim(),
-                    dept: document.getElementById('editAcDept').value,
-                    loc: document.getElementById('editAcLocation').value,
-                    brand: document.getElementById('editAcBrand').value.trim(),
-                    model: document.getElementById('editAcModel').value.trim(),
-                    type: document.getElementById('editAcType').value,
-                    serial: document.getElementById('editAcSerial').value.trim() || 'N/A'
-                };
-                if (!updated.tag || !updated.dept || !updated.loc || !updated.brand || !updated.model) {
-                    alert('Please fill all required fields.');
-                    return;
-                }
-                this.disabled = true;
-                const orig = this.innerHTML;
-                this.innerHTML = '⏳ Saving...';
-
-                const allInv = await fetchAllInventory();
-                const targetId = buildAcIdentity({ refTag: original.tag, refLocation: original.loc, refSerial: original.serial, refModel: original.model });
-                const remaining = allInv.filter(x => buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model }) !== targetId);
-                remaining.push(updated);
-                const ownerTech = technicianSelect.value;
-                await pushInventoryToCloud(ownerTech, remaining);
-                showStatus('✅ Refrigerator updated in cloud.', true);
-                editAcModal.classList.remove('show');
-                this.disabled = false;
-                this.innerHTML = orig;
-                refreshSupervisorInventory();
-            });
-
-            async function refreshSupervisorPending() {
-                const list = document.getElementById('supervisorPendingList');
-                const badge = document.getElementById('supervisorPendingCount');
-                if (!list) return;
-                list.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding: 12px;">Loading…</div>';
-                try {
-                    const records = await fetchAllLogs();
-                    const pending = records.filter(r => !safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim())
-                        .sort((a, b) => recordTime(b) - recordTime(a));
-                    badge.textContent = pending.length;
-                    if (pending.length === 0) {
-                        list.innerHTML = '<div style="text-align:center; color:#1b6b3f; padding: 14px;">✅ No pending records.</div>';
-                        return;
-                    }
-                    list.innerHTML = pending.map((r) => {
-                        const tag = safeStr(r['Ref Tag'] || r['AC Tag'] || r.refTag) || '—';
-                        const loc = safeStr(r['Location'] || r.refLocation) || '—';
-                        const dept = safeStr(r['Department'] || r.refDept) || '—';
-                        const tech = safeStr(r['Technician'] || r.technician) || '—';
-                        const wd = formatDateOnly(r['Work Date'] || r.workDate);
-                        const hash = safeStr(r['Report Hash'] || r.reportHash);
-                        return `<div class="pending-row">
-                            <div class="info">
-                                <div class="gen">🧊 ${escapeHtml(tag)} — ${escapeHtml(loc)}</div>
-                                <div class="meta">Dept: ${escapeHtml(dept)} · Tech: ${escapeHtml(tech)}</div>
-                                <div class="meta">Work date: ${wd}</div>
-                            </div>
-                            <button class="btn-approve" data-hash="${hash}">✅ Co-sign</button>
-                        </div>`;
-                    }).join('');
-                    list.querySelectorAll('.btn-approve').forEach(btn => {
-                        btn.addEventListener('click', async function() {
-                            const hash = this.getAttribute('data-hash');
-                            if (!hash) { alert('No Report Hash.'); return; }
-                            this.disabled = true; this.textContent = '⏳…';
-                            const ok = await cosignRecord(hash, technicianSelect.value);
-                            if (ok) { this.textContent = '✅ Signed'; setTimeout(() => refreshSupervisorPending(), 800); }
-                            else { this.disabled = false; this.textContent = '✅ Co-sign'; }
-                        });
-                    });
-                } catch (e) {
-                    list.innerHTML = '<div style="text-align:center; color:#b33a3a; padding: 12px;">⚠️ ' + e.message + '</div>';
-                }
-            }
-            document.getElementById('supervisorRefreshPendingBtn')?.addEventListener('click', refreshSupervisorPending);
-
-            document.getElementById('supervisorDownloadAllBtn')?.addEventListener('click', async function() {
+            // Per-department / full-fleet analysis downloads (summary only — no checklists)
+            document.getElementById('supervisorDownloadDeptAnalysisBtn')?.addEventListener('click', async function() {
+                const dept = document.getElementById('supervisorAnalysisDept')?.value || '';
+                if (!dept) { showStatus('⚠️ Please pick a department first.', false); return; }
                 this.disabled = true; const orig = this.innerHTML;
                 this.innerHTML = '<span>⏳</span> Fetching...';
                 try {
                     const records = await fetchAllLogs();
-                    if (records.length === 0) { showStatus('📭 No PMs yet.', false); this.disabled = false; this.innerHTML = orig; return; }
-                    this.innerHTML = '<span>⏳</span> Generating ' + records.length + '...';
-                    await generatePDF(records);
-                    showStatus('📄 Full fleet PDF generated.', true);
+                    const filtered = records.filter(r => normalizeText(r['Department'] || r.refDept) === normalizeText(dept));
+                    if (filtered.length === 0) { showStatus('📭 No PMs for this department yet.', false); this.disabled = false; this.innerHTML = orig; return; }
+                    this.innerHTML = '<span>⏳</span> Generating...';
+                    await generateAnalysisPDF(filtered, dept);
+                    showStatus('📊 Department analysis generated.', true);
                 } catch (err) { showStatus('⚠️ ' + err.message, false); }
                 this.disabled = false; this.innerHTML = orig;
             });
 
-            document.getElementById('supervisorDownloadAnalysisBtn')?.addEventListener('click', async function() {
+            document.getElementById('supervisorDownloadAllAnalysisBtn')?.addEventListener('click', async function() {
                 this.disabled = true; const orig = this.innerHTML;
                 this.innerHTML = '<span>⏳</span> Fetching...';
                 try {
@@ -3384,6 +3288,84 @@
                 populateInchargeSuggestions();
             });
 
+            // ================= EDIT REF MODAL =================
+            const editAcModal = document.getElementById('editAcModal');
+            const editAcDeptSelect = document.getElementById('editAcDept');
+            const editAcLocationSelect = document.getElementById('editAcLocation');
+
+            function populateEditAcDeptSelect() {
+                if (!editAcDeptSelect) return;
+                editAcDeptSelect.innerHTML = '';
+                Object.keys(DEPARTMENTS).forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d; opt.textContent = d;
+                    editAcDeptSelect.appendChild(opt);
+                });
+            }
+            function populateEditAcServiceSelect() {
+                const dept = editAcDeptSelect.value;
+                const services = (DEPARTMENTS[dept] && DEPARTMENTS[dept].services) || [];
+                editAcLocationSelect.innerHTML = '';
+                services.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s; opt.textContent = s;
+                    editAcLocationSelect.appendChild(opt);
+                });
+            }
+            editAcDeptSelect?.addEventListener('change', populateEditAcServiceSelect);
+
+            function openEditAcModal(ac) {
+                populateEditAcDeptSelect();
+                document.getElementById('editAcTag').value = ac.tag || '';
+                document.getElementById('editAcDept').value = ac.dept || Object.keys(DEPARTMENTS)[0] || '';
+                populateEditAcServiceSelect();
+                document.getElementById('editAcLocation').value = ac.loc || '';
+                document.getElementById('editAcBrand').value = ac.brand || '';
+                document.getElementById('editAcModel').value = ac.model || '';
+                document.getElementById('editAcType').value = ac.type || 'Fridge';
+                document.getElementById('editAcSerial').value = ac.serial || '';
+                document.getElementById('editAcLastPm').value = ac.lastPmDate || '';
+                document.getElementById('editAcNextPm').value = ac.nextPmDate || '';
+                editAcModal._originalAc = ac;
+                editAcModal.classList.add('show');
+            }
+
+            document.getElementById('editAcCancel')?.addEventListener('click', () => editAcModal.classList.remove('show'));
+
+            document.getElementById('editAcSave')?.addEventListener('click', async function() {
+                const original = editAcModal._originalAc;
+                if (!original) return;
+                const updated = {
+                    tag: document.getElementById('editAcTag').value.trim(),
+                    dept: document.getElementById('editAcDept').value,
+                    loc: document.getElementById('editAcLocation').value,
+                    brand: document.getElementById('editAcBrand').value.trim(),
+                    model: document.getElementById('editAcModel').value.trim(),
+                    type: document.getElementById('editAcType').value,
+                    serial: document.getElementById('editAcSerial').value.trim() || 'N/A',
+                    lastPmDate: document.getElementById('editAcLastPm').value || '',
+                    nextPmDate: document.getElementById('editAcNextPm').value || ''
+                };
+                if (!updated.tag || !updated.dept || !updated.loc || !updated.brand || !updated.model) {
+                    alert('Please fill all required fields.');
+                    return;
+                }
+                this.disabled = true;
+                const orig = this.innerHTML;
+                this.innerHTML = '⏳ Saving...';
+
+                const allInv = await fetchAllInventory();
+                const targetId = buildAcIdentity({ refTag: original.tag, refLocation: original.loc, refSerial: original.serial, refModel: original.model });
+                const remaining = allInv.filter(x => buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model }) !== targetId);
+                remaining.push(updated);
+                const ownerTech = technicianSelect.value;
+                await pushInventoryToCloud(ownerTech, remaining);
+                showStatus('✅ Refrigerator updated in cloud.', true);
+                editAcModal.classList.remove('show');
+                this.disabled = false;
+                this.innerHTML = orig;
+            });
+
             // ================= LOGIN / LOGOUT =================
             const loginModal = document.getElementById('loginModal');
             const loginRoleSelect = document.getElementById('loginRoleSelect');
@@ -3431,7 +3413,7 @@
                 }
 
                 technicianSelect.value = payload.name;
-                const roleSuffix = currentRole === 'incharge' ? ' (In-Charge)' : (currentRole === 'supervisor' ? ' (Supervisor)' : '');
+                const roleSuffix = currentRole === 'incharge' ? ' (In-Charge)' : (currentRole === 'supervisor' ? ' (Manager)' : '');
                 loggedInUserName.textContent = payload.name + roleSuffix;
                 lockedTechName.textContent = payload.name;
                 updateTechnicianDisplay();
@@ -3450,17 +3432,9 @@
                     setTimeout(() => loadDepartmentInventory(), 400);
                 } else if (currentRole === 'supervisor') {
                     AC_INVENTORY = [];
-                    try {
-                        let inv = await fetchInventoryFromCloud(payload.name);
-                        AC_INVENTORY = inv || [];
-                        cacheInventoryLocally(payload.name, inv || []);
-                    } catch (e) {
-                        AC_INVENTORY = loadCachedInventory(payload.name) || [];
-                    }
-                    fetchInchargeSignatureFromCloud(payload.name).then(sig => { if (sig) currentInchargeSignature = sig; });
+                    populateSupervisorDeptFilter();
                     setTimeout(() => refreshSupervisorInventory(), 300);
-                    setTimeout(() => refreshSupervisorPending(), 400);
-                    showStatus('👑 Welcome Supervisor ' + payload.name + '!', true);
+                    showStatus('👑 Welcome ' + payload.name + ' — fleet overview ready.', true);
                 } else {
                     AC_INVENTORY = [];
                     renderAcSelector();
@@ -3527,8 +3501,14 @@
                 const iname = loginInchargeName.value.trim();
                 if (!inDept) { loginError.textContent = 'Please choose your department.'; return; }
                 if (!iname) { loginError.textContent = 'Please enter your full name.'; return; }
-                if (pin !== INCHARGE_PIN) {
-                    loginError.textContent = 'Wrong In-Charge PIN.';
+                const expectedPin = INCHARGE_PINS[iname];
+                if (!expectedPin) {
+                    loginError.textContent = 'This name is not registered as an In-Charge. Contact the manager.';
+                    loginPinInput.value = ''; loginPinInput.focus();
+                    return;
+                }
+                if (pin !== expectedPin) {
+                    loginError.textContent = 'Wrong PIN for ' + iname;
                     loginPinInput.value = ''; loginPinInput.focus();
                     return;
                 }
