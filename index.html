@@ -540,6 +540,22 @@
                     </div>
                 </div>
             </div>
+                        <div class="card" style="margin-bottom: 24px; border: 2px solid #7a4c9c;">
+                <div class="card-header" style="background:#f3e8ff; color:#5d3578;">
+                    <span>👥</span> Manage In-Charges
+                    <span style="margin-left:auto; font-size:0.78rem; background:#7a4c9c; color:white; padding: 3px 12px; border-radius: 20px; font-weight:700;">Manager Only</span>
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 0.88rem; color: #5b7b96; margin-bottom: 14px;">
+                        Add or edit In-Charge accounts here. Each one has a unique PIN and is tied to a department. Changes sync to all devices after you save.
+                    </p>
+                    <div id="inchargeEditorList" style="margin-bottom: 12px;"></div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 8px;">
+                        <button class="btn-add" id="addInchargeBtn">➕ Add New In-Charge</button>
+                        <button class="btn-primary" id="saveInchargesBtn" style="padding: 12px 24px; font-size: 0.95rem;">💾 Save All Changes to Cloud</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="action-buttons" id="technicianActionButtons">
@@ -1521,12 +1537,14 @@
                 }
             }
 
-            async function populateInchargeSuggestions() {
+                      async function populateInchargeSuggestions() {
                 const datalist = document.getElementById('inchargeSuggestions');
                 const loginDatalist = document.getElementById('loginInchargeSuggestions');
                 if (datalist) datalist.innerHTML = '';
                 if (loginDatalist) loginDatalist.innerHTML = '';
                 const names = await fetchKnownIncharges();
+                Object.keys(INCHARGE_PINS).forEach(n => { if (names.indexOf(n) === -1) names.push(n); });
+                names.sort();
                 names.forEach(n => {
                     if (datalist) { const o1 = document.createElement('option'); o1.value = n; datalist.appendChild(o1); }
                     if (loginDatalist) { const o2 = document.createElement('option'); o2.value = n; loginDatalist.appendChild(o2); }
@@ -1753,9 +1771,10 @@
                     refreshPendingApprovals();
                     loadDepartmentInventory();
                 }
-                if (isSupervisor) {
+             if (isSupervisor) {
                     populateSupervisorDeptFilter();
                     refreshSupervisorInventory();
+                    renderInchargeEditor();
                 }
             }
 
@@ -2411,6 +2430,141 @@
                     sel2.value = current2;
                 }
             }
+                        // ================= IN-CHARGE REGISTRY (managed by supervisor) =================
+            function normalizeInchargeRegistry(raw) {
+                const out = {};
+                if (!raw || typeof raw !== 'object') return out;
+                Object.keys(raw).forEach(k => {
+                    const v = raw[k];
+                    if (typeof v === 'string') {
+                        out[k] = { pin: v, dept: '' };
+                    } else if (v && typeof v === 'object') {
+                        out[k] = { pin: String(v.pin || ''), dept: String(v.dept || '') };
+                    }
+                });
+                return out;
+            }
+
+            async function loadInchargeRegistry() {
+                try {
+                    const res = await fetch(GOOGLE_SHEET_URL + '?type=config&_ts=' + Date.now(), { cache: 'no-store' });
+                    const json = await res.json();
+                    const raw = json && json.config && json.config[INCHARGE_REGISTRY_KEY];
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        const normalized = normalizeInchargeRegistry(parsed);
+                        if (Object.keys(normalized).length > 0) {
+                            INCHARGE_PINS = normalized;
+                            return;
+                        }
+                    }
+                } catch (e) {}
+                INCHARGE_PINS = JSON.parse(JSON.stringify(DEFAULT_INCHARGE_PINS));
+            }
+
+            async function saveInchargeRegistryToCloud(registry) {
+                await fetch(GOOGLE_SHEET_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'config_set',
+                        key: INCHARGE_REGISTRY_KEY,
+                        value: JSON.stringify(registry)
+                    })
+                });
+            }
+
+            function renderInchargeEditor() {
+                const wrap = document.getElementById('inchargeEditorList');
+                if (!wrap) return;
+                wrap.innerHTML = '';
+                const names = Object.keys(INCHARGE_PINS).sort();
+                if (names.length === 0) {
+                    wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">No In-Charges yet. Click "Add New In-Charge".</div>';
+                    return;
+                }
+                names.forEach(name => {
+                    const rec = INCHARGE_PINS[name] || { pin: '', dept: '' };
+                    const row = document.createElement('div');
+                    row.className = 'dept-editor-row';
+                    row.innerHTML = `
+                        <div>
+                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700;">FULL NAME</label>
+                            <input type="text" class="incharge-name-input" value="${escapeHtml(name)}" data-original-name="${escapeHtml(name)}" style="width:100%; font-weight:700;">
+                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700; margin-top:8px; display:block;">PIN (4–8 digits)</label>
+                            <input type="text" inputmode="numeric" class="incharge-pin-input" value="${escapeHtml(rec.pin || '')}" style="width:100%; letter-spacing:2px;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700;">DEPARTMENT</label>
+                            <select class="incharge-dept-input" style="width:100%;">
+                                <option value="">— choose —</option>
+                            </select>
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="btn-danger" data-del-incharge="${escapeHtml(name)}">🗑️</button>
+                        </div>
+                    `;
+                    wrap.appendChild(row);
+                    const sel = row.querySelector('.incharge-dept-input');
+                    Object.keys(DEPARTMENTS).forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d; opt.textContent = d;
+                        if (d === rec.dept) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                });
+                wrap.querySelectorAll('[data-del-incharge]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const dn = this.getAttribute('data-del-incharge');
+                        if (!confirm('Delete In-Charge "' + dn + '"? They will no longer be able to log in.')) return;
+                        delete INCHARGE_PINS[dn];
+                        renderInchargeEditor();
+                    });
+                });
+            }
+
+            document.getElementById('addInchargeBtn')?.addEventListener('click', () => {
+                const name = prompt('New In-Charge name (as they will type it at login, e.g. "Dr. Jane DOE"):');
+                if (!name) return;
+                const trimmed = name.trim();
+                if (!trimmed) return;
+                if (INCHARGE_PINS[trimmed]) { alert('That name already exists.'); return; }
+                INCHARGE_PINS[trimmed] = { pin: '', dept: '' };
+                renderInchargeEditor();
+            });
+
+            document.getElementById('saveInchargesBtn')?.addEventListener('click', async function() {
+                const rows = document.querySelectorAll('#inchargeEditorList .dept-editor-row');
+                const next = {};
+                let err = '';
+                rows.forEach(row => {
+                    const name = (row.querySelector('.incharge-name-input').value || '').trim();
+                    const pin  = (row.querySelector('.incharge-pin-input').value || '').trim();
+                    const dept = (row.querySelector('.incharge-dept-input').value || '').trim();
+                    if (!name) return;
+                    if (!pin) { err = 'PIN is required for ' + name; return; }
+                    if (!/^\d{4,8}$/.test(pin)) { err = 'PIN for ' + name + ' must be 4–8 digits.'; return; }
+                    if (next[name]) { err = 'Duplicate name: ' + name; return; }
+                    next[name] = { pin: pin, dept: dept };
+                });
+                if (err) { alert(err); return; }
+                if (Object.keys(next).length === 0) { alert('At least one In-Charge is required.'); return; }
+                this.disabled = true;
+                const orig = this.innerHTML;
+                this.innerHTML = '⏳ Saving...';
+                INCHARGE_PINS = next;
+                try {
+                    await saveInchargeRegistryToCloud(next);
+                    showStatus('✅ In-Charge registry saved to cloud.', true);
+                } catch (e) {
+                    showStatus('⚠️ Saved locally — cloud sync failed.', false);
+                }
+                renderInchargeEditor();
+                populateInchargeSuggestions();
+                this.disabled = false;
+                this.innerHTML = orig;
+            });
 
             document.querySelectorAll('#supervisorStatusFilterBar .filter-chip').forEach(chip => {
                 chip.addEventListener('click', function() {
@@ -3565,16 +3719,18 @@
                 const iname = loginInchargeName.value.trim();
                 if (!inDept) { loginError.textContent = 'Please choose your department.'; return; }
                 if (!iname) { loginError.textContent = 'Please enter your full name.'; return; }
-                const expectedPin = INCHARGE_PINS[iname];
-                if (!expectedPin) {
+                               const record = INCHARGE_PINS[iname];
+                if (!record) {
                     loginError.textContent = 'This name is not registered as an In-Charge. Contact the manager.';
                     loginPinInput.value = ''; loginPinInput.focus();
                     return;
                 }
+                const expectedPin = record.pin || '';
                 if (pin !== expectedPin) {
                     loginError.textContent = 'Wrong PIN for ' + iname;
                     loginPinInput.value = ''; loginPinInput.focus();
                     return;
+                }
                 }
                 saveSession({ name: iname, dept: inDept, role: 'incharge' });
                 unlockApp({ name: iname, dept: inDept, role: 'incharge' });
@@ -3591,10 +3747,11 @@
                 renderAcSelector();
                 updatePendingCount();
                 populateInchargeSuggestions();
-
                 (async () => {
                     await ensureDepartmentsLoaded();
+                    await loadInchargeRegistry();
                     const existingSession = loadSession();
+                    ...
                     if (existingSession && (TECHNICIAN_PINS[existingSession.name] || existingSession.role === 'incharge' || existingSession.name === SUPERVISOR_NAME)) {
                         unlockApp(existingSession);
                     } else {
