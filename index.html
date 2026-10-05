@@ -3512,7 +3512,7 @@
                         cacheInventoryLocally(payload.name, inv);
                         renderAcSelector();
                         showStatus('✅ Welcome, ' + payload.name + '! ' + inv.length + ' refrigerator(s) loaded.', true);
-                    }} catch (err) {
+                    } catch (err) {
     console.error('❌ Refrigerator load failed:', err);
     const cached = loadCachedInventory(payload.name) || [];
     AC_INVENTORY = cached;
