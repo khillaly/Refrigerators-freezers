@@ -3512,13 +3512,14 @@
                         cacheInventoryLocally(payload.name, inv);
                         renderAcSelector();
                         showStatus('✅ Welcome, ' + payload.name + '! ' + inv.length + ' refrigerator(s) loaded.', true);
-                    } catch (err) {
-                        const cached = loadCachedInventory(payload.name) || [];
-                        AC_INVENTORY = cached;
-                        renderAcSelector();
-                        if (cached.length > 0) showStatus('📥 Offline — ' + cached.length + ' refrigerator(s) from cache.', false);
-                        else showStatus('⚠️ Could not load refrigerator list.', false);
-                    }
+                    }} catch (err) {
+    console.error('❌ Refrigerator load failed:', err);
+    const cached = loadCachedInventory(payload.name) || [];
+    AC_INVENTORY = cached;
+    renderAcSelector();
+    if (cached.length > 0) showStatus('📥 Offline — ' + cached.length + ' from cache. Error: ' + (err.message || err), false);
+    else showStatus('⚠️ Could not load refrigerator list: ' + (err.message || err), false);
+}
                 }
             }
             function lockApp() {
