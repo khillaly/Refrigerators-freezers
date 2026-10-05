@@ -19,7 +19,6 @@
         body { background: linear-gradient(135deg, #eef4fa 0%, #f5f7fa 100%); padding: 24px 16px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         body::before { content: 'CHUB REFRIGERATOR MAINTENANCE'; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: clamp(24px, 4vw, 72px); font-weight: 900; color: rgba(30, 74, 109, 0.12); letter-spacing: 6px; pointer-events: none; user-select: none; white-space: nowrap; z-index: 50; text-align: center; width: 100%; }
         .app-container { max-width: 1300px; width: 100%; background: white; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); padding: 32px 28px; margin-bottom: 30px; }
-
         .title-hero { text-align: center; padding: 22px 20px 30px 20px; margin-bottom: 24px; background: linear-gradient(135deg, #0b3b5c 0%, #1e4a6d 50%, #2a6b96 100%); border-radius: 24px; position: relative; overflow: hidden; box-shadow: 0 14px 30px -10px rgba(15, 56, 82, 0.5); }
         .title-hero h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; z-index: 2; text-shadow: 0 3px 12px rgba(0,0,0,0.25); }
         .title-hero h1 .title-accent { background: linear-gradient(90deg, #7fc8ff, #b3e0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 900; }
@@ -27,20 +26,17 @@
         .title-hero .title-sub .dot-sep { width: 5px; height: 5px; border-radius: 50%; background: #7fc8ff; display: inline-block; }
         .title-hero .recording-notice { margin-top: 14px; display: inline-block; background: rgba(255,255,255,0.14); color: #eaf6ff; padding: 8px 20px; border-radius: 40px; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.25); position: relative; z-index: 2; }
         .title-ornament { font-size: 2rem; filter: drop-shadow(0 0 8px rgba(127,200,255,0.7)); }
-
         .subhead { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; background: #eef6fc; padding: 16px 24px; border-radius: 24px; margin-bottom: 24px; border: 1px solid #d8e8f4; gap: 14px; }
         .tech-info { display: flex; align-items: center; gap: 14px; font-size: 1.05rem; color: #0b3b5c; font-weight: 500; flex-wrap: wrap; }
         .workdate-tag { background: #fff3cd; color: #7a5300; padding: 8px 22px; border-radius: 40px; font-weight: 600; font-size: 1rem; display: flex; align-items: center; gap: 8px; border: 1px solid #f4d97a; }
         .sync-status { background: #e2f0e6; color: #1b6b3f; padding: 6px 16px; border-radius: 40px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 6px; border: 1px solid #b8dfc3; }
         .sync-status.offline { background: #fff3cd; color: #7a5300; border-color: #f4d97a; }
         .sync-status.error { background: #ffe6e6; color: #b33a3a; border-color: #f0b8b8; }
-
         .generator-selector { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; background: #f9fcff; padding: 18px 24px; border-radius: 24px; border: 1.5px solid #cfdfeb; margin-bottom: 20px; }
         .chub-logo { flex: 1 1 180px; max-width: 320px; height: auto; margin-left: 15px; margin-right: 15px; vertical-align: middle; object-fit: contain; }
         .generator-selector label { font-weight: 600; color: #1e4a6d; font-size: 1.05rem; white-space: nowrap; }
         select, input[type="date"] { padding: 14px 24px; border-radius: 40px; border: 1.5px solid #bdd3e6; background: white; font-size: 1rem; font-weight: 600; color: #0a2a3f; min-width: 200px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.02); font-family: inherit; }
         select:hover { border-color: #1e4a6d; background: #f4faff; }
-
         .generator-banner { background: linear-gradient(90deg, #1e4a6d 0%, #2a6b96 100%); color: white; padding: 18px 28px; border-radius: 20px; margin-bottom: 30px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: 0 8px 20px -8px rgba(30,74,109,0.5); position: relative; overflow: hidden; }
         .generator-banner .gen-icon { font-size: 1.8rem; background: rgba(255,255,255,0.15); width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 2; }
         .generator-banner .gen-text { position: relative; z-index: 2; flex: 1; min-width: 200px; }
@@ -49,13 +45,11 @@
         .generator-banner .gen-badge { background: rgba(255,255,255,0.2); color: white; padding: 6px 16px; border-radius: 40px; font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; z-index: 2; }
         .generator-banner .gen-nextpm { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.16); color: #eaf6ff; padding: 6px 14px; border-radius: 40px; font-size: 0.78rem; font-weight: 600; margin-top: 8px; z-index: 2; position: relative; border: 1px solid rgba(255,255,255,0.25); }
         .generator-banner .gen-incharge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,215,120,0.22); color: #ffe8a8; padding: 6px 14px; border-radius: 40px; font-size: 0.78rem; font-weight: 600; margin-top: 8px; margin-left: 8px; z-index: 2; position: relative; border: 1px solid rgba(255,215,120,0.4); }
-
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
         .grid-3-wide { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
         .card { background: #fff; border-radius: 24px; border: 1px solid #e2eaf1; box-shadow: 0 6px 14px rgba(0,0,0,0.02); overflow: hidden; }
         .card-header { background: #f0f6fc; padding: 16px 22px; font-weight: 600; font-size: 1.15rem; color: #12405e; border-bottom: 1px solid #d4e3ef; display: flex; align-items: center; gap: 10px; }
         .card-body { padding: 20px 22px; }
-
         .check-item { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
         .check-item:last-child { margin-bottom: 0; }
         .check-item input[type="checkbox"] { width: 22px; height: 22px; margin-top: 2px; accent-color: #1e4a6d; cursor: pointer; flex-shrink: 0; }
@@ -65,13 +59,11 @@
         .rating-block { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 8px; }
         .rating-option { display: flex; align-items: center; gap: 6px; }
         .rating-option input[type="radio"] { accent-color: #1e4a6d; width: 18px; height: 18px; }
-
         .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
         .field-group:last-child { margin-bottom: 0; }
         .field-group label { font-weight: 600; color: #1f3c54; font-size: 0.95rem; }
         .field-group input[type="number"], .field-group input[type="text"], .field-group input[type="date"], .field-group input[type="password"], .field-group select { padding: 12px 16px; border-radius: 16px; border: 1.5px solid #cfdfeb; background: #fbfdff; font-size: 0.95rem; color: #0a2a3f; transition: 0.2s; width: 100%; font-family: inherit; }
         .field-group input:focus, .field-group select:focus { outline: none; border-color: #1e4a6d; background: white; box-shadow: 0 0 0 3px rgba(30,74,109,0.1); }
-
         .btn-primary { background: #1e4a6d; color: white; border: none; padding: 16px 36px; border-radius: 40px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 10px 18px -8px rgba(20,60,100,0.3); }
         .btn-primary:hover { background: #0f3852; transform: scale(1.01); }
         .btn-pdf { background: #b33a3a; color: white; border: none; padding: 16px 36px; border-radius: 40px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 12px; box-shadow: 0 10px 18px -8px rgba(150,40,40,0.3); }
@@ -91,12 +83,12 @@
         .btn-danger:hover { background: #8f2929; }
         .btn-qr { background: #0b3d91; color: white; border: none; padding: 12px 26px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-qr:hover { background: #082b66; }
-
         .btn-add { background: #1b6b3f; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-add:hover { background: #155231; }
         .btn-remove { background: #b33a3a; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-remove:hover { background: #8f2929; }
-
+        .btn-editCurrent { background: #f4a300; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-editCurrent:hover { background: #c98600; }
         .signoff-section { background: #f0f6fc; border-radius: 24px; padding: 26px 28px; margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border: 1px solid #cfe0ee; gap: 20px; }
         .signoff-left { display: flex; flex-direction: column; gap: 6px; }
         .signoff-left .label { font-weight: 600; color: #12405e; font-size: 1rem; letter-spacing: 0.3px; }
@@ -104,7 +96,6 @@
         .signoff-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
         .signature-pad { background: white; border-radius: 40px; padding: 6px 16px; border: 2px dashed #9cb9d0; display: flex; align-items: center; justify-content: center; min-width: 160px; min-height: 55px; font-size: 0.85rem; color: #1e4a6d; font-weight: 500; letter-spacing: 0.5px; white-space: nowrap; }
         .signature-pad img { max-height: 50px; max-width: 200px; object-fit: contain; }
-
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 30, 50, 0.55); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
         .modal-overlay.show { display: flex; }
         .modal-box { background: white; border-radius: 24px; padding: 32px 28px; max-width: 520px; width: 100%; box-shadow: 0 25px 60px -12px rgba(0,0,0,0.4); max-height: 90vh; overflow-y: auto; position: relative; z-index: 1001; margin: auto; }
@@ -116,34 +107,28 @@
         .modal-box .btn-cancel { background: #e7f0f8; color: #1e4a6d; }
         .modal-box .btn-go { background: #1e4a6d; color: white; }
         .modal-box .btn-go:disabled { opacity: 0.6; cursor: wait; }
-
         .sig-preview { background: #fbfdff; border: 2px dashed #cfdfeb; border-radius: 16px; padding: 12px; text-align: center; min-height: 90px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
         .sig-preview img { max-height: 80px; max-width: 100%; object-fit: contain; }
         .sig-preview .placeholder { color: #9cb9d0; font-size: 0.9rem; font-style: italic; }
         .modal-box h3.sig-h3 { font-size: 0.95rem; color: #12405e; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #d4e3ef; }
-
         .pending-list { display: flex; flex-direction: column; gap: 10px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
         .pending-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; background: #fbfdff; border: 1px solid #d4e3ef; border-radius: 14px; flex-wrap: wrap; }
         .pending-row .info { flex: 1; min-width: 200px; }
         .pending-row .gen { font-weight: 700; color: #12405e; font-size: 0.95rem; }
         .pending-row .meta { font-size: 0.8rem; color: #5b7b96; margin-top: 2px; }
-
         .filter-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
         .filter-chip { padding: 10px 18px; border-radius: 40px; border: 1.5px solid #cfdfeb; background: #fbfdff; font-size: 0.85rem; font-weight: 600; color: #5b7b96; cursor: pointer; transition: 0.15s; user-select: none; }
         .filter-chip:hover { border-color: #1e4a6d; color: #1e4a6d; }
         .filter-chip.active { background: #1e4a6d; color: white; border-color: #1e4a6d; }
-
         .action-buttons { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 24px; justify-content: center; }
         .status-message { margin-top: 20px; padding: 14px 24px; border-radius: 40px; background: #e2f0e6; color: #1b6b3f; font-weight: 500; display: none; align-items: center; gap: 10px; }
         .status-message.show { display: flex; }
         .footer-note { font-size: 0.85rem; color: #5b7b96; text-align: center; margin-top: 12px; }
         .section-title { font-size: 1.3rem; font-weight: 600; color: #12405e; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-
         .incharge-picker { background: #fff9ec; border: 1.5px solid #f4d97a; border-radius: 20px; padding: 18px 22px; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
         .incharge-picker label { font-weight: 700; color: #7a5300; font-size: 1rem; }
         .incharge-picker input { flex: 1; min-width: 240px; padding: 12px 18px; border-radius: 40px; border: 1.5px solid #e8c96a; background: white; font-size: 1rem; font-weight: 600; color: #7a5300; }
         .incharge-picker .hint { font-size: 0.82rem; color: #7a5300; flex-basis: 100%; margin-top: 4px; }
-
         .inv-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .inv-table th { background: #eef6fc; color: #12405e; padding: 10px 12px; text-align: left; font-size: 0.85rem; font-weight: 700; border: 1px solid #d4e3ef; }
         .inv-table td { padding: 9px 12px; border: 1px solid #d4e3ef; font-size: 0.85rem; color: #1f3c54; }
@@ -153,12 +138,14 @@
         .status-badge.pending { background: #fff3cd; color: #7a5300; border: 1px solid #f4d97a; }
         .status-badge.overdue { background: #ffe6e6; color: #b33a3a; border: 1px solid #f0b8b8; }
         .status-badge.never { background: #e7f0f8; color: #5b7b96; border: 1px solid #cfdfeb; }
-
         .kpi-card { border-radius:14px; padding:14px; text-align:center; }
         .kpi-card .kpi-label { font-size:0.72rem; font-weight:700; letter-spacing:0.5px; }
         .kpi-card .kpi-value { font-size:1.7rem; font-weight:800; margin-top:4px; }
-
-        /* ============ QR STICKER PRINT SHEET ============ */
+        .dup-warning { background: #fff3cd; border: 2px solid #f4d97a; border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; display: none; }
+        .dup-warning.show { display: block; }
+        .dup-warning .dup-title { font-weight: 800; color: #7a5300; margin-bottom: 8px; font-size: 1rem; }
+        .dup-warning .dup-row { font-size: 0.88rem; color: #7a5300; margin-bottom: 4px; }
+        .dup-warning .dup-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .qr-sticker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 8px; }
         .qr-sticker { border: 2px dashed #1e4a6d; border-radius: 12px; padding: 10px; background: white; text-align: center; page-break-inside: avoid; }
         .qr-sticker .qr-canvas-wrap { display: flex; justify-content: center; align-items: center; margin-bottom: 6px; }
@@ -167,8 +154,6 @@
         .qr-sticker .sticker-loc { font-size: 0.72rem; color: #12405e; margin-bottom: 2px; }
         .qr-sticker .sticker-brand { font-size: 0.65rem; color: #5b7b96; margin-bottom: 4px; }
         .qr-sticker .sticker-hint { font-size: 0.6rem; color: #1e4a6d; font-weight: 700; letter-spacing: 0.4px; }
-
-        /* ============ PUBLIC INFO PAGE ============ */
         #acInfoPage { position: fixed; inset: 0; background: linear-gradient(135deg, #eef4fa 0%, #f5f7fa 100%); z-index: 5000; overflow-y: auto; padding: 18px 12px; display: none; }
         #acInfoPage.show { display: block; }
         .info-wrap { max-width: 720px; margin: 0 auto; }
@@ -194,13 +179,12 @@
         .info-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
         .info-actions button { padding: 10px 18px; border-radius: 40px; font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer; }
         .info-actions .refresh-btn { background: #1e4a6d; color: white; }
-
         @media (max-width: 900px) {
             .generator-selector { flex-direction: column; align-items: stretch; }
             .generator-selector label { margin-left: 0 !important; }
             select { min-width: 100% !important; width: 100%; }
             .generator-selector > div { min-width: 100% !important; }
-            .btn-add, .btn-remove { flex: 1; justify-content: center; }
+            .btn-add, .btn-remove, .btn-editCurrent { flex: 1; justify-content: center; }
             .chub-logo { margin: 10px auto; max-width: 220px; }
             .qr-sticker-grid { grid-template-columns: repeat(2, 1fr); }
         }
@@ -232,9 +216,6 @@
     </style>
 </head>
 <body>
-    <!-- =========================================================== -->
-    <!-- PUBLIC REF INFO PAGE (activated by ?refinfo=TAG — no login) -->
-    <!-- =========================================================== -->
     <div id="acInfoPage">
         <div class="info-wrap">
             <div class="info-hero">
@@ -300,7 +281,6 @@
             </div>
         </div>
 
-        <!-- TECHNICIAN SECTION -->
         <div id="technicianSection">
             <div class="generator-selector">
                 <div class="field-group" style="margin-bottom:0; min-width: 240px;">
@@ -310,6 +290,7 @@
                 <label for="acSelect" style="margin-left: 10px;">🔽 Select Refrigerator:</label>
                 <select id="acSelect"></select>
                 <button id="addAcBtn" class="btn-add">➕ Add New Refrigerator</button>
+                <button id="editAcBtn" class="btn-editCurrent">✏️ Edit This Fridge</button>
                 <button id="removeAcBtn" class="btn-remove">➖ Remove Refrigerator</button>
                 <button id="qrAcBtn" class="btn-qr">🔳 QR Sticker</button>
                 <button id="qrAllBtn" class="btn-qr">📄 Print All QR Stickers</button>
@@ -420,7 +401,6 @@
             </div>
         </div>
 
-        <!-- IN-CHARGE SECTION -->
         <div id="inchargeSection" style="display:none;">
             <div class="card" id="pendingApprovalsCard" style="margin-bottom: 28px; border: 2px solid #1b6b3f;">
                 <div class="card-header" style="background:#e2f0e6; color:#1b6b3f;">
@@ -488,10 +468,7 @@
             </div>
         </div>
 
-        <!-- MANAGER / SUPERVISOR SECTION — read-only fleet overview -->
         <div id="supervisorSection" style="display:none;">
-
-            <!-- KPI OVERVIEW -->
             <div class="card" style="margin-bottom: 24px; border: 2px solid #0b3d91;">
                 <div class="card-header" style="background:#e8f1fb; color:#0b3d91;">
                     <span>📊</span> Fleet Overview — All Departments
@@ -504,7 +481,6 @@
                 </div>
             </div>
 
-            <!-- ALL REFRIGERATORS -->
             <div class="card" style="margin-bottom: 24px;">
                 <div class="card-header">
                     <span>🌐</span> All Refrigerators &amp; Freezers
@@ -512,7 +488,7 @@
                 </div>
                 <div class="card-body">
                     <p style="font-size: 0.88rem; color: #3a6583; margin-bottom: 14px;">
-                        Read-only status of every refrigerator in the fleet. Filter by department or status. Checklist details are not shown here — use the analysis reports below.
+                        Read-only status of every refrigerator in the fleet. Filter by department or status.
                     </p>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 12px;">
                         <select id="supervisorDeptFilter" style="padding:10px 16px; border-radius:40px; border:1.5px solid #cfdfeb; font-weight:600;">
@@ -547,14 +523,13 @@
                 </div>
             </div>
 
-            <!-- ANALYSIS DOWNLOADS -->
             <div class="card" style="margin-bottom: 24px;">
                 <div class="card-header">
                     <span>📥</span> Download Analysis Reports
                 </div>
                 <div class="card-body">
                     <p style="font-size: 0.88rem; color: #3a6583; margin-bottom: 14px;">
-                        Executive-summary reports only — KPIs, breakdown by department, technician, and anomalies. No raw checklist items.
+                        Executive-summary reports only — KPIs, breakdown by department, technician, and anomalies.
                     </p>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
                         <select id="supervisorAnalysisDept" style="padding:10px 16px; border-radius:40px; border:1.5px solid #cfdfeb; font-weight:600; min-width: 220px;">
@@ -565,7 +540,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
         <div class="action-buttons" id="technicianActionButtons">
@@ -587,7 +561,6 @@
         </div>
     </div>
 
-    <!-- LOGIN MODAL -->
     <div class="modal-overlay show" id="loginModal">
         <div class="modal-box" style="max-width: 420px; text-align: center;">
             <div style="font-size: 3rem; margin-bottom: 12px;">🔐</div>
@@ -637,7 +610,6 @@
         </div>
     </div>
 
-    <!-- PFX AUTO PASSWORD MODAL -->
     <div class="modal-overlay" id="pfxPasswordModal">
         <div class="modal-box" style="max-width: 400px; text-align: center;">
             <div style="font-size: 2.5rem; margin-bottom: 12px;">🔐</div>
@@ -654,7 +626,6 @@
         </div>
     </div>
 
-    <!-- COMBINED SIGNATURE + CERTIFICATE MODAL -->
     <div class="modal-overlay" id="signatureModal">
         <div class="modal-box">
             <h2>🖊️ Signature &amp; Digital Certificate</h2>
@@ -706,11 +677,19 @@
         </div>
     </div>
 
-    <!-- ADD NEW REFRIGERATOR MODAL -->
     <div class="modal-overlay" id="addAcModal">
         <div class="modal-box">
             <h2>➕ Add New Refrigerator</h2>
             <p>This refrigerator will be saved to the cloud under your name: <strong id="addAcOwnerName">—</strong></p>
+
+            <div id="dupWarning" class="dup-warning">
+                <div class="dup-title">⚠️ This tag already exists in the fleet!</div>
+                <div id="dupWarningBody"></div>
+                <div class="dup-actions">
+                    <button type="button" class="btn-edit" id="dupEditBtn">✏️ Edit this existing fridge instead</button>
+                    <button type="button" class="btn-secondary" id="dupDismissBtn">Continue anyway</button>
+                </div>
+            </div>
 
             <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="field-group">
@@ -775,7 +754,6 @@
         </div>
     </div>
 
-    <!-- EDIT REFRIGERATOR MODAL -->
     <div class="modal-overlay" id="editAcModal">
         <div class="modal-box">
             <h2>✏️ Edit Refrigerator</h2>
@@ -838,7 +816,6 @@
         </div>
     </div>
 
-    <!-- QR STICKER MODAL -->
     <div class="modal-overlay" id="qrModal">
         <div class="modal-box" style="max-width: 720px;">
             <h2>🔳 QR Code Sticker</h2>
@@ -851,7 +828,6 @@
         </div>
     </div>
 
-    <!-- PRINT AREA (hidden except when printing) -->
     <div id="qrPrintArea" style="display:none;"></div>
 
     <script>
@@ -859,9 +835,8 @@
             const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyc-xhUZaHszJA2EW-81Cc7H-pkis3EYLkXcF43HEb1xlMYPerEBIUzPhqgpo6hFwY/exec';
             const RECORDING_START = '03 Jul 2026';
 
-            // ================= QUARTERLY PM SCHEDULE =================
-            const PM_INTERVAL_MONTHS = 6;                     // not used for refrigerators
-            const REF_QUARTER_MONTHS = [2, 5, 8, 11];         // 0-indexed → Mar, Jun, Sep, Dec
+            const PM_INTERVAL_MONTHS = 6;
+            const REF_QUARTER_MONTHS = [2, 5, 8, 11];
             const REF_QUARTER_DAY    = 15;
 
             function getNextRefPmDate_(dateVal) {
@@ -892,8 +867,6 @@
 
             const DEFAULT_LIST_OWNER = 'Hillaly KUBWIMANA';
 
-            // ================= IN-CHARGE PINs (per person) =================
-            // Key = exact name that the In-Charge types at login (case-sensitive).
             const INCHARGE_PINS = {
                 'Laboratory In-Charge':        '2201',
                 'Operating Theatre In-Charge': '2202',
@@ -921,12 +894,17 @@
                 'Laboratory': {
                     defaultIncharge: 'Laboratory In-Charge',
                     services: [
-                        'Genetics', 'Hematology', 'Biochemistry', 'Parasitology', 'TB',
-                        'Sterilization', 'Molecular Pre-PCR', 'Molecular Post-PCR',
-                        'Immunology', 'Culture Media', 'Direct Examination', 'Grossing Room',
-                        'Embedding Room', 'Staining Room', 'Refrigerators Room',
-                        'Stock Consumables', "Doctor's Office – Pathology", 'Lab UPS Room',
-                        'Immunoserology', 'Old lab server-room', 'Cold chain fridge room',
+                        'Genetics', 'Hematology', 'Biochemistry', 'Parasitology', 'TB', 'TB-service',
+                        'Sterilization', 'Lab sterilization',
+                        'Molecular Pre-PCR', 'PRE-PCR', 'Molecular Post-PCR', 'Molecular clean room',
+                        'Immunology', 'Immunoserology',
+                        'Culture Media', 'Direct Examination', 'Microbiology', 'Bacteriology',
+                        'Anatomical', 'Pathology',
+                        'Grossing Room', 'Embedding Room', 'Staining Room',
+                        'Refrigerators Room', 'Fridge room',
+                        'Stock Consumables', 'store service',
+                        "Doctor's Office – Pathology", 'Lab UPS Room',
+                        'Old lab server-room', 'Cold chain fridge room',
                         'Sample Storage Room 1', 'Vaccine Room', 'Reagent Room', 'Freezer Bay'
                     ]
                 },
@@ -979,7 +957,6 @@
             window.__cachedPfxBinary = null;
             window.__cachedPfxPassword = null;
 
-            // ================= HELPERS =================
             function sanitizeForPDF(str) {
                 if (str === null || str === undefined) return '';
                 return String(str).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, ' ').trim();
@@ -1065,7 +1042,6 @@
                 return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             }
 
-            // ================= SIGNATURE STORAGE =================
             function loadSignatures() {
                 let stored = {};
                 try { const raw = localStorage.getItem(SIG_STORAGE_KEY); if (raw) stored = JSON.parse(raw); } catch(e) { stored = {}; }
@@ -1089,7 +1065,6 @@
                 try { localStorage.setItem(getInchargeSigCacheKey(name), dataUrl || ''); } catch(e) {}
             }
 
-            // ================= CERT STATE =================
             const CERT_STATE = { certificate: null, privateKey: null, subject: '', issuer: '', serial: '', validFrom: null, validTo: null, fingerprint: '' };
             function isCertLoaded() { return !!(CERT_STATE.certificate && CERT_STATE.privateKey); }
             function clearCert() {
@@ -1154,7 +1129,6 @@
                 return data;
             }
 
-            // ================= CLOUD SYNC =================
             async function pushTechnicianSignatureToCloud(techName, dataUrl) {
                 if (!techName) return;
                 try {
@@ -1320,7 +1294,6 @@
                 } catch (e) { return []; }
             }
 
-            // ================= REFRIGERATOR INVENTORY CLOUD =================
             const CACHE_KEY_PREFIX = 'chub_ref_cache_v4_';
             function getCacheKey(techName) { return CACHE_KEY_PREFIX + (techName || 'default').replace(/\s+/g, '_'); }
             function cacheInventoryLocally(techName, inv) { try { localStorage.setItem(getCacheKey(techName), JSON.stringify(inv)); } catch(e) {} }
@@ -1345,13 +1318,43 @@
                 return true;
             }
 
+            // ================= PRELOADED LABORATORY REFRIGERATOR INVENTORY (35 units) =================
             const DEFAULT_REF_INVENTORY = [
-                { tag: 'CHUB/FRG/001', dept: 'Laboratory', loc: 'Sample Storage Room 1', type: 'Lab Fridge',        brand: 'LG',        model: 'GN-B422',   serial: 'N/A' },
-                { tag: 'CHUB/FRG/002', dept: 'Laboratory', loc: 'Sample Storage Room 1', type: 'Fridge-Freezer',   brand: 'Samsung',   model: 'RT38',      serial: 'N/A' },
-                { tag: 'CHUB/FRG/003', dept: 'Laboratory', loc: 'Vaccine Room',         type: 'Vaccine Fridge',   brand: 'Vestfrost', model: 'VKS-100',   serial: 'N/A' },
-                { tag: 'CHUB/FRG/004', dept: 'Laboratory', loc: 'Reagent Room',         type: 'Fridge',           brand: 'Bosch',     model: 'KSV36',     serial: 'N/A' },
-                { tag: 'CHUB/FRG/005', dept: 'Laboratory', loc: 'Freezer Bay',          type: 'Upright Freezer',  brand: 'LG',        model: 'GC-B569',   serial: 'N/A' },
-                { tag: 'CHUB/FRG/006', dept: 'Laboratory', loc: 'Freezer Bay',          type: 'Chest Freezer',    brand: 'Haier',     model: 'HCF-219',   serial: 'N/A' }
+                { tag: 'CHUB/MCH NBM/292', dept: 'Laboratory', loc: 'Sterilization',        type: 'Fridge',          brand: '(unspecified)',      model: 'BPR-5V1000',                     serial: 'YC100025211042',                 lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/289', dept: 'Laboratory', loc: 'TB-service',           type: 'Fridge',          brand: '(unspecified)',      model: 'DFK350',                         serial: '2453977733808',                  lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/287', dept: 'Laboratory', loc: 'Microbiology',         type: 'Upright Freezer', brand: '(unspecified)',      model: '729RELH (Not working)',          serial: '810438-166',                     lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/293', dept: 'Laboratory', loc: 'Hematology',           type: 'Fridge',          brand: '(unspecified)',      model: 'LIEBHERR',                       serial: '782209264',                      lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/110', dept: 'Laboratory', loc: 'PRE-PCR',              type: 'Fridge',          brand: '(unspecified)',      model: 'LIEBHERR profline',              serial: '80.042.188.3',                   lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/118', dept: 'Laboratory', loc: 'Bacteriology',         type: 'Fridge',          brand: '(unspecified)',      model: 'LIEBHERR Medline',               serial: 'N/A',                            lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/345', dept: 'Laboratory', loc: 'Bacteriology',         type: 'Fridge',          brand: '(unspecified)',      model: '(unspecified)',                  serial: 'N/A',                            lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/TBD-08', dept: 'Laboratory', loc: 'Anatomical',        type: 'Fridge',          brand: '(unspecified)',      model: 'BRF-40V450',                     serial: 'BRF40V45025240044C',             lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/289', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'liebherr',                       serial: '2910989',                        lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/285', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'Samsung',                        serial: '_',                              lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/341', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'Samsung',                        serial: '_',                              lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/281', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'Bompani (Partial working)',      serial: 'KE0099K200100120',               lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/280', dept: 'Laboratory', loc: 'Fridge room',          type: 'Upright Freezer', brand: 'Haier',              model: 'DW-86L388J',                     serial: 'BEQH94E1T000GN8R004',            lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/283', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: 'Nikai',              model: 'Nikai',                          serial: 'KE076E103030125',                lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/284', dept: 'Laboratory', loc: 'Fridge room',          type: 'Upright Freezer', brand: '(unspecified)',      model: 'ULTF420',                        serial: '20084120264',                    lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/313', dept: 'Laboratory', loc: 'Store service',        type: 'Fridge',          brand: '(unspecified)',      model: 'LG vitamin',                     serial: '002IMUW00070',                   lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/316', dept: 'Laboratory', loc: 'Store service',        type: 'Fridge',          brand: 'Liebherr',           model: 'Liebherr',                       serial: '80.667.864.9',                   lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/315', dept: 'Laboratory', loc: 'Store service',        type: 'Fridge',          brand: 'Bompani',            model: 'Bompani',                        serial: '4A74814316',                     lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/314', dept: 'Laboratory', loc: 'Store service',        type: 'Fridge',          brand: '(unspecified)',      model: 'Super general',                  serial: 'INA032808083',                   lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/342', dept: 'Laboratory', loc: 'Lab sterilization',    type: 'Fridge',          brand: 'Skyworth',           model: 'SRS-300DJ',                      serial: '1674',                           lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/288', dept: 'Laboratory', loc: 'TB-service',           type: 'Fridge',          brand: 'Haier',              model: 'Haier',                          serial: '_',                              lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/294', dept: 'Laboratory', loc: 'Hematology',           type: 'Fridge',          brand: 'Haier',              model: 'HXC-6295',                       serial: 'BEOHC5EAPOOQJQ360017',           lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/296', dept: 'Laboratory', loc: 'Biochemistry',         type: 'Fridge',          brand: 'Haier',              model: 'Haier',                          serial: 'BEOHC9EAPOOQ350012',             lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/301', dept: 'Laboratory', loc: 'Immunoserology',       type: 'Fridge',          brand: 'Haier',              model: 'HXC-6295',                       serial: 'BEOHC5EAPOOQJQ37003',            lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/311', dept: 'Laboratory', loc: 'Molecular clean room', type: 'Fridge',          brand: 'Liebherr',           model: 'Liebherr',                       serial: '49.360.505.8',                   lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/343', dept: 'Laboratory', loc: 'Bacteriology',         type: 'Fridge',          brand: 'Liebherr',           model: 'Liebherr',                       serial: '782209257',                      lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH/NBM/349', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr-profi-line',model: 'Liebherr (Not working)',         serial: '99831305.04',                    lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH/NBM/117', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Bompani Biomedica',  model: 'Bompani Biomedica (Not working)',serial: '33150056',                       lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/PATH/MICR/PAR/FRG/060', dept: 'Laboratory', loc: 'Pathology',   type: 'Fridge',          brand: 'V110KE (Subir)',     model: 'V110KE (Subir) (Not working)',   serial: '1900047',                        lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH/NBM/1440',dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr Profi-line',model: 'Liebherr Profi-line (Not working)',serial: '180.042.190.6(9265007-00',      lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/050', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Skyworth',           model: 'SRS-300DJ (Not working)',        serial: '1666',                           lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/344', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr',           model: 'Liebherr (Not working)',         serial: 'N/A',                            lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/TBD-33', dept: 'Laboratory', loc: 'Pathology',         type: 'Fridge',          brand: 'Haier Biomedical',   model: 'HYC-309',                        serial: 'BEOUD6E0000QERCQOO1',            lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/TBD-34', dept: 'Laboratory', loc: 'Pathology',         type: 'Upright Freezer', brand: 'Haier Biomedical',   model: 'DW-30L298J',                     serial: 'BEQYC1D0000Q3RBE0004',           lastPmDate: '', nextPmDate: '' },
+                { tag: 'CHUB/MCH NBM/TBD-35', dept: 'Laboratory', loc: 'Pathology',         type: 'Upright Freezer', brand: 'Haier Biomedical',   model: 'DW-30L298J',                     serial: 'BEOYC1D0000QJRBE0004',           lastPmDate: '', nextPmDate: '' }
             ];
 
             let AC_INVENTORY = [];
@@ -1366,7 +1369,6 @@
                 return `${tag}::${loc}::${serial}::${model}`;
             }
 
-            // ================= DOM =================
             const acSelect = document.getElementById('acSelect');
             const technicianSelect = document.getElementById('technicianSelect');
             const signoffTechName = document.getElementById('signoffTechName');
@@ -1399,7 +1401,6 @@
             let currentInchargeDept = '';
             let supervisorStatusFilter = 'all';
 
-            // ================= STATUS / SYNC =================
             function showStatus(msg, isSuccess = true) {
                 statusText.textContent = msg;
                 statusMessage.style.background = isSuccess ? '#e2f0e6' : '#ffe6e6';
@@ -1438,7 +1439,6 @@
                 else { const q = getQueue(); q.push(data); saveQueue(q); setSyncStatus('offline', 'Offline — queued'); showStatus('📥 Saved locally — will sync when online.', false); return false; }
             }
 
-            // ================= DATE =================
             function setAutoWorkDate() {
                 const today = new Date();
                 const yyyy = today.getFullYear();
@@ -1463,7 +1463,6 @@
                 if (signoffNextPm) signoffNextPm.textContent = label;
             }
 
-            // ================= REF SELECTOR =================
             function renderAcSelector() {
                 acSelect.innerHTML = '';
                 if (AC_INVENTORY.length === 0) {
@@ -1514,7 +1513,6 @@
                 }
             }
 
-            // ================= IN-CHARGE NAME SUGGESTIONS =================
             async function populateInchargeSuggestions() {
                 const datalist = document.getElementById('inchargeSuggestions');
                 const loginDatalist = document.getElementById('loginInchargeSuggestions');
@@ -1527,19 +1525,20 @@
                 });
             }
 
-            // ================= ADD/REMOVE REF =================
             const addAcModal = document.getElementById('addAcModal');
             const newAcDeptSelect = document.getElementById('newAcDept');
             const newAcLocationSelect = document.getElementById('newAcLocation');
 
             function populateDepartmentSelect() {
                 if (!newAcDeptSelect) return;
+                const current = newAcDeptSelect.value;
                 newAcDeptSelect.innerHTML = '';
                 Object.keys(DEPARTMENTS).forEach(d => {
                     const opt = document.createElement('option');
                     opt.value = d; opt.textContent = d;
                     newAcDeptSelect.appendChild(opt);
                 });
+                if (current && DEPARTMENTS[current]) newAcDeptSelect.value = current;
                 populateServiceSelect();
             }
             function populateLoginDepartmentSelect() {
@@ -1568,11 +1567,11 @@
             document.getElementById('addAcBtn').addEventListener('click', () => {
                 document.getElementById('addAcOwnerName').textContent = technicianSelect.value || '—';
                 populateDepartmentSelect();
+                document.getElementById('dupWarning').classList.remove('show');
                 addAcModal.classList.add('show');
             });
             document.getElementById('addAcCancel').addEventListener('click', () => { addAcModal.classList.remove('show'); });
 
-            // Auto-fill Next PM when Last PM changes
             document.getElementById('newAcLastPm')?.addEventListener('change', function() {
                 const nd = getNextRefPmDate_(this.value);
                 if (nd) document.getElementById('newAcNextPm').value = toIsoDate_(nd);
@@ -1580,6 +1579,39 @@
             document.getElementById('editAcLastPm')?.addEventListener('change', function() {
                 const nd = getNextRefPmDate_(this.value);
                 if (nd) document.getElementById('editAcNextPm').value = toIsoDate_(nd);
+            });
+
+            // ---- Duplicate check helper ----
+            async function findEquipmentByTag(tag) {
+                const target = normalizeText(tag);
+                if (!target) return null;
+                const allInv = await fetchAllInventory();
+                if (!allInv || !allInv.length) return null;
+                return allInv.find(x => normalizeText(x.tag) === target) || null;
+            }
+
+            // Auto-check on tag blur/change in Add modal
+            document.getElementById('newAcTag')?.addEventListener('blur', async function() {
+                const tag = this.value.trim();
+                const dupBox = document.getElementById('dupWarning');
+                if (!tag) { dupBox.classList.remove('show'); return; }
+                const existing = await findEquipmentByTag(tag);
+                if (!existing) { dupBox.classList.remove('show'); return; }
+                const owner = existing.technician || '(unknown)';
+                document.getElementById('dupWarningBody').innerHTML =
+                    `<div class="dup-row"><strong>Tag:</strong> ${escapeHtml(existing.tag || '—')}</div>
+                     <div class="dup-row"><strong>Location:</strong> ${escapeHtml(existing.loc || '—')}</div>
+                     <div class="dup-row"><strong>Brand / Model:</strong> ${escapeHtml((existing.brand || '') + ' ' + (existing.model || ''))}</div>
+                     <div class="dup-row"><strong>Added by:</strong> ${escapeHtml(owner)}</div>`;
+                dupBox.classList.add('show');
+                document.getElementById('dupEditBtn').onclick = () => {
+                    addAcModal.classList.remove('show');
+                    openEditAcModal(existing);
+                };
+            });
+
+            document.getElementById('dupDismissBtn')?.addEventListener('click', () => {
+                document.getElementById('dupWarning').classList.remove('show');
             });
 
             document.getElementById('addAcSave').addEventListener('click', async () => {
@@ -1596,6 +1628,20 @@
                 if (!tag || !dept || !loc || !brand || !model) { alert('Please fill in all required fields marked with *'); return; }
                 const ownerTech = technicianSelect.value;
                 if (!ownerTech) { alert('You must be logged in to add a refrigerator.'); return; }
+
+                // Final duplicate check
+                const existing = await findEquipmentByTag(tag);
+                if (existing) {
+                    const owner = existing.technician || '(unknown)';
+                    const proceed = confirm(
+                        '⚠️ DUPLICATE TAG\n\n' +
+                        'Tag: ' + tag + '\n' +
+                        'Already added by: ' + owner + '\n' +
+                        'Location: ' + (existing.loc || '—') + '\n\n' +
+                        'Do you want to save anyway? (Better: cancel and edit the existing one.)'
+                    );
+                    if (!proceed) return;
+                }
 
                 const saveBtn = document.getElementById('addAcSave');
                 saveBtn.disabled = true;
@@ -1622,6 +1668,7 @@
                 document.getElementById('newAcSerial').value = '';
                 document.getElementById('newAcLastPm').value = '';
                 document.getElementById('newAcNextPm').value = '';
+                document.getElementById('dupWarning').classList.remove('show');
                 addAcModal.classList.remove('show');
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '💾 Save Refrigerator to Cloud';
@@ -1645,7 +1692,14 @@
                 renderAcSelector();
             });
 
-            // ================= TECH DISPLAY =================
+            // ---- Edit current fridge (technician-facing) ----
+            document.getElementById('editAcBtn').addEventListener('click', () => {
+                const idx = acSelect.value;
+                if (idx === '' || !AC_INVENTORY[idx]) { showStatus('⚠️ No refrigerator selected.', false); return; }
+                const ac = AC_INVENTORY[idx];
+                openEditAcModal(ac);
+            });
+
             function updateTechnicianDisplay() {
                 if (!technicianSelect) return;
                 const name = technicianSelect.value;
@@ -1663,7 +1717,6 @@
                 }
             }
 
-            // ================= ROLE VISIBILITY =================
             function applyRoleVisibility() {
                 const isIncharge = currentRole === 'incharge';
                 const isSupervisor = currentRole === 'supervisor';
@@ -1698,7 +1751,6 @@
                 }
             }
 
-            // ================= COLLECT FORM DATA =================
             function getTickedItems(startNum, endNum) {
                 const items = [];
                 for (let i = startNum; i <= endNum; i++) {
@@ -1734,7 +1786,6 @@
                 };
             }
 
-            // ================= REMOTE LOGS =================
             async function fetchAllLogs() {
                 const url = GOOGLE_SHEET_URL + '?type=ref_logs&_ts=' + Date.now();
                 const res = await fetch(url, { method: 'GET', cache: 'no-store' });
@@ -1762,7 +1813,6 @@
                 } catch (e) { return { ok: false, error: e.message }; }
             }
 
-            // ================= SIGN-OFF =================
             signOffBtn.addEventListener('click', async function() {
                 const data = collectFormData();
                 if (!data) return;
@@ -1816,7 +1866,6 @@
             }
             resetBtn.addEventListener('click', () => { lastSubmittedSnapshot = null; resetForm(true); });
 
-            // ================= QR CODE GENERATION =================
             function buildAcInfoUrl(ac) {
                 const base = window.location.origin + window.location.pathname;
                 return base + '?refinfo=' + encodeURIComponent(ac.tag || '');
@@ -1917,7 +1966,6 @@
                 setTimeout(() => { window.print(); setTimeout(() => { printArea.style.display = 'none'; }, 500); }, 200);
             });
 
-            // ================= PUBLIC REF INFO PAGE =================
             function initAcInfoPage() {
                 const params = new URLSearchParams(window.location.search);
                 const tag = params.get('refinfo');
@@ -1972,7 +2020,7 @@
                     type: latest['Type'] || 'Fridge'
                 };
                 const lastWorkDate = latest['Work Date'] || latest['Timestamp'] || '';
-                const nextDate = getNextRefPmDate_(lastWorkDate);   // quarterly
+                const nextDate = getNextRefPmDate_(lastWorkDate);
                 const now = new Date();
                 const daysUntil = nextDate ? Math.round((nextDate - now) / 86400000) : 9999;
                 let status = 'maintained';
@@ -2070,13 +2118,11 @@
                 `;
             }
 
-            // ================= INIT =================
             const showingPublicInfo = initAcInfoPage();
             if (showingPublicInfo) {
                 document.querySelector('.app-container').style.display = 'none';
             }
 
-            // ================= IN-CHARGE: PENDING APPROVALS =================
             const pendingApprovalsList = document.getElementById('pendingApprovalsList');
             const pendingApprovalsCount = document.getElementById('pendingApprovalsCount');
 
@@ -2183,7 +2229,6 @@
                 setTimeout(() => refreshPendingApprovals(), 800);
             });
 
-            // ================= IN-CHARGE: DEPARTMENT INVENTORY =================
             function inferDepartmentFromIncharge(inchargeName) {
                 for (const dept of Object.keys(DEPARTMENTS)) {
                     if (normalizeText(DEPARTMENTS[dept].defaultIncharge) === normalizeText(inchargeName)) return dept;
@@ -2201,11 +2246,10 @@
                     return rid === myId;
                 }).sort((a, b) => recordTime(b) - recordTime(a));
 
-                // 1) Real PM logs are the source of truth
                 if (myRecords.length > 0) {
                     const lastPm = myRecords[0];
                     const lastDate = safeStr(lastPm['Work Date'] || lastPm.workDate);
-                    const nextDate = getNextRefPmDate_(lastDate);   // quarterly
+                    const nextDate = getNextRefPmDate_(lastDate);
                     const nextDateStr = nextDate ? nextDate.toISOString().slice(0, 10) : '';
                     const daysUntil = nextDate ? Math.round((nextDate - now) / 86400000) : 9999;
                     let status;
@@ -2215,7 +2259,6 @@
                     return { status, lastPm: lastDate, nextPm: nextDateStr, source: 'log' };
                 }
 
-                // 2) Fallback: technician-entered dates from inventory
                 if (ac.lastPmDate || ac.nextPmDate) {
                     const lastDate = ac.lastPmDate || '';
                     const nextDate = ac.nextPmDate || '';
@@ -2232,7 +2275,6 @@
                     return { status, lastPm: lastDate, nextPm: nextDate, source: 'inventory' };
                 }
 
-                // 3) Nothing
                 return { status: 'never', lastPm: null, nextPm: null, source: 'none' };
             }
 
@@ -2302,7 +2344,6 @@
                 });
             });
 
-            // ================= IN-CHARGE DOWNLOAD BUTTONS =================
             document.getElementById('inchargeDownloadAllBtn').addEventListener('click', async function() {
                 this.disabled = true;
                 const orig = this.innerHTML;
@@ -2341,7 +2382,6 @@
                 this.disabled = false; this.innerHTML = orig;
             });
 
-            // ================= MANAGER / SUPERVISOR FUNCTIONS (read-only) =================
             function populateSupervisorDeptFilter() {
                 const sel = document.getElementById('supervisorDeptFilter');
                 const sel2 = document.getElementById('supervisorAnalysisDept');
@@ -2393,10 +2433,8 @@
                 const records = await fetchAllLogs();
                 const now = new Date();
 
-                // Build status for every fridge once
                 const allRows = allInv.map(ac => ({ ac, ...computeAcStatus(ac, records, now) }));
 
-                // KPI grid (uses full set, not filtered)
                 const kpi = {
                     total: allRows.length,
                     maintained: allRows.filter(r => r.status === 'maintained').length,
@@ -2439,7 +2477,6 @@
                     `;
                 }
 
-                // Table (respects filters)
                 const deptFilter = document.getElementById('supervisorDeptFilter')?.value || 'all';
                 const rows = allRows
                     .filter(r => deptFilter === 'all' || normalizeText(r.ac.dept) === normalizeText(deptFilter))
@@ -2467,7 +2504,6 @@
                 }).join('');
             }
 
-            // Per-department / full-fleet analysis downloads (summary only — no checklists)
             document.getElementById('supervisorDownloadDeptAnalysisBtn')?.addEventListener('click', async function() {
                 const dept = document.getElementById('supervisorAnalysisDept')?.value || '';
                 if (!dept) { showStatus('⚠️ Please pick a department first.', false); return; }
@@ -2497,7 +2533,6 @@
                 this.disabled = false; this.innerHTML = orig;
             });
 
-            // ================= PDF GENERATION =================
             async function generatePDF(records) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -2599,7 +2634,6 @@
                     let y = addHeader(data);
 
                     const deptLabel = sanitizeForPDF(data.refDept || data['Department'] || '—');
-                    const inchargeNameRec = sanitizeForPDF(data.inchargeName || data['In-Charge Name'] || '—');
                     doc.setFillColor(30, 74, 109);
                     doc.rect(margin, y, contentWidth, 15, 'F');
                     doc.setTextColor(255, 255, 255);
@@ -3082,7 +3116,6 @@
                 } catch (e) { return null; }
             }
 
-            // ================= TECHNICIAN PDF BUTTONS =================
             pdfBtn.addEventListener('click', async function() {
                 const current = collectFormData();
                 if (!current) return;
@@ -3114,7 +3147,6 @@
                 this.disabled = false; this.innerHTML = orig;
             });
 
-            // ================= SIGNATURE MODAL =================
             const signatureModal = document.getElementById('signatureModal');
             const sigFileInput = document.getElementById('sigFileInput');
             const inchargeSigInput = document.getElementById('inchargeSigInput');
@@ -3288,7 +3320,6 @@
                 populateInchargeSuggestions();
             });
 
-            // ================= EDIT REF MODAL =================
             const editAcModal = document.getElementById('editAcModal');
             const editAcDeptSelect = document.getElementById('editAcDept');
             const editAcLocationSelect = document.getElementById('editAcLocation');
@@ -3319,7 +3350,21 @@
                 document.getElementById('editAcTag').value = ac.tag || '';
                 document.getElementById('editAcDept').value = ac.dept || Object.keys(DEPARTMENTS)[0] || '';
                 populateEditAcServiceSelect();
-                document.getElementById('editAcLocation').value = ac.loc || '';
+                // If location is not in the list, add it as an extra option
+                const locSel = document.getElementById('editAcLocation');
+                const wanted = ac.loc || '';
+                if (wanted) {
+                    let found = false;
+                    for (let i = 0; i < locSel.options.length; i++) {
+                        if (locSel.options[i].value === wanted) { found = true; break; }
+                    }
+                    if (!found) {
+                        const opt = document.createElement('option');
+                        opt.value = wanted; opt.textContent = wanted + ' (existing)';
+                        locSel.appendChild(opt);
+                    }
+                    locSel.value = wanted;
+                }
                 document.getElementById('editAcBrand').value = ac.brand || '';
                 document.getElementById('editAcModel').value = ac.model || '';
                 document.getElementById('editAcType').value = ac.type || 'Fridge';
@@ -3357,6 +3402,11 @@
                 const allInv = await fetchAllInventory();
                 const targetId = buildAcIdentity({ refTag: original.tag, refLocation: original.loc, refSerial: original.serial, refModel: original.model });
                 const remaining = allInv.filter(x => buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model }) !== targetId);
+
+                // Preserve original technician if it exists
+                const preservedTechnician = original.technician || technicianSelect.value || DEFAULT_LIST_OWNER;
+                updated.technician = preservedTechnician;
+
                 remaining.push(updated);
                 const ownerTech = technicianSelect.value;
                 await pushInventoryToCloud(ownerTech, remaining);
@@ -3364,9 +3414,16 @@
                 editAcModal.classList.remove('show');
                 this.disabled = false;
                 this.innerHTML = orig;
+
+                // Refresh local inventory if the edited item is mine
+                try {
+                    let inv = await fetchInventoryFromCloud(technicianSelect.value);
+                    AC_INVENTORY = inv;
+                    cacheInventoryLocally(technicianSelect.value, inv);
+                    renderAcSelector();
+                } catch (e) {}
             });
 
-            // ================= LOGIN / LOGOUT =================
             const loginModal = document.getElementById('loginModal');
             const loginRoleSelect = document.getElementById('loginRoleSelect');
             const loginTechSelect = document.getElementById('loginTechSelect');
@@ -3442,6 +3499,7 @@
                     try {
                         let inv = await fetchInventoryFromCloud(payload.name);
                         if (inv.length === 0 && payload.name === DEFAULT_LIST_OWNER) {
+                            // First-time seed for the default owner — preload the full Laboratory list
                             inv = DEFAULT_REF_INVENTORY.slice();
                             await pushInventoryToCloud(payload.name, inv);
                         }
@@ -3518,7 +3576,6 @@
             loginPinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); } });
             logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lockApp(); showStatus('Logged out.', true); } });
 
-            // ================= INIT =================
             if (!showingPublicInfo) {
                 workDateInput.addEventListener('change', updateWorkDateDisplay);
                 syncBtn.addEventListener('click', flushQueue);
