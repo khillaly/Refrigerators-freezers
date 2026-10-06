@@ -3642,12 +3642,16 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
         refSerial: r['Serial Number'] || r.refSerial,
         refModel: r['Model'] || r.refModel
     })));
-    const notServiced = invInDept.filter(ac =>
-        !servicedIds.has(buildAcIdentity({
-            refTag: ac.tag, refLocation: ac.loc,
-            refSerial: ac.serial, refModel: ac.model
-        }))
-    );
+   const notServiced = invInDept.filter(ac => {
+    // Exclude Not-Working fridges — they belong in their own section
+    const ws = normalizeText(safeStr(ac.workingStatus || 'Working'));
+    if (ws === 'NOT WORKING') return false;
+    // Include only fridges that had no PM in the period
+    return !servicedIds.has(buildAcIdentity({
+        refTag: ac.tag, refLocation: ac.loc,
+        refSerial: ac.serial, refModel: ac.model
+    }));
+});
 
     // ---------- Fetch technician signature ----------
     const techName = opts.tech;
