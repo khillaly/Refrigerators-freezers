@@ -919,16 +919,11 @@
             </div>
 
             <div class="field-group">
-                <label>Scope</label>
-                <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:4px;">
-                    <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
-                        <input type="radio" name="analysisScope" value="mine" checked> Only my PMs
-                    </label>
-                    <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
-                        <input type="radio" name="analysisScope" value="all"> All technicians
-                    </label>
-                </div>
-            </div>
+    <label>Scope</label>
+    <div style="background:#eef6fc; border-left:3px solid #1e4a6d; padding:10px 14px; border-radius:8px; font-size:0.85rem; color:#12405e; font-weight:600;">
+        🔒 Only <strong id="analysisScopeName">your own</strong> PM records will be included.
+    </div>
+</div>
 
             <div id="analysisError" style="color:#b33a3a; font-size:0.85rem; min-height:18px;"></div>
 
@@ -3523,7 +3518,7 @@
                 }
                 this.disabled = false; this.innerHTML = orig;
             });
-             // ==================== PM ANALYSIS (PERIOD + DEPARTMENT) ====================
+ // ==================== PM ANALYSIS (PERIOD + DEPARTMENT) ====================
 
 const analysisModal = document.getElementById('analysisModal');
 const analysisFrom  = document.getElementById('analysisFrom');
@@ -3531,20 +3526,17 @@ const analysisTo    = document.getElementById('analysisTo');
 const analysisDept  = document.getElementById('analysisDept');
 const analysisError = document.getElementById('analysisError');
 
-// Populate the department dropdown from the loaded DEPARTMENTS object
 function populateAnalysisDeptSelect() {
     const current = analysisDept.value || 'all';
     analysisDept.innerHTML = '<option value="all">🏢 All Departments</option>';
     Object.keys(DEPARTMENTS).forEach(d => {
         const o = document.createElement('option');
-        o.value = d;
-        o.textContent = d;
+        o.value = d; o.textContent = d;
         analysisDept.appendChild(o);
     });
     analysisDept.value = current;
 }
 
-// Set default dates: last 90 days
 function setDefaultAnalysisDates() {
     const today = new Date();
     const past  = new Date();
@@ -3558,6 +3550,9 @@ document.getElementById('analysisBtn').addEventListener('click', () => {
     populateAnalysisDeptSelect();
     setDefaultAnalysisDates();
     analysisError.textContent = '';
+    // Show the logged-in technician's name in the scope note
+    const nameSpan = document.getElementById('analysisScopeName');
+    if (nameSpan) nameSpan.textContent = (currentLoggedInName || 'your own');
     analysisModal.classList.add('show');
 });
 
@@ -3569,10 +3564,15 @@ document.getElementById('analysisGenerate').addEventListener('click', async func
     const from = analysisFrom.value;
     const to   = analysisTo.value;
     const dept = analysisDept.value || 'all';
-    const scope = document.querySelector('input[name="analysisScope"]:checked')?.value || 'mine';
+
+    // 🔒 ALWAYS force "only my PMs" for technicians
+    const techFilter = currentLoggedInName || technicianSelect.value;
+    if (!techFilter) {
+        analysisError.textContent = 'You must be logged in.';
+        return;
+    }
 
     analysisError.textContent = '';
-
     if (!from) { analysisError.textContent = 'Please pick a From date.'; return; }
     if (!to)   { analysisError.textContent = 'Please pick a To date.'; return; }
     if (from > to) { analysisError.textContent = 'From date must be before To date.'; return; }
@@ -3585,8 +3585,10 @@ document.getElementById('analysisGenerate').addEventListener('click', async func
         const allLogs = await fetchAllLogs();
         const allInv  = await fetchAllInventory();
 
-        const techFilter = (scope === 'mine') ? (currentLoggedInName || technicianSelect.value) : '';
-        await generatePmAnalysisPDF(allLogs, allInv, { from, to, dept, tech: techFilter });
+        await generatePmAnalysisPDF(allLogs, allInv, {
+            from, to, dept,
+            tech: techFilter      // 🔒 locked to the logged-in technician
+        });
         showStatus('📊 PM Analysis PDF generated.', true);
         analysisModal.classList.remove('show');
     } catch (err) {
@@ -3597,19 +3599,13 @@ document.getElementById('analysisGenerate').addEventListener('click', async func
     this.innerHTML = orig;
 });
 
-/**
- * Generate the PM Analysis PDF.
- *   logs     : array of PM log records
- *   inventory: array of fridge records
- *   opts     : { from, to, dept, tech }
- */
 async function generatePmAnalysisPDF(logs, inventory, opts) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = 210, pageH = 297, mL = 14, mR = 14;
     const cW = pageW - mL - mR;
 
-    // ---------- Filter the logs ----------
+    // ---------- Filter logs (period + dept + technician) ----------
     const fromTs = new Date(opts.from + 'T00:00:00').getTime();
     const toTs   = new Date(opts.to   + 'T23:59:59').getTime();
 
@@ -3621,30 +3617,25 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     };
     const deptMatches = r => {
         if (opts.dept === 'all') return true;
-        const rd = normalizeText(r['Department'] || r.refDept || '');
-        return rd === normalizeText(opts.dept);
+        return normalizeText(r['Department'] || r.refDept || '') === normalizeText(opts.dept);
     };
     const techMatches = r => {
         if (!opts.tech) return true;
-        const rt = normalizeText(r['Technician'] || r.technician || '');
-        return rt === normalizeText(opts.tech);
+        return normalizeText(r['Technician'] || r.technician || '') === normalizeText(opts.tech);
     };
 
     const filteredLogs = logs.filter(r => inRange(r) && deptMatches(r) && techMatches(r));
 
-    // ---------- Filter the inventory ----------
+    // ---------- Inventory filter ----------
     const invInDept = inventory.filter(ac => {
         if (opts.dept === 'all') return true;
         return normalizeText(ac.dept) === normalizeText(opts.dept);
     });
 
-    // Not-working fridges
     const notWorking = invInDept.filter(ac => {
-        const ws = safeStr(ac.workingStatus || 'Working');
-        return normalizeText(ws) === 'NOT WORKING';
+        return normalizeText(safeStr(ac.workingStatus || 'Working')) === 'NOT WORKING';
     });
 
-    // Fridges in the dept that got NO PM during the period
     const servicedIds = new Set(filteredLogs.map(r => buildAcIdentity({
         refTag: r['Ref Tag'] || r['AC Tag'] || r.refTag,
         refLocation: r['Location'] || r.refLocation,
@@ -3652,10 +3643,31 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
         refModel: r['Model'] || r.refModel
     })));
     const notServiced = invInDept.filter(ac =>
-        !servicedIds.has(buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model }))
+        !servicedIds.has(buildAcIdentity({
+            refTag: ac.tag, refLocation: ac.loc,
+            refSerial: ac.serial, refModel: ac.model
+        }))
     );
 
-    // ---------- Draw header ----------
+    // ---------- Fetch technician signature ----------
+    const techName = opts.tech;
+    let techVisualSig = getSignatureFor(techName);
+    if (!techVisualSig) {
+        try {
+            const res = await fetch(GOOGLE_SHEET_URL + '?type=config&_ts=' + Date.now(), { cache: 'no-store' });
+            const json = await res.json();
+            const cfg = json.config || {};
+            const cloudSig = cfg['TechSig_' + techName];
+            if (cloudSig) {
+                techVisualSig = cloudSig.startsWith('data:') ? cloudSig : ('data:image/png;base64,' + cloudSig);
+                saveSignatureFor(techName, techVisualSig);
+            }
+        } catch (e) {}
+    }
+    let techSigDims = null;
+    if (techVisualSig) techSigDims = await loadImageDimensions(techVisualSig);
+
+    // ---------- Header ----------
     doc.setFillColor(30, 74, 109); doc.rect(0, 0, pageW, 6, 'F');
     doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(18, 64, 94);
     doc.text('Refrigerator PM Analysis', mL, 20);
@@ -3719,7 +3731,7 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     });
     y += Math.ceil(kpis.length / perRow) * (boxH + 4) + 4;
 
-    // ---------- Section: PMs in period ----------
+    // ---------- Helpers ----------
     function sectionHeader(title, color) {
         if (y > pageH - 30) { doc.addPage(); y = 20; }
         doc.setFillColor.apply(doc, color);
@@ -3762,7 +3774,7 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     }
     y += 4;
 
-    // --- PMs by department (only if scope is 'all') ---
+    // --- PMs by department (only if dept = all) ---
     if (opts.dept === 'all') {
         sectionHeader('PMs BY DEPARTMENT', [238, 246, 252]);
         const byDept = {};
@@ -3785,11 +3797,10 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     sectionHeader('NOT-WORKING FRIDGES', [255, 235, 235]);
     if (notWorking.length === 0) {
         doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
-        doc.text('✅ No fridges currently flagged as Not Working.', mL + 2, y + 3); y += 8;
+        doc.text('No fridges currently flagged as Not Working.', mL + 2, y + 3); y += 8;
     } else {
         tableHeader(['Tag', 'Location', 'Brand / Model', 'Last PM'], [40, 45, cW - 40 - 45 - 25, 25]);
         notWorking.forEach((ac, i) => {
-            // Find last PM for this fridge
             const id = buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model });
             const relevant = logs.filter(r => buildAcIdentity({
                 refTag: r['Ref Tag'] || r['AC Tag'] || r.refTag,
@@ -3798,7 +3809,6 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
                 refModel: r['Model'] || r.refModel
             }) === id).sort((a,b) => recordTime(b) - recordTime(a));
             const lastPm = relevant[0] ? formatDateOnly(relevant[0]['Work Date'] || relevant[0].workDate) : '—';
-
             tableRow(
                 [ac.tag || '—', ac.loc || '—', (ac.brand || '') + ' ' + (ac.model || ''), lastPm],
                 [40, 45, cW - 40 - 45 - 25, 25],
@@ -3812,7 +3822,7 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     sectionHeader('NEVER SERVICED IN PERIOD', [255, 243, 205]);
     if (notServiced.length === 0) {
         doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
-        doc.text('✅ All fridges in scope were serviced at least once in the period.', mL + 2, y + 3); y += 8;
+        doc.text('All fridges in scope were serviced at least once in the period.', mL + 2, y + 3); y += 8;
     } else {
         tableHeader(['Tag', 'Location', 'Brand / Model', 'Working?'], [40, 45, cW - 40 - 45 - 25, 25]);
         notServiced.forEach((ac, i) => {
@@ -3862,18 +3872,83 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     const anomalyRows = Object.keys(attentionMap).filter(k => attentionMap[k] > 0).map(k => [k, attentionMap[k]]);
     if (anomalyRows.length === 0) {
         doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
-        doc.text('✅ No anomalies flagged in this period.', mL + 2, y + 3);
+        doc.text('No anomalies flagged in this period.', mL + 2, y + 3); y += 6;
     } else {
         tableHeader(['Checklist Item', 'Times Flagged'], [cW - 30, 30]);
         anomalyRows.forEach((row, i) => tableRow(row, [cW - 30, 30], { shade: i % 2 === 1 }));
     }
 
+    // ---------- SIGNATURE BLOCK (NEW) ----------
+    // Reserve space. If not enough room on current page, add one.
+    const sigBoxH = 40;
+    if (y > pageH - sigBoxH - 12) { doc.addPage(); y = 20; }
+    y += 4;
+
+    // Section header
+    doc.setFillColor(240, 246, 252); doc.setDrawColor(207, 224, 238); doc.setLineWidth(0.3);
+    doc.roundedRect(mL, y, cW, sigBoxH, 2, 2, 'FD');
+
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(91, 123, 150);
+    doc.text('PREPARED AND ANALYSED BY (TECHNICIAN)', mL + 3, y + 5);
+
+    // Left column: technician name + date
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(10, 42, 63);
+    doc.text(sanitizeForPDF(opts.tech || '—'), mL + 3, y + 12);
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(58, 101, 131);
+    doc.text('Report period: ' + formatDateOnly(opts.from) + ' → ' + formatDateOnly(opts.to), mL + 3, y + 17);
+    doc.text('Generated on: ' + new Date().toLocaleString('en-GB'), mL + 3, y + 21);
+    doc.text('Scope: ' + (opts.dept === 'all' ? 'All departments' : opts.dept), mL + 3, y + 25);
+
+    // Right column: visual signature box
+    const sigAreaW = 70;
+    const sigAreaH = 22;
+    const sigAreaX = mL + cW - sigAreaW - 4;
+    const sigAreaY = y + 6;
+    doc.setDrawColor(200, 215, 230); doc.setLineWidth(0.3);
+    doc.roundedRect(sigAreaX, sigAreaY, sigAreaW, sigAreaH, 1.5, 1.5, 'S');
+
+    let drawn = false;
+    if (techVisualSig) {
+        try {
+            let w = sigAreaW - 6;
+            let h = sigAreaH - 6;
+            if (techSigDims && techSigDims.width > 0 && techSigDims.height > 0) {
+                const aspect = techSigDims.width / techSigDims.height;
+                h = w / aspect;
+                if (h > sigAreaH - 4) { h = sigAreaH - 4; w = h * aspect; }
+            }
+            const sx = sigAreaX + (sigAreaW - w) / 2;
+            const sy = sigAreaY + (sigAreaH - h) / 2;
+            doc.addImage(techVisualSig, 'PNG', sx, sy, w, h);
+            drawn = true;
+        } catch (e) {}
+    }
+    if (!drawn) {
+        doc.setFontSize(6); doc.setFont('helvetica', 'italic'); doc.setTextColor(156, 185, 208);
+        doc.text('(no visual signature on file)', sigAreaX + sigAreaW / 2, sigAreaY + sigAreaH / 2 + 1, { align: 'center' });
+    }
+    doc.setFontSize(6); doc.setFont('helvetica', 'italic'); doc.setTextColor(91, 123, 150);
+    doc.text('Signature', sigAreaX + sigAreaW / 2, sigAreaY + sigAreaH + 3, { align: 'center' });
+
+    // Digital signature note if cert loaded
+    if (isCertLoaded()) {
+        doc.setFillColor(226, 240, 230); doc.setDrawColor(27, 107, 63); doc.setLineWidth(0.3);
+        doc.roundedRect(mL + 3, y + sigBoxH - 12, cW - 6, 9, 1.5, 1.5, 'FD');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(27, 107, 63);
+        doc.text('PDF DIGITALLY SIGNED (PKCS#7)', mL + 5, y + sigBoxH - 8.5);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(5.5); doc.setTextColor(58, 101, 131);
+        doc.text('Subject: ' + sanitizeForPDF(CERT_STATE.subject || '—').substring(0, 90), mL + 5, y + sigBoxH - 4.5);
+    }
+
     // ---------- Footer ----------
     doc.setFontSize(7); doc.setTextColor(150, 170, 190);
-    doc.text('CHUB Refrigerator Fleet PM System · PM Analysis Report', pageW / 2, pageH - 6, { align: 'center' });
+    doc.text('CHUB Refrigerator Fleet PM System · PM Analysis Report',
+        pageW / 2, pageH - 6, { align: 'center' });
 
     // ---------- Save ----------
-    const fname = 'CHUB_Ref_PM_Analysis_' + opts.from + '_to_' + opts.to + '_' + (opts.dept === 'all' ? 'AllDepts' : opts.dept.replace(/\s+/g, '_')) + '.pdf';
+    const fname = 'CHUB_Ref_PM_Analysis_' + opts.from + '_to_' + opts.to + '_' +
+                  (opts.dept === 'all' ? 'AllDepts' : opts.dept.replace(/\s+/g, '_')) +
+                  '_' + (opts.tech || 'user').replace(/\s+/g, '_') + '.pdf';
     const pdfBytes = doc.output('arraybuffer');
     const signedBytes = await signPdfBytes(pdfBytes, fname);
     if (signedBytes) { downloadBytes(signedBytes, fname); }
