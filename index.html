@@ -884,7 +884,7 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="qrModal">
+      <div class="modal-overlay" id="qrModal">
         <div class="modal-box" style="max-width: 720px;">
             <h2>🔳 QR Code Sticker</h2>
             <p>Print this sticker and attach it to the refrigerator. Scanning it always shows the latest PM info — no need to reprint when data changes.</p>
@@ -893,48 +893,49 @@
                 <button class="btn-cancel" id="qrModalClose">Close</button>
                 <button class="btn-go" id="qrModalPrint">🖨️ Print / Save as PDF</button>
             </div>
-            <div class="modal-overlay" id="analysisModal">
-    <div class="modal-box" style="max-width: 460px;">
-        <h2>📊 PM Analysis Report</h2>
-        <p>Choose a period and department. The report will list all PMs done, plus any not-working or never-serviced fridges.</p>
-
-        <div class="field-group">
-            <label for="analysisFrom">From date *</label>
-            <input type="date" id="analysisFrom">
-        </div>
-
-        <div class="field-group">
-            <label for="analysisTo">To date *</label>
-            <input type="date" id="analysisTo">
-        </div>
-
-        <div class="field-group">
-            <label for="analysisDept">Department</label>
-            <select id="analysisDept">
-                <option value="all">🏢 All Departments</option>
-            </select>
-        </div>
-
-        <div class="field-group">
-            <label>Scope</label>
-            <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:4px;">
-                <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
-                    <input type="radio" name="analysisScope" value="mine" checked> Only my PMs
-                </label>
-                <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
-                    <input type="radio" name="analysisScope" value="all"> All technicians
-                </label>
-            </div>
-        </div>
-
-        <div id="analysisError" style="color:#b33a3a; font-size:0.85rem; min-height:18px;"></div>
-
-        <div class="modal-actions">
-            <button class="btn-cancel" id="analysisCancel">Cancel</button>
-            <button class="btn-go" id="analysisGenerate">📊 Generate Analysis PDF</button>
         </div>
     </div>
-</div>
+
+    <div class="modal-overlay" id="analysisModal">
+        <div class="modal-box" style="max-width: 460px;">
+            <h2>📊 PM Analysis Report</h2>
+            <p>Choose a period and department. The report will list all PMs done, plus any not-working or never-serviced fridges.</p>
+
+            <div class="field-group">
+                <label for="analysisFrom">From date *</label>
+                <input type="date" id="analysisFrom">
+            </div>
+
+            <div class="field-group">
+                <label for="analysisTo">To date *</label>
+                <input type="date" id="analysisTo">
+            </div>
+
+            <div class="field-group">
+                <label for="analysisDept">Department</label>
+                <select id="analysisDept">
+                    <option value="all">🏢 All Departments</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label>Scope</label>
+                <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:4px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
+                        <input type="radio" name="analysisScope" value="mine" checked> Only my PMs
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
+                        <input type="radio" name="analysisScope" value="all"> All technicians
+                    </label>
+                </div>
+            </div>
+
+            <div id="analysisError" style="color:#b33a3a; font-size:0.85rem; min-height:18px;"></div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" id="analysisCancel">Cancel</button>
+                <button class="btn-go" id="analysisGenerate">📊 Generate Analysis PDF</button>
+            </div>
         </div>
     </div>
 
