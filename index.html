@@ -48,6 +48,7 @@
         .generator-banner .gen-status { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 40px; font-size: 0.78rem; font-weight: 700; margin-top: 8px; margin-left: 8px; z-index: 2; position: relative; }
         .generator-banner .gen-status.working { background: rgba(70,200,120,0.25); color: #c8ffd8; border: 1px solid rgba(70,200,120,0.5); }
         .generator-banner .gen-status.not-working { background: rgba(255,100,100,0.25); color: #ffd0d0; border: 1px solid rgba(255,100,100,0.5); }
+        .generator-banner .gen-owner { display: inline-flex; align-items: center; gap: 6px; background: rgba(180,210,255,0.22); color: #dbe9ff; padding: 6px 14px; border-radius: 40px; font-size: 0.78rem; font-weight: 600; margin-top: 8px; margin-left: 8px; z-index: 2; position: relative; border: 1px solid rgba(180,210,255,0.4); }
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
         .grid-3-wide { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
         .card { background: #fff; border-radius: 24px; border: 1px solid #e2eaf1; box-shadow: 0 6px 14px rgba(0,0,0,0.02); overflow: hidden; }
@@ -82,16 +83,21 @@
         .btn-approve:disabled { opacity: 0.6; cursor: wait; }
         .btn-edit { background: #2a6b96; color: white; border: none; padding: 8px 16px; border-radius: 40px; font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: 0.15s; }
         .btn-edit:hover { background: #1e4a6d; }
+        .btn-edit:disabled { background: #c0c8d0; cursor: not-allowed; }
         .btn-danger { background: #b33a3a; color: white; border: none; padding: 8px 16px; border-radius: 40px; font-weight: 600; font-size: 0.82rem; cursor: pointer; transition: 0.15s; }
         .btn-danger:hover { background: #8f2929; }
+        .btn-danger:disabled { background: #c0c8d0; cursor: not-allowed; }
         .btn-qr { background: #0b3d91; color: white; border: none; padding: 12px 26px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-qr:hover { background: #082b66; }
         .btn-add { background: #1b6b3f; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-add:hover { background: #155231; }
+        .btn-add:disabled { background: #c0c8d0; cursor: not-allowed; }
         .btn-remove { background: #b33a3a; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-remove:hover { background: #8f2929; }
+        .btn-remove:disabled { background: #c0c8d0; cursor: not-allowed; }
         .btn-editCurrent { background: #f4a300; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-editCurrent:hover { background: #c98600; }
+        .btn-editCurrent:disabled { background: #c0c8d0; cursor: not-allowed; }
         .signoff-section { background: #f0f6fc; border-radius: 24px; padding: 26px 28px; margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border: 1px solid #cfe0ee; gap: 20px; }
         .signoff-left { display: flex; flex-direction: column; gap: 6px; }
         .signoff-left .label { font-weight: 600; color: #12405e; font-size: 1rem; letter-spacing: 0.3px; }
@@ -143,6 +149,7 @@
         .status-badge.never { background: #e7f0f8; color: #5b7b96; border: 1px solid #cfdfeb; }
         .status-badge.working { background: #e2f0e6; color: #1b6b3f; border: 1px solid #b8dfc3; }
         .status-badge.not-working { background: #ffe6e6; color: #b33a3a; border: 1px solid #f0b8b8; }
+        .status-badge.mine { background: #dbe9ff; color: #0b3d91; border: 1px solid #a9c7f0; }
         .kpi-card { border-radius:14px; padding:14px; text-align:center; }
         .kpi-card .kpi-label { font-size:0.72rem; font-weight:700; letter-spacing:0.5px; }
         .kpi-card .kpi-value { font-size:1.7rem; font-weight:800; margin-top:4px; }
@@ -316,6 +323,7 @@
                     <div class="gen-nextpm" id="acNextPm">📅 Next PM due: —</div>
                     <div class="gen-incharge" id="acInchargeTag" style="display:none;">👤 In-Charge: —</div>
                     <div class="gen-status working" id="acWorkingStatus" style="display:none;">✅ Working</div>
+                    <div class="gen-owner" id="acOwnerTag" style="display:none;">🔑 Owner: —</div>
                 </div>
                 <div class="gen-badge">Active</div>
             </div>
@@ -439,12 +447,12 @@
 
             <div class="card" style="margin-bottom: 28px;">
                 <div class="card-header">
-                    <span>🧊</span> My Department Refrigerator Inventory
+                    <span>🧊</span> Department Refrigerator Inventory
                     <span id="invDeptBadge" style="margin-left:auto; background:#eef6fc; color:#12405e; padding: 3px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">—</span>
                 </div>
                 <div class="card-body">
                     <p style="font-size: 0.88rem; color: #3a6583; margin-bottom: 14px;">
-                        Below are all refrigerators in your department, with their last PM date, next PM date, and current maintenance status.
+                        Read-only view. All refrigerators in your department, with their last PM date, next PM date, and current status.
                     </p>
                     <div class="filter-selector" id="inventoryFilterBar" style="margin-bottom: 12px;">
                         <div class="filter-chip active" data-status="all">📋 All</div>
@@ -461,13 +469,14 @@
                                     <th>Location</th>
                                     <th>Brand / Model</th>
                                     <th>Working?</th>
+                                    <th>Owner</th>
                                     <th>Last PM</th>
                                     <th>Next PM</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody id="inventoryTableBody">
-                                <tr><td colspan="7" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>
+                                <tr><td colspan="8" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -501,11 +510,14 @@
                 </div>
                 <div class="card-body">
                     <p style="font-size: 0.88rem; color: #3a6583; margin-bottom: 14px;">
-                        Read-only status of every refrigerator in the fleet. Filter by department or status.
+                        Read-only status of every refrigerator in the fleet. Filter by department, status, or owner.
                     </p>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 12px;">
                         <select id="supervisorDeptFilter" style="padding:10px 16px; border-radius:40px; border:1.5px solid #cfdfeb; font-weight:600;">
                             <option value="all">🏢 All Departments</option>
+                        </select>
+                        <select id="supervisorOwnerFilter" style="padding:10px 16px; border-radius:40px; border:1.5px solid #cfdfeb; font-weight:600;">
+                            <option value="all">👤 All Owners</option>
                         </select>
                         <div class="filter-selector" id="supervisorStatusFilterBar" style="margin-bottom:0;">
                             <div class="filter-chip active" data-status="all">📋 All</div>
@@ -524,13 +536,14 @@
                                     <th>Location</th>
                                     <th>Brand / Model</th>
                                     <th>Working?</th>
+                                    <th>Owner</th>
                                     <th>Last PM</th>
                                     <th>Next PM</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody id="supervisorInventoryTableBody">
-                                <tr><td colspan="8" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>
+                                <tr><td colspan="9" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -554,14 +567,14 @@
                     </div>
                 </div>
             </div>
-                        <div class="card" style="margin-bottom: 24px; border: 2px solid #7a4c9c;">
+            <div class="card" style="margin-bottom: 24px; border: 2px solid #7a4c9c;">
                 <div class="card-header" style="background:#f3e8ff; color:#5d3578;">
                     <span>👥</span> Manage In-Charges
                     <span style="margin-left:auto; font-size:0.78rem; background:#7a4c9c; color:white; padding: 3px 12px; border-radius: 20px; font-weight:700;">Manager Only</span>
                 </div>
                 <div class="card-body">
                     <p style="font-size: 0.88rem; color: #5b7b96; margin-bottom: 14px;">
-                        Add or edit In-Charge accounts here. Each one has a unique PIN and is tied to a department. Changes sync to all devices after you save.
+                        Add or edit In-Charge accounts here. Each one has a unique PIN and is tied to a department.
                     </p>
                     <div id="inchargeEditorList" style="margin-bottom: 12px;"></div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 8px;">
@@ -716,8 +729,7 @@
                 <div class="dup-title">⚠️ This tag already exists in the fleet!</div>
                 <div id="dupWarningBody"></div>
                 <div class="dup-actions">
-                    <button type="button" class="btn-edit" id="dupEditBtn">✏️ Edit this existing fridge instead</button>
-                    <button type="button" class="btn-secondary" id="dupDismissBtn">Continue anyway</button>
+                    <button type="button" class="btn-secondary" id="dupDismissBtn">OK, I understand</button>
                 </div>
             </div>
 
@@ -897,7 +909,6 @@
             })();
 
             const RECORDING_START = '03 Jul 2026';
-            const PM_INTERVAL_MONTHS = 6;
             const REF_QUARTER_MONTHS = [2, 5, 8, 11];
             const REF_QUARTER_DAY    = 15;
 
@@ -1078,13 +1089,6 @@
                 let d = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T00:00:00') : new Date(s);
                 return isNaN(d.getTime()) ? null : d;
             }
-            function addMonths(dateVal, months) {
-                const d = parseToDate(dateVal); if (!d) return null;
-                const day = d.getDate(); d.setMonth(d.getMonth() + months);
-                if (d.getDate() < day) d.setDate(0);
-                return d;
-            }
-            function formatPmDate(d) { return d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'; }
             function nextPmForPDF(dateVal) {
                 const d = getNextRefPmDate_(dateVal);
                 return d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -1104,6 +1108,9 @@
             function escapeHtml(s) {
                 if (s === null || s === undefined) return '';
                 return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            }
+            function sameOwner(a, b) {
+                return normalizeText(a) === normalizeText(b);
             }
 
             function loadSignatures() {
@@ -1222,12 +1229,6 @@
                     await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config_set', key: 'InchargeSigner_' + inchargeName, value: inchargeName }) });
                     await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config_set', key: 'InchargeUpdatedAt_' + inchargeName, value: new Date().toISOString() }) });
                 } catch (e) {}
-            }
-            async function pushDepartmentsToCloud(depts) {
-                try {
-                    await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config_set', key: DEPT_CLOUD_KEY, value: JSON.stringify(depts) }) });
-                    return true;
-                } catch(e) { return false; }
             }
             async function fetchDepartmentsFromCloud() {
                 try {
@@ -1381,12 +1382,26 @@
                 await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 return true;
             }
+            async function addInventoryItemToCloud(item, techName) {
+                const payload = { action: 'ref_inventory_add', technician: techName, item: item };
+                await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+                return true;
+            }
+            async function editInventoryItemInCloud(original, updated, techName) {
+                const payload = { action: 'ref_inventory_edit', technician: techName, original: original, updated: updated };
+                await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+                return true;
+            }
+            async function removeInventoryItemInCloud(original, techName) {
+                const payload = { action: 'ref_inventory_remove', technician: techName, original: original };
+                await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+                return true;
+            }
 
-            // ================= PRELOADED LABORATORY REFRIGERATOR INVENTORY (35 units) =================
             const DEFAULT_REF_INVENTORY = [
                 { tag: 'CHUB/MCH NBM/292', dept: 'Laboratory', loc: 'Sterilization',        type: 'Fridge',          brand: '(unspecified)',      model: 'BPR-5V1000',                     serial: 'YC100025211042',                 lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/289', dept: 'Laboratory', loc: 'TB-service',           type: 'Fridge',          brand: '(unspecified)',      model: 'DFK350',                         serial: '2453977733808',                  lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
-                { tag: 'CHUB/MCH NBM/287', dept: 'Laboratory', loc: 'Microbiology',         type: 'Upright Freezer', brand: '(unspecified)',      model: '729RELH (Not working)',          serial: '810438-166',                     lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
+                { tag: 'CHUB/MCH NBM/287', dept: 'Laboratory', loc: 'Microbiology',         type: 'Upright Freezer', brand: '(unspecified)',      model: '729RELH',                        serial: '810438-166',                     lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
                 { tag: 'CHUB/MCH NBM/293', dept: 'Laboratory', loc: 'Hematology',           type: 'Fridge',          brand: '(unspecified)',      model: 'LIEBHERR',                       serial: '782209264',                      lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/110', dept: 'Laboratory', loc: 'PRE-PCR',              type: 'Fridge',          brand: '(unspecified)',      model: 'LIEBHERR profline',              serial: '80.042.188.3',                   lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/118', dept: 'Laboratory', loc: 'Bacteriology',         type: 'Fridge',          brand: '(unspecified)',      model: 'LIEBHERR Medline',               serial: 'N/A',                            lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
@@ -1395,7 +1410,7 @@
                 { tag: 'CHUB/MCH NBM/289', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'liebherr',                       serial: '2910989',                        lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/285', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'Samsung',                        serial: '_',                              lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/341', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'Samsung',                        serial: '_',                              lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
-                { tag: 'CHUB/MCH NBM/281', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'Bompani (Partial working)',      serial: 'KE0099K200100120',               lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
+                { tag: 'CHUB/MCH NBM/281', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: '(unspecified)',      model: 'Bompani',                        serial: 'KE0099K200100120',               lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/280', dept: 'Laboratory', loc: 'Fridge room',          type: 'Upright Freezer', brand: 'Haier',              model: 'DW-86L388J',                     serial: 'BEQH94E1T000GN8R004',            lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/283', dept: 'Laboratory', loc: 'Fridge room',          type: 'Fridge',          brand: 'Nikai',              model: 'Nikai',                          serial: 'KE076E103030125',                lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/284', dept: 'Laboratory', loc: 'Fridge room',          type: 'Upright Freezer', brand: '(unspecified)',      model: 'ULTF420',                        serial: '20084120264',                    lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
@@ -1410,12 +1425,12 @@
                 { tag: 'CHUB/MCH NBM/301', dept: 'Laboratory', loc: 'Immunoserology',       type: 'Fridge',          brand: 'Haier',              model: 'HXC-6295',                       serial: 'BEOHC5EAPOOQJQ37003',            lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/311', dept: 'Laboratory', loc: 'Molecular clean room', type: 'Fridge',          brand: 'Liebherr',           model: 'Liebherr',                       serial: '49.360.505.8',                   lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/343', dept: 'Laboratory', loc: 'Bacteriology',         type: 'Fridge',          brand: 'Liebherr',           model: 'Liebherr',                       serial: '782209257',                      lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
-                { tag: 'CHUB/MCH/NBM/349', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr-profi-line',model: 'Liebherr (Not working)',         serial: '99831305.04',                    lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
-                { tag: 'CHUB/MCH/NBM/117', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Bompani Biomedica',  model: 'Bompani Biomedica (Not working)',serial: '33150056',                       lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
-                { tag: 'CHUB/PATH/MICR/PAR/FRG/060', dept: 'Laboratory', loc: 'Pathology',   type: 'Fridge',          brand: 'V110KE (Subir)',     model: 'V110KE (Subir) (Not working)',   serial: '1900047',                        lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
-                { tag: 'CHUB/MCH/NBM/1440',dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr Profi-line',model: 'Liebherr Profi-line (Not working)',serial: '180.042.190.6(9265007-00',      lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
-                { tag: 'CHUB/MCH NBM/050', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Skyworth',           model: 'SRS-300DJ (Not working)',        serial: '1666',                           lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
-                { tag: 'CHUB/MCH NBM/344', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr',           model: 'Liebherr (Not working)',         serial: 'N/A',                            lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
+                { tag: 'CHUB/MCH/NBM/349', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr-profi-line',model: 'Liebherr',                       serial: '99831305.04',                    lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
+                { tag: 'CHUB/MCH/NBM/117', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Bompani Biomedica',  model: 'Bompani Biomedica',              serial: '33150056',                       lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
+                { tag: 'CHUB/PATH/MICR/PAR/FRG/060', dept: 'Laboratory', loc: 'Pathology',   type: 'Fridge',          brand: 'V110KE (Subir)',     model: 'V110KE (Subir)',                 serial: '1900047',                        lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
+                { tag: 'CHUB/MCH/NBM/1440',dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr Profi-line',model: 'Liebherr Profi-line',            serial: '180.042.190.6(9265007-00',      lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
+                { tag: 'CHUB/MCH NBM/050', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Skyworth',           model: 'SRS-300DJ',                      serial: '1666',                           lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
+                { tag: 'CHUB/MCH NBM/344', dept: 'Laboratory', loc: 'Pathology',            type: 'Fridge',          brand: 'Liebherr',           model: 'Liebherr',                       serial: 'N/A',                            lastPmDate: '', nextPmDate: '', workingStatus: 'Not Working' },
                 { tag: 'CHUB/MCH NBM/TBD-33', dept: 'Laboratory', loc: 'Pathology',         type: 'Fridge',          brand: 'Haier Biomedical',   model: 'HYC-309',                        serial: 'BEOUD6E0000QERCQOO1',            lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/TBD-34', dept: 'Laboratory', loc: 'Pathology',         type: 'Upright Freezer', brand: 'Haier Biomedical',   model: 'DW-30L298J',                     serial: 'BEQYC1D0000Q3RBE0004',           lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
                 { tag: 'CHUB/MCH NBM/TBD-35', dept: 'Laboratory', loc: 'Pathology',         type: 'Upright Freezer', brand: 'Haier Biomedical',   model: 'DW-30L298J',                     serial: 'BEOYC1D0000QJRBE0004',           lastPmDate: '', nextPmDate: '', workingStatus: 'Working' }
@@ -1431,6 +1446,13 @@
                 const serial = normalizeText(obj.refSerial || obj.serial || '');
                 const model  = normalizeText(obj.refModel || obj.model || '');
                 return `${tag}::${loc}::${serial}::${model}`;
+            }
+            function getInventoryOwner(item) {
+                return String(item.owner || item.technician || '').trim();
+            }
+            function canEditItem(item) {
+                if (currentRole !== 'technician') return false;
+                return sameOwner(getInventoryOwner(item), currentLoggedInName);
             }
 
             const acSelect = document.getElementById('acSelect');
@@ -1455,8 +1477,12 @@
             const acNextPm = document.getElementById('acNextPm');
             const acInchargeTag = document.getElementById('acInchargeTag');
             const acWorkingStatus = document.getElementById('acWorkingStatus');
+            const acOwnerTag = document.getElementById('acOwnerTag');
             const inchargeNameInput = document.getElementById('inchargeNameInput');
             const signoffIncharge = document.getElementById('signoffIncharge');
+            const addAcBtn = document.getElementById('addAcBtn');
+            const editAcBtn = document.getElementById('editAcBtn');
+            const removeAcBtn = document.getElementById('removeAcBtn');
 
             let currentInchargeSignature = '';
             let lastSubmittedSnapshot = null;
@@ -1465,6 +1491,7 @@
             let inventoryFilterStatus = 'all';
             let currentInchargeDept = '';
             let supervisorStatusFilter = 'all';
+            let supervisorOwnerFilter = 'all';
             let currentLoggedInName = '';
 
             function showStatus(msg, isSuccess = true) {
@@ -1539,17 +1566,35 @@
                     acSub.textContent = 'Tap "➕ Add New Refrigerator" to start your list.';
                     acInchargeTag.style.display = 'none';
                     if (acWorkingStatus) acWorkingStatus.style.display = 'none';
+                    if (acOwnerTag) acOwnerTag.style.display = 'none';
+                    updateEditButtonsState();
                     return;
                 }
                 AC_INVENTORY.forEach((ac, index) => {
                     const opt = document.createElement('option');
                     opt.value = index;
                     const ws = ac.workingStatus ? (ac.workingStatus === 'Not Working' ? ' ⛔' : ' ✅') : '';
-                    opt.textContent = `${ac.tag} | ${ac.loc} | ${ac.brand}${ws}`;
+                    const own = canEditItem(ac) ? '' : ' 🔒';
+                    opt.textContent = `${ac.tag} | ${ac.loc} | ${ac.brand}${ws}${own}`;
                     acSelect.appendChild(opt);
                 });
                 updateAcBanner();
             }
+
+            function updateEditButtonsState() {
+                const idx = acSelect.value;
+                const item = (idx !== '' && AC_INVENTORY[idx]) ? AC_INVENTORY[idx] : null;
+                const editable = item ? canEditItem(item) : false;
+                if (editAcBtn) {
+                    editAcBtn.disabled = !editable;
+                    editAcBtn.title = editable ? 'Edit this refrigerator' : 'Only the owner can edit this refrigerator';
+                }
+                if (removeAcBtn) {
+                    removeAcBtn.disabled = !editable;
+                    removeAcBtn.title = editable ? 'Remove this refrigerator' : 'Only the owner can remove this refrigerator';
+                }
+            }
+
             function updateAcBanner() {
                 const idx = acSelect.value;
                 if (idx === '' || !AC_INVENTORY[idx]) {
@@ -1557,6 +1602,8 @@
                     acSub.textContent = 'Tap "➕ Add New Refrigerator" to start your list.';
                     acInchargeTag.style.display = 'none';
                     if (acWorkingStatus) acWorkingStatus.style.display = 'none';
+                    if (acOwnerTag) acOwnerTag.style.display = 'none';
+                    updateEditButtonsState();
                     return;
                 }
                 const ac = AC_INVENTORY[idx];
@@ -1574,7 +1621,14 @@
                     acWorkingStatus.className = 'gen-status ' + (ws === 'Not Working' ? 'not-working' : 'working');
                     acWorkingStatus.style.display = 'inline-flex';
                 }
+                if (acOwnerTag) {
+                    const owner = getInventoryOwner(ac) || '—';
+                    acOwnerTag.textContent = '🔑 Owner: ' + owner;
+                    acOwnerTag.style.display = 'inline-flex';
+                }
+                updateEditButtonsState();
             }
+
             acSelect.addEventListener('change', updateAcBanner);
             inchargeNameInput.addEventListener('input', updateInchargeDisplay);
             function updateInchargeDisplay() {
@@ -1641,11 +1695,14 @@
             }
             newAcDeptSelect.addEventListener('change', populateServiceSelect);
 
-            document.getElementById('addAcBtn').addEventListener('click', () => {
+            addAcBtn.addEventListener('click', () => {
+                if (currentRole !== 'technician') {
+                    showStatus('⛔ Only technicians can add refrigerators.', false);
+                    return;
+                }
                 document.getElementById('addAcOwnerName').textContent = currentLoggedInName || '—';
                 populateDepartmentSelect();
                 document.getElementById('dupWarning').classList.remove('show');
-                // Reset working status to Working
                 const wg = document.querySelector('#newAcWorkingGroup input[value="Working"]');
                 if (wg) wg.checked = true;
                 syncWorkingGroupUI('newAc');
@@ -1662,7 +1719,6 @@
                 if (nd) document.getElementById('editAcNextPm').value = toIsoDate_(nd);
             });
 
-            // Working status UI sync
             function syncWorkingGroupUI(prefix) {
                 const group = document.getElementById(prefix + 'WorkingGroup');
                 if (!group) return;
@@ -1693,105 +1749,122 @@
                 if (!tag) { dupBox.classList.remove('show'); return; }
                 const existing = await findEquipmentByTag(tag);
                 if (!existing) { dupBox.classList.remove('show'); return; }
-                const owner = existing.technician || '(unknown)';
+                const owner = getInventoryOwner(existing) || '(unknown)';
                 document.getElementById('dupWarningBody').innerHTML =
                     `<div class="dup-row"><strong>Tag:</strong> ${escapeHtml(existing.tag || '—')}</div>
                      <div class="dup-row"><strong>Location:</strong> ${escapeHtml(existing.loc || '—')}</div>
                      <div class="dup-row"><strong>Brand / Model:</strong> ${escapeHtml((existing.brand || '') + ' ' + (existing.model || ''))}</div>
                      <div class="dup-row"><strong>Added by:</strong> ${escapeHtml(owner)}</div>`;
                 dupBox.classList.add('show');
-                document.getElementById('dupEditBtn').onclick = () => {
-                    addAcModal.classList.remove('show');
-                    openEditAcModal(existing);
-                };
             });
 
             document.getElementById('dupDismissBtn')?.addEventListener('click', () => {
                 document.getElementById('dupWarning').classList.remove('show');
             });
 
-            document.getElementById('addAcSave').addEventListener('click', async () => {
-                const tag = document.getElementById('newAcTag').value.trim();
-                const dept = newAcDeptSelect.value;
-                const loc = newAcLocationSelect.value;
-                const brand = document.getElementById('newAcBrand').value.trim();
-                const model = document.getElementById('newAcModel').value.trim();
-                const type = document.getElementById('newAcType').value;
-                const serial = document.getElementById('newAcSerial').value.trim() || 'N/A';
-                const workingStatus = document.querySelector('#newAcWorkingGroup input:checked')?.value || 'Working';
-                const lastPmDate = document.getElementById('newAcLastPm').value || '';
-                const nextPmDate = document.getElementById('newAcNextPm').value || '';
+            addAcSave_init();
+            function addAcSave_init() {
+                document.getElementById('addAcSave').addEventListener('click', async () => {
+                    if (currentRole !== 'technician') {
+                        alert('⛔ Only technicians can add refrigerators.');
+                        return;
+                    }
+                    const tag = document.getElementById('newAcTag').value.trim();
+                    const dept = newAcDeptSelect.value;
+                    const loc = newAcLocationSelect.value;
+                    const brand = document.getElementById('newAcBrand').value.trim();
+                    const model = document.getElementById('newAcModel').value.trim();
+                    const type = document.getElementById('newAcType').value;
+                    const serial = document.getElementById('newAcSerial').value.trim() || 'N/A';
+                    const workingStatus = document.querySelector('#newAcWorkingGroup input:checked')?.value || 'Working';
+                    const lastPmDate = document.getElementById('newAcLastPm').value || '';
+                    const nextPmDate = document.getElementById('newAcNextPm').value || '';
 
-                if (!tag || !dept || !loc || !brand || !model) { alert('Please fill in all required fields marked with *'); return; }
-                const ownerTech = technicianSelect.value || currentLoggedInName;
-                if (!ownerTech) { alert('You must be logged in to add a refrigerator.'); return; }
+                    if (!tag || !dept || !loc || !brand || !model) { alert('Please fill in all required fields marked with *'); return; }
 
-                const existing = await findEquipmentByTag(tag);
-                if (existing) {
-                    const owner = existing.technician || '(unknown)';
-                    const proceed = confirm(
-                        '⚠️ DUPLICATE TAG\n\n' +
-                        'Tag: ' + tag + '\n' +
-                        'Already added by: ' + owner + '\n' +
-                        'Location: ' + (existing.loc || '—') + '\n\n' +
-                        'Do you want to save anyway? (Better: cancel and edit the existing one.)'
-                    );
-                    if (!proceed) return;
+                    const ownerTech = currentLoggedInName;
+                    if (!ownerTech) { alert('You must be logged in to add a refrigerator.'); return; }
+
+                    const existing = await findEquipmentByTag(tag);
+                    if (existing) {
+                        const owner = getInventoryOwner(existing) || '(unknown)';
+                        const proceed = confirm(
+                            '⚠️ DUPLICATE TAG\n\n' +
+                            'Tag: ' + tag + '\n' +
+                            'Already added by: ' + owner + '\n' +
+                            'Location: ' + (existing.loc || '—') + '\n\n' +
+                            'The refrigerator will not be added twice.'
+                        );
+                        if (!proceed) return;
+                        showStatus('⚠️ This tag already exists — not added.', false);
+                        return;
+                    }
+
+                    const saveBtn = document.getElementById('addAcSave');
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '⏳ Saving...';
+
+                    const newAc = {
+                        owner: ownerTech,
+                        technician: ownerTech,
+                        tag, dept, loc, type, brand, model, serial,
+                        workingStatus, lastPmDate, nextPmDate
+                    };
+
+                    try {
+                        await addInventoryItemToCloud(newAc, ownerTech);
+                        AC_INVENTORY.push(newAc);
+                        cacheInventoryLocally(ownerTech, AC_INVENTORY);
+                        renderAcSelector();
+                        acSelect.value = AC_INVENTORY.length - 1;
+                        updateAcBanner();
+                        showStatus('✅ Refrigerator saved to cloud.', true);
+                    } catch (err) {
+                        showStatus('⚠️ Save failed: ' + err.message, false);
+                    }
+
+                    document.getElementById('newAcTag').value = '';
+                    document.getElementById('newAcBrand').value = '';
+                    document.getElementById('newAcModel').value = '';
+                    document.getElementById('newAcSerial').value = '';
+                    document.getElementById('newAcLastPm').value = '';
+                    document.getElementById('newAcNextPm').value = '';
+                    document.getElementById('dupWarning').classList.remove('show');
+                    addAcModal.classList.remove('show');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '💾 Save Refrigerator to Cloud';
+                });
+            }
+
+            removeAcBtn.addEventListener('click', async () => {
+                if (currentRole !== 'technician') {
+                    showStatus('⛔ Only technicians can remove refrigerators.', false);
+                    return;
                 }
-
-                const saveBtn = document.getElementById('addAcSave');
-                saveBtn.disabled = true;
-                saveBtn.innerHTML = '⏳ Saving...';
-
-                const newAc = { tag, dept, loc, type, brand, model, serial, workingStatus, lastPmDate, nextPmDate };
-                AC_INVENTORY.push(newAc);
-
-                try {
-                    await pushInventoryToCloud(ownerTech, AC_INVENTORY);
-                    cacheInventoryLocally(ownerTech, AC_INVENTORY);
-                    renderAcSelector();
-                    acSelect.value = AC_INVENTORY.length - 1;
-                    updateAcBanner();
-                    showStatus('✅ Refrigerator saved to cloud.', true);
-                } catch (err) {
-                    cacheInventoryLocally(ownerTech, AC_INVENTORY);
-                    showStatus('⚠️ Saved locally, will sync when online.', false);
-                }
-
-                document.getElementById('newAcTag').value = '';
-                document.getElementById('newAcBrand').value = '';
-                document.getElementById('newAcModel').value = '';
-                document.getElementById('newAcSerial').value = '';
-                document.getElementById('newAcLastPm').value = '';
-                document.getElementById('newAcNextPm').value = '';
-                document.getElementById('dupWarning').classList.remove('show');
-                addAcModal.classList.remove('show');
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = '💾 Save Refrigerator to Cloud';
-            });
-
-            document.getElementById('removeAcBtn').addEventListener('click', async () => {
-                const ownerTech = technicianSelect.value || currentLoggedInName;
                 const idx = acSelect.value;
                 if (idx === '' || !AC_INVENTORY[idx]) { showStatus('⚠️ No refrigerator selected to remove.', false); return; }
                 const ac = AC_INVENTORY[idx];
-                if (!confirm(`Remove this refrigerator from your cloud list?\n\n${ac.tag} — ${ac.loc}\n(${ac.brand} ${ac.model})`)) return;
-                AC_INVENTORY.splice(idx, 1);
+                if (!canEditItem(ac)) { showStatus('⛔ Only the owner can remove this refrigerator.', false); return; }
+                if (!confirm(`Remove this refrigerator?\n\n${ac.tag} — ${ac.loc}\n(${ac.brand} ${ac.model})`)) return;
+
                 try {
-                    await pushInventoryToCloud(ownerTech, AC_INVENTORY);
-                    cacheInventoryLocally(ownerTech, AC_INVENTORY);
-                    showStatus('🗑️ Refrigerator removed from cloud.', true);
+                    await removeInventoryItemInCloud({
+                        tag: ac.tag, loc: ac.loc, serial: ac.serial, model: ac.model
+                    }, currentLoggedInName);
+                    AC_INVENTORY.splice(idx, 1);
+                    cacheInventoryLocally(currentLoggedInName, AC_INVENTORY);
+                    showStatus('🗑️ Refrigerator removed.', true);
+                    renderAcSelector();
                 } catch (err) {
-                    cacheInventoryLocally(ownerTech, AC_INVENTORY);
-                    showStatus('⚠️ Removed locally — will sync when online.', false);
+                    showStatus('⚠️ Removal failed: ' + err.message, false);
                 }
-                renderAcSelector();
             });
 
-            document.getElementById('editAcBtn').addEventListener('click', () => {
+            editAcBtn.addEventListener('click', () => {
                 const idx = acSelect.value;
                 if (idx === '' || !AC_INVENTORY[idx]) { showStatus('⚠️ No refrigerator selected.', false); return; }
                 const ac = AC_INVENTORY[idx];
+                if (!canEditItem(ac)) { showStatus('⛔ Only the owner can edit this refrigerator.', false); return; }
                 openEditAcModal(ac);
             });
 
@@ -1842,6 +1915,7 @@
                 }
                 if (isSupervisor) {
                     populateSupervisorDeptFilter();
+                    populateSupervisorOwnerFilter();
                     refreshSupervisorInventory();
                     renderInchargeEditor();
                 }
@@ -2375,11 +2449,11 @@
             async function loadDepartmentInventory() {
                 const tbody = document.getElementById('inventoryTableBody');
                 const deptBadge = document.getElementById('invDeptBadge');
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>';
 
                 const dept = currentInchargeDept;
                 if (!dept) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#b33a3a; padding: 14px;">No department set. Please log out and pick a department at login.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#b33a3a; padding: 14px;">No department set. Please log out and pick a department at login.</td></tr>';
                     return;
                 }
                 deptBadge.textContent = dept;
@@ -2388,15 +2462,14 @@
                 if (allInv.length === 0) {
                     allInv = [];
                     try {
-                        const fallback = await fetchInventoryFromCloud(DEFAULT_LIST_OWNER);
-                        allInv = fallback;
+                        allInv = await fetchInventoryFromCloud(DEFAULT_LIST_OWNER);
                     } catch (e) {}
                 }
                 const records = await fetchAllLogs();
 
                 const myAcs = allInv.filter(ac => normalizeText(ac.dept) === normalizeText(dept));
                 if (myAcs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators registered under ' + dept + '.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators registered under ' + dept + '.</td></tr>';
                     return;
                 }
 
@@ -2409,7 +2482,7 @@
                 const filtered = inventoryFilterStatus === 'all' ? rows : rows.filter(r => r.status === inventoryFilterStatus);
 
                 if (filtered.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match this filter.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match this filter.</td></tr>';
                     return;
                 }
 
@@ -2418,11 +2491,13 @@
                     const ac = r.ac;
                     const ws = ac.workingStatus || 'Working';
                     const wsBadge = ws === 'Not Working' ? '<span class="status-badge not-working">⛔ Not Working</span>' : '<span class="status-badge working">✅ Working</span>';
+                    const owner = getInventoryOwner(ac) || '—';
                     return `<tr>
                         <td><strong>${escapeHtml(ac.tag)}</strong></td>
                         <td>${escapeHtml(ac.loc)}</td>
                         <td>${escapeHtml(ac.brand + ' ' + ac.model)}</td>
                         <td>${wsBadge}</td>
+                        <td>${escapeHtml(owner)}</td>
                         <td>${r.lastPm ? formatDateOnly(r.lastPm) : '—'}</td>
                         <td>${r.nextPm ? formatDateOnly(r.nextPm) : '—'}</td>
                         <td><span class="status-badge ${r.status}">${statusLabels[r.status]}</span></td>
@@ -2502,6 +2577,18 @@
                     });
                     sel2.value = current2;
                 }
+            }
+            function populateSupervisorOwnerFilter() {
+                const sel = document.getElementById('supervisorOwnerFilter');
+                if (!sel) return;
+                const current = sel.value || 'all';
+                sel.innerHTML = '<option value="all">👤 All Owners</option>';
+                Object.keys(TECHNICIAN_PINS).forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t; opt.textContent = t;
+                    sel.appendChild(opt);
+                });
+                sel.value = current;
             }
 
             function normalizeInchargeRegistry(raw) {
@@ -2648,13 +2735,17 @@
                 });
             });
             document.getElementById('supervisorDeptFilter')?.addEventListener('change', refreshSupervisorInventory);
+            document.getElementById('supervisorOwnerFilter')?.addEventListener('change', function() {
+                supervisorOwnerFilter = this.value;
+                refreshSupervisorInventory();
+            });
 
             async function refreshSupervisorInventory() {
                 const tbody = document.getElementById('supervisorInventoryTableBody');
                 const countBadge = document.getElementById('supervisorInvCount');
                 const kpiGrid = document.getElementById('supervisorKpiGrid');
                 if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>';
 
                 let allInv = await fetchAllInventory();
                 if (!allInv || allInv.length === 0) {
@@ -2712,12 +2803,13 @@
                 const deptFilter = document.getElementById('supervisorDeptFilter')?.value || 'all';
                 const rows = allRows
                     .filter(r => deptFilter === 'all' || normalizeText(r.ac.dept) === normalizeText(deptFilter))
-                    .filter(r => supervisorStatusFilter === 'all' || r.status === supervisorStatusFilter);
+                    .filter(r => supervisorStatusFilter === 'all' || r.status === supervisorStatusFilter)
+                    .filter(r => supervisorOwnerFilter === 'all' || normalizeText(getInventoryOwner(r.ac)) === normalizeText(supervisorOwnerFilter));
 
                 countBadge.textContent = rows.length + ' shown / ' + allRows.length + ' total';
 
                 if (rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match filters.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match filters.</td></tr>';
                     return;
                 }
 
@@ -2726,12 +2818,14 @@
                     const ac = r.ac;
                     const ws = ac.workingStatus || 'Working';
                     const wsBadge = ws === 'Not Working' ? '<span class="status-badge not-working">⛔ Not Working</span>' : '<span class="status-badge working">✅ Working</span>';
+                    const owner = getInventoryOwner(ac) || '—';
                     return `<tr>
                         <td><strong>${escapeHtml(ac.tag)}</strong></td>
                         <td>${escapeHtml(ac.dept)}</td>
                         <td>${escapeHtml(ac.loc)}</td>
                         <td>${escapeHtml((ac.brand || '') + ' ' + (ac.model || ''))}</td>
                         <td>${wsBadge}</td>
+                        <td>${escapeHtml(owner)}</td>
                         <td>${r.lastPm ? formatDateOnly(r.lastPm) : '—'}</td>
                         <td>${r.nextPm ? formatDateOnly(r.nextPm) : '—'}</td>
                         <td><span class="status-badge ${r.status}">${statusLabels[r.status]}</span></td>
@@ -2767,6 +2861,8 @@
                 } catch (err) { showStatus('⚠️ ' + err.message, false); }
                 this.disabled = false; this.innerHTML = orig;
             });
+
+                       // ================== PDF GENERATORS (FULL) ==================
 
             async function generatePDF(records) {
                 const { jsPDF } = window.jspdf;
@@ -2875,7 +2971,8 @@
                     doc.setFontSize(11); doc.setFont('helvetica', 'bold');
                     doc.text(sanitizeForPDF(`${data.refTag || data['Ref Tag'] || data['AC Tag']} — ${data.refLocation || data['Location']}`), margin + 4, y + 5.5);
                     doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(203, 228, 247);
-                    doc.text(sanitizeForPDF(`Department: ${deptLabel}  |  ${data.refType || data['Type'] || 'Fridge'}  |  ${data.refBrand || data['Brand']}  |  ${data.refModel || data['Model']}  |  SN: ${data.refSerial || data['Serial Number']}`), margin + 4, y + 12);
+                    const ws = safeStr(data.refWorkingStatus || data['Working Status'] || 'Working');
+                    doc.text(sanitizeForPDF(`Department: ${deptLabel}  |  ${data.refType || data['Type'] || 'Fridge'}  |  ${data.refBrand || data['Brand']}  |  ${data.refModel || data['Model']}  |  SN: ${data.refSerial || data['Serial Number']}  |  Working: ${ws}`), margin + 4, y + 12);
                     y += 19;
 
                     doc.setFillColor(248, 250, 252); doc.setDrawColor(203, 213, 225); doc.setLineWidth(0.2);
@@ -3351,6 +3448,7 @@
                 } catch (e) { return null; }
             }
 
+            // ================== END PDF GENERATORS ==================
             pdfBtn.addEventListener('click', async function() {
                 const current = collectFormData();
                 if (!current) return;
@@ -3605,7 +3703,6 @@
                 document.getElementById('editAcSerial').value = ac.serial || '';
                 document.getElementById('editAcLastPm').value = ac.lastPmDate || '';
                 document.getElementById('editAcNextPm').value = ac.nextPmDate || '';
-                // Working status
                 const ws = ac.workingStatus || 'Working';
                 const radio = document.querySelector(`#editAcWorkingGroup input[value="${ws}"]`);
                 if (radio) radio.checked = true;
@@ -3617,8 +3714,16 @@
             document.getElementById('editAcCancel')?.addEventListener('click', () => editAcModal.classList.remove('show'));
 
             document.getElementById('editAcSave')?.addEventListener('click', async function() {
+                if (currentRole !== 'technician') {
+                    alert('⛔ Only technicians can edit refrigerators.');
+                    return;
+                }
                 const original = editAcModal._originalAc;
                 if (!original) return;
+                if (!canEditItem(original)) {
+                    alert('⛔ Only the technician who added this refrigerator can edit it.');
+                    return;
+                }
                 const updated = {
                     tag: document.getElementById('editAcTag').value.trim(),
                     dept: document.getElementById('editAcDept').value,
@@ -3639,52 +3744,22 @@
                 const orig = this.innerHTML;
                 this.innerHTML = '⏳ Saving...';
 
-                // Technician can only edit their own inventory. In-charge/supervisor edits the global one.
-                const editorName = currentLoggedInName || technicianSelect.value;
-                const isManagerial = currentRole === 'incharge' || currentRole === 'supervisor';
-
                 try {
-                    if (isManagerial) {
-                        // Update across all inventories (global)
-                        const allInv = await fetchAllInventory();
-                        const targetId = buildAcIdentity({ refTag: original.tag, refLocation: original.loc, refSerial: original.serial, refModel: original.model });
-                        let matched = false;
-                        const next = allInv.map(x => {
-                            const xId = buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model });
-                            if (xId === targetId) {
-                                matched = true;
-                                return { ...x, ...updated, technician: x.technician || editorName };
-                            }
-                            return x;
-                        });
-                        if (!matched) {
-                            // Not found globally — append with editor as owner
-                            next.push({ ...updated, technician: editorName });
-                        }
-                        await pushInventoryToCloud(editorName, next);
-                    } else {
-                        // Technician edits their own inventory only
-                        const idx = AC_INVENTORY.findIndex(x => buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model }) === buildAcIdentity({ refTag: original.tag, refLocation: original.loc, refSerial: original.serial, refModel: original.model }));
-                        if (idx === -1) {
-                            // Not in my inventory — but this may be a fridge added by someone else. Fetch mine fresh.
-                            let inv = await fetchInventoryFromCloud(editorName);
-                            const j = inv.findIndex(x => buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model }) === buildAcIdentity({ refTag: original.tag, refLocation: original.loc, refSerial: original.serial, refModel: original.model }));
-                            if (j === -1) {
-                                // Not mine — clone into my inventory with new identity
-                                inv.push({ ...updated, technician: editorName });
-                            } else {
-                                inv[j] = { ...inv[j], ...updated, technician: editorName };
-                            }
-                            AC_INVENTORY = inv;
-                        } else {
-                            AC_INVENTORY[idx] = { ...AC_INVENTORY[idx], ...updated };
-                        }
-                        await pushInventoryToCloud(editorName, AC_INVENTORY);
-                        cacheInventoryLocally(editorName, AC_INVENTORY);
-                    }
-                    showStatus('✅ Refrigerator updated in cloud.', true);
-                    editAcModal.classList.remove('show');
+                    await editInventoryItemInCloud(
+                        { tag: original.tag, loc: original.loc, serial: original.serial, model: original.model },
+                        updated,
+                        currentLoggedInName
+                    );
+                    // Update local
+                    const idx = AC_INVENTORY.findIndex(x =>
+                        buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model }) ===
+                        buildAcIdentity({ refTag: original.tag, refLocation: original.loc, refSerial: original.serial, refModel: original.model })
+                    );
+                    if (idx !== -1) AC_INVENTORY[idx] = { ...AC_INVENTORY[idx], ...updated };
+                    cacheInventoryLocally(currentLoggedInName, AC_INVENTORY);
                     renderAcSelector();
+                    showStatus('✅ Refrigerator updated.', true);
+                    editAcModal.classList.remove('show');
                 } catch (e) {
                     showStatus('⚠️ Update failed: ' + e.message, false);
                 }
@@ -3737,10 +3812,8 @@
                     currentRole = payload.role || 'technician';
                 }
 
-                // Always store logged-in name; only set the technician <select> for technicians.
                 currentLoggedInName = payload.name;
                 if (currentRole === 'technician') {
-                    // Ensure the option exists (it should, but guard just in case)
                     let found = false;
                     for (let i = 0; i < technicianSelect.options.length; i++) {
                         if (technicianSelect.options[i].value === payload.name) { found = true; break; }
@@ -3752,7 +3825,7 @@
                     }
                     technicianSelect.value = payload.name;
                 } else {
-                    technicianSelect.value = ''; // clear for non-technicians
+                    technicianSelect.value = '';
                 }
 
                 const roleSuffix = currentRole === 'incharge' ? ' (In-Charge)' : (currentRole === 'supervisor' ? ' (Manager)' : '');
@@ -3775,28 +3848,36 @@
                 } else if (currentRole === 'supervisor') {
                     AC_INVENTORY = [];
                     populateSupervisorDeptFilter();
+                    populateSupervisorOwnerFilter();
                     setTimeout(() => refreshSupervisorInventory(), 300);
                     showStatus('👑 Welcome ' + payload.name + ' — fleet overview ready.', true);
                 } else {
+                    // TECHNICIAN: load the GLOBAL inventory and filter to "mine" client-side.
                     AC_INVENTORY = [];
                     renderAcSelector();
                     showStatus('⏳ Loading your refrigerator list...', true);
                     try {
-                        let inv = await fetchInventoryFromCloud(payload.name);
-                        if (inv.length === 0 && payload.name === DEFAULT_LIST_OWNER) {
-                            inv = DEFAULT_REF_INVENTORY.slice();
-                            await pushInventoryToCloud(payload.name, inv);
-                        }
-                        AC_INVENTORY = inv;
-                        cacheInventoryLocally(payload.name, inv);
+                        const all = await fetchAllInventory();
+                        AC_INVENTORY = all
+                            .map(a => ({
+                                owner: a.owner || a.technician || '',
+                                technician: a.technician || a.owner || '',
+                                tag: a.tag, dept: a.dept, loc: a.loc, type: a.type,
+                                brand: a.brand, model: a.model, serial: a.serial,
+                                workingStatus: a.workingStatus || 'Working',
+                                lastPmDate: a.lastPmDate || '',
+                                nextPmDate: a.nextPmDate || ''
+                            }))
+                            .filter(a => sameOwner(a.owner, payload.name) || sameOwner(a.technician, payload.name));
+                        cacheInventoryLocally(payload.name, AC_INVENTORY);
                         renderAcSelector();
-                        showStatus('✅ Welcome, ' + payload.name + '! ' + inv.length + ' refrigerator(s) loaded.', true);
+                        showStatus('✅ Welcome, ' + payload.name + '! ' + AC_INVENTORY.length + ' refrigerator(s) loaded.', true);
                     } catch (err) {
                         console.error('❌ Refrigerator load failed:', err);
                         const cached = loadCachedInventory(payload.name) || [];
                         AC_INVENTORY = cached;
                         renderAcSelector();
-                        if (cached.length > 0) showStatus('📥 Offline — ' + cached.length + ' from cache. Error: ' + (err.message || err), false);
+                        if (cached.length > 0) showStatus('📥 Offline — ' + cached.length + ' from cache.', false);
                         else showStatus('⚠️ Could not load refrigerator list: ' + (err.message || err), false);
                     }
                 }
