@@ -585,12 +585,13 @@
             </div>
         </div>
 
-        <div class="action-buttons" id="technicianActionButtons">
-            <button class="btn-pdf" id="pdfBtn"><span>📄</span> Export Current as PDF</button>
-            <button class="btn-pdf-all" id="historyPdfBtn"><span>📚</span> Download My PMs (Cloud)</button>
-            <button class="btn-sync" id="syncBtn"><span>🔄</span> Sync pending (<span id="pendingCount">0</span>)</button>
-            <button class="btn-secondary" id="resetBtn">⟲ Reset form</button>
-        </div>
+      <div class="action-buttons" id="technicianActionButtons">
+    <button class="btn-pdf" id="pdfBtn"><span>📄</span> Export Current as PDF</button>
+    <button class="btn-pdf-all" id="historyPdfBtn"><span>📚</span> Download My PMs (Cloud)</button>
+    <button class="btn-pdf-all" id="analysisBtn" style="background:#0b6b3a;"><span>📊</span> PM Analysis (Period + Dept)</button>
+    <button class="btn-sync" id="syncBtn"><span>🔄</span> Sync pending (<span id="pendingCount">0</span>)</button>
+    <button class="btn-secondary" id="resetBtn">⟲ Reset form</button>
+</div>
 
         <div class="status-message" id="statusMessage">
             <span>✅</span> <span id="statusText">Checklist signed off successfully!</span>
@@ -892,6 +893,48 @@
                 <button class="btn-cancel" id="qrModalClose">Close</button>
                 <button class="btn-go" id="qrModalPrint">🖨️ Print / Save as PDF</button>
             </div>
+            <div class="modal-overlay" id="analysisModal">
+    <div class="modal-box" style="max-width: 460px;">
+        <h2>📊 PM Analysis Report</h2>
+        <p>Choose a period and department. The report will list all PMs done, plus any not-working or never-serviced fridges.</p>
+
+        <div class="field-group">
+            <label for="analysisFrom">From date *</label>
+            <input type="date" id="analysisFrom">
+        </div>
+
+        <div class="field-group">
+            <label for="analysisTo">To date *</label>
+            <input type="date" id="analysisTo">
+        </div>
+
+        <div class="field-group">
+            <label for="analysisDept">Department</label>
+            <select id="analysisDept">
+                <option value="all">🏢 All Departments</option>
+            </select>
+        </div>
+
+        <div class="field-group">
+            <label>Scope</label>
+            <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:4px;">
+                <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
+                    <input type="radio" name="analysisScope" value="mine" checked> Only my PMs
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-weight:500;">
+                    <input type="radio" name="analysisScope" value="all"> All technicians
+                </label>
+            </div>
+        </div>
+
+        <div id="analysisError" style="color:#b33a3a; font-size:0.85rem; min-height:18px;"></div>
+
+        <div class="modal-actions">
+            <button class="btn-cancel" id="analysisCancel">Cancel</button>
+            <button class="btn-go" id="analysisGenerate">📊 Generate Analysis PDF</button>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 
@@ -3479,7 +3522,362 @@
                 }
                 this.disabled = false; this.innerHTML = orig;
             });
+             // ==================== PM ANALYSIS (PERIOD + DEPARTMENT) ====================
 
+const analysisModal = document.getElementById('analysisModal');
+const analysisFrom  = document.getElementById('analysisFrom');
+const analysisTo    = document.getElementById('analysisTo');
+const analysisDept  = document.getElementById('analysisDept');
+const analysisError = document.getElementById('analysisError');
+
+// Populate the department dropdown from the loaded DEPARTMENTS object
+function populateAnalysisDeptSelect() {
+    const current = analysisDept.value || 'all';
+    analysisDept.innerHTML = '<option value="all">🏢 All Departments</option>';
+    Object.keys(DEPARTMENTS).forEach(d => {
+        const o = document.createElement('option');
+        o.value = d;
+        o.textContent = d;
+        analysisDept.appendChild(o);
+    });
+    analysisDept.value = current;
+}
+
+// Set default dates: last 90 days
+function setDefaultAnalysisDates() {
+    const today = new Date();
+    const past  = new Date();
+    past.setDate(today.getDate() - 90);
+    const fmt = d => d.toISOString().slice(0, 10);
+    analysisTo.value   = fmt(today);
+    analysisFrom.value = fmt(past);
+}
+
+document.getElementById('analysisBtn').addEventListener('click', () => {
+    populateAnalysisDeptSelect();
+    setDefaultAnalysisDates();
+    analysisError.textContent = '';
+    analysisModal.classList.add('show');
+});
+
+document.getElementById('analysisCancel').addEventListener('click', () => {
+    analysisModal.classList.remove('show');
+});
+
+document.getElementById('analysisGenerate').addEventListener('click', async function() {
+    const from = analysisFrom.value;
+    const to   = analysisTo.value;
+    const dept = analysisDept.value || 'all';
+    const scope = document.querySelector('input[name="analysisScope"]:checked')?.value || 'mine';
+
+    analysisError.textContent = '';
+
+    if (!from) { analysisError.textContent = 'Please pick a From date.'; return; }
+    if (!to)   { analysisError.textContent = 'Please pick a To date.'; return; }
+    if (from > to) { analysisError.textContent = 'From date must be before To date.'; return; }
+
+    this.disabled = true;
+    const orig = this.innerHTML;
+    this.innerHTML = '<span>⏳</span> Fetching...';
+
+    try {
+        const allLogs = await fetchAllLogs();
+        const allInv  = await fetchAllInventory();
+
+        const techFilter = (scope === 'mine') ? (currentLoggedInName || technicianSelect.value) : '';
+        await generatePmAnalysisPDF(allLogs, allInv, { from, to, dept, tech: techFilter });
+        showStatus('📊 PM Analysis PDF generated.', true);
+        analysisModal.classList.remove('show');
+    } catch (err) {
+        analysisError.textContent = '⚠️ ' + (err.message || 'Could not generate.');
+    }
+
+    this.disabled = false;
+    this.innerHTML = orig;
+});
+
+/**
+ * Generate the PM Analysis PDF.
+ *   logs     : array of PM log records
+ *   inventory: array of fridge records
+ *   opts     : { from, to, dept, tech }
+ */
+async function generatePmAnalysisPDF(logs, inventory, opts) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = 210, pageH = 297, mL = 14, mR = 14;
+    const cW = pageW - mL - mR;
+
+    // ---------- Filter the logs ----------
+    const fromTs = new Date(opts.from + 'T00:00:00').getTime();
+    const toTs   = new Date(opts.to   + 'T23:59:59').getTime();
+
+    const inRange = r => {
+        const d = safeStr(r['Work Date'] || r.workDate || r['Timestamp'] || r.timestamp);
+        if (!d) return false;
+        const t = new Date(d).getTime();
+        return !isNaN(t) && t >= fromTs && t <= toTs;
+    };
+    const deptMatches = r => {
+        if (opts.dept === 'all') return true;
+        const rd = normalizeText(r['Department'] || r.refDept || '');
+        return rd === normalizeText(opts.dept);
+    };
+    const techMatches = r => {
+        if (!opts.tech) return true;
+        const rt = normalizeText(r['Technician'] || r.technician || '');
+        return rt === normalizeText(opts.tech);
+    };
+
+    const filteredLogs = logs.filter(r => inRange(r) && deptMatches(r) && techMatches(r));
+
+    // ---------- Filter the inventory ----------
+    const invInDept = inventory.filter(ac => {
+        if (opts.dept === 'all') return true;
+        return normalizeText(ac.dept) === normalizeText(opts.dept);
+    });
+
+    // Not-working fridges
+    const notWorking = invInDept.filter(ac => {
+        const ws = safeStr(ac.workingStatus || 'Working');
+        return normalizeText(ws) === 'NOT WORKING';
+    });
+
+    // Fridges in the dept that got NO PM during the period
+    const servicedIds = new Set(filteredLogs.map(r => buildAcIdentity({
+        refTag: r['Ref Tag'] || r['AC Tag'] || r.refTag,
+        refLocation: r['Location'] || r.refLocation,
+        refSerial: r['Serial Number'] || r.refSerial,
+        refModel: r['Model'] || r.refModel
+    })));
+    const notServiced = invInDept.filter(ac =>
+        !servicedIds.has(buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model }))
+    );
+
+    // ---------- Draw header ----------
+    doc.setFillColor(30, 74, 109); doc.rect(0, 0, pageW, 6, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(18, 64, 94);
+    doc.text('Refrigerator PM Analysis', mL, 20);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(58, 101, 131);
+    doc.text('Site: CHUB · Refrigerator Fleet Preventive Maintenance', mL, 26);
+
+    doc.setFontSize(8); doc.setTextColor(91, 123, 150);
+    const genAt = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    doc.text('Generated: ' + genAt, pageW - mR, 20, { align: 'right' });
+    doc.text('Records: ' + filteredLogs.length, pageW - mR, 25, { align: 'right' });
+
+    // Filters strip
+    doc.setFillColor(238, 246, 252);
+    doc.rect(mL, 32, cW, 12, 'F');
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(18, 64, 94);
+    doc.text('Period:', mL + 3, 37);
+    doc.text('Department:', mL + 3, 41);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(58, 101, 131);
+    doc.text(formatDateOnly(opts.from) + '  →  ' + formatDateOnly(opts.to), mL + 22, 37);
+    doc.text(opts.dept === 'all' ? 'All Departments' : opts.dept, mL + 22, 41);
+    if (opts.tech) {
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(18, 64, 94);
+        doc.text('Technician:', mL + 90, 41);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(58, 101, 131);
+        doc.text(opts.tech, mL + 113, 41);
+    }
+    doc.setDrawColor(30, 74, 109); doc.setLineWidth(0.5);
+    doc.line(mL, 46, pageW - mR, 46);
+
+    // ---------- KPI cards ----------
+    let y = 54;
+    const totalPm       = filteredLogs.length;
+    const uniqueServiced = servicedIds.size;
+    const totalFridges  = invInDept.length;
+    const neverServiced = notServiced.length;
+    const nwCount       = notWorking.length;
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(18, 64, 94);
+    doc.text('KEY PERFORMANCE INDICATORS', mL, y); y += 6;
+
+    const kpis = [
+        ['Total PMs in period',    String(totalPm)],
+        ['Fridges serviced',       String(uniqueServiced)],
+        ['Total fridges in dept',  String(totalFridges)],
+        ['Never serviced in period',String(neverServiced)],
+        ['Not-working fridges',    String(nwCount)]
+    ];
+    const perRow = 3;
+    const boxW = (cW - (perRow - 1) * 4) / perRow;
+    const boxH = 20;
+    kpis.forEach((k, i) => {
+        const col = i % perRow, row = Math.floor(i / perRow);
+        const bx = mL + col * (boxW + 4);
+        const by = y + row * (boxH + 4);
+        doc.setFillColor(249, 252, 255); doc.setDrawColor(212, 227, 239); doc.setLineWidth(0.3);
+        doc.roundedRect(bx, by, boxW, boxH, 2, 2, 'FD');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(91, 123, 150);
+        doc.text(k[0].toUpperCase(), bx + 3, by + 6);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(18, 64, 94);
+        doc.text(k[1], bx + 3, by + 16);
+    });
+    y += Math.ceil(kpis.length / perRow) * (boxH + 4) + 4;
+
+    // ---------- Section: PMs in period ----------
+    function sectionHeader(title, color) {
+        if (y > pageH - 30) { doc.addPage(); y = 20; }
+        doc.setFillColor.apply(doc, color);
+        doc.rect(mL, y - 4, cW, 6, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(18, 64, 94);
+        doc.text(title, mL + 2, y); y += 6;
+    }
+    function tableHeader(cols, widths) {
+        doc.setFillColor(212, 227, 239); doc.rect(mL, y, cW, 6, 'F');
+        doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(18, 64, 94);
+        let x = mL + 2;
+        cols.forEach((c, i) => { doc.text(c, x, y + 4); x += widths[i]; });
+        y += 6;
+    }
+    function tableRow(cells, widths, opts2) {
+        opts2 = opts2 || {};
+        if (y > pageH - 12) { doc.addPage(); y = 20; }
+        if (opts2.shade) { doc.setFillColor(249, 252, 255); doc.rect(mL, y, cW, 6, 'F'); }
+        doc.setFont('helvetica', opts2.bold ? 'bold' : 'normal'); doc.setFontSize(8);
+        doc.setTextColor.apply(doc, opts2.color || [31, 60, 84]);
+        let x = mL + 2;
+        cells.forEach((c, i) => { doc.text(String(c).substring(0, 80), x, y + 4); x += widths[i]; });
+        y += 6;
+    }
+
+    // --- PMs by fridge ---
+    sectionHeader('PMs BY REFRIGERATOR (in period)', [238, 246, 252]);
+    const byAc = {};
+    filteredLogs.forEach(r => {
+        const key = safeStr(r['Ref Tag'] || r['AC Tag'] || r.refTag) + ' — ' + safeStr(r['Location'] || r.refLocation);
+        byAc[key] = (byAc[key] || 0) + 1;
+    });
+    const acRows = Object.keys(byAc).sort().map(k => [k, byAc[k]]);
+    if (acRows.length === 0) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(91, 123, 150);
+        doc.text('No PM records in this period.', mL + 2, y + 3); y += 8;
+    } else {
+        tableHeader(['Refrigerator', 'PMs'], [cW - 30, 30]);
+        acRows.forEach((row, i) => tableRow(row, [cW - 30, 30], { shade: i % 2 === 1 }));
+    }
+    y += 4;
+
+    // --- PMs by department (only if scope is 'all') ---
+    if (opts.dept === 'all') {
+        sectionHeader('PMs BY DEPARTMENT', [238, 246, 252]);
+        const byDept = {};
+        filteredLogs.forEach(r => {
+            const d = safeStr(r['Department'] || r.refDept || '—');
+            byDept[d] = (byDept[d] || 0) + 1;
+        });
+        const deptRows = Object.keys(byDept).sort().map(k => [k, byDept[k]]);
+        if (deptRows.length === 0) {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(91, 123, 150);
+            doc.text('No PM records in this period.', mL + 2, y + 3); y += 8;
+        } else {
+            tableHeader(['Department', 'PMs'], [cW - 30, 30]);
+            deptRows.forEach((row, i) => tableRow(row, [cW - 30, 30], { shade: i % 2 === 1 }));
+        }
+        y += 4;
+    }
+
+    // --- Not-working fridges ---
+    sectionHeader('NOT-WORKING FRIDGES', [255, 235, 235]);
+    if (notWorking.length === 0) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
+        doc.text('✅ No fridges currently flagged as Not Working.', mL + 2, y + 3); y += 8;
+    } else {
+        tableHeader(['Tag', 'Location', 'Brand / Model', 'Last PM'], [40, 45, cW - 40 - 45 - 25, 25]);
+        notWorking.forEach((ac, i) => {
+            // Find last PM for this fridge
+            const id = buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model });
+            const relevant = logs.filter(r => buildAcIdentity({
+                refTag: r['Ref Tag'] || r['AC Tag'] || r.refTag,
+                refLocation: r['Location'] || r.refLocation,
+                refSerial: r['Serial Number'] || r.refSerial,
+                refModel: r['Model'] || r.refModel
+            }) === id).sort((a,b) => recordTime(b) - recordTime(a));
+            const lastPm = relevant[0] ? formatDateOnly(relevant[0]['Work Date'] || relevant[0].workDate) : '—';
+
+            tableRow(
+                [ac.tag || '—', ac.loc || '—', (ac.brand || '') + ' ' + (ac.model || ''), lastPm],
+                [40, 45, cW - 40 - 45 - 25, 25],
+                { shade: i % 2 === 1, color: [179, 58, 58] }
+            );
+        });
+    }
+    y += 4;
+
+    // --- Never serviced in period ---
+    sectionHeader('NEVER SERVICED IN PERIOD', [255, 243, 205]);
+    if (notServiced.length === 0) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
+        doc.text('✅ All fridges in scope were serviced at least once in the period.', mL + 2, y + 3); y += 8;
+    } else {
+        tableHeader(['Tag', 'Location', 'Brand / Model', 'Working?'], [40, 45, cW - 40 - 45 - 25, 25]);
+        notServiced.forEach((ac, i) => {
+            const ws = safeStr(ac.workingStatus || 'Working');
+            tableRow(
+                [ac.tag || '—', ac.loc || '—', (ac.brand || '') + ' ' + (ac.model || ''), ws],
+                [40, 45, cW - 40 - 45 - 25, 25],
+                { shade: i % 2 === 1, color: ws === 'Not Working' ? [179, 58, 58] : [122, 83, 0] }
+            );
+        });
+    }
+    y += 6;
+
+    // --- Anomalies ---
+    sectionHeader('CHECKLIST ANOMALIES (in period)', [255, 235, 235]);
+    const ALL_ITEMS = [
+        { cat: 'Clean', text: 'Clean interior shelves, walls and drawers' },
+        { cat: 'Clean', text: 'Clean door gaskets and seals' },
+        { cat: 'Clean', text: 'Clean condenser coils and ventilation grills' },
+        { cat: 'Clean', text: 'Clean/empty drain pan and clear drain line' },
+        { cat: 'Clean', text: 'Clean exterior surfaces and control panel' },
+        { cat: 'Temp',  text: 'Check refrigerator temperature (2 – 8 °C)' },
+        { cat: 'Temp',  text: 'Check freezer temperature (≤ –18 °C)' },
+        { cat: 'Temp',  text: 'Verify thermostat calibration and stability' },
+        { cat: 'Temp',  text: 'Check evaporator fan and condenser fan operation' },
+        { cat: 'Temp',  text: 'Verify defrost cycle is functioning properly' },
+        { cat: 'Door',  text: 'Inspect door seal (gasket) for cracks, gaps or mould' },
+        { cat: 'Door',  text: 'Test door seal with dollar bill test' },
+        { cat: 'Door',  text: 'Check door hinge alignment and self-closing function' },
+        { cat: 'Door',  text: 'Verify door alarm and interior light function' },
+        { cat: 'Door',  text: 'Inspect shelving, drawers and door bins integrity' }
+    ];
+    const attentionMap = {};
+    ALL_ITEMS.forEach(it => { attentionMap[it.text] = 0; });
+    filteredLogs.forEach(r => {
+        const cleanSet = new Set(safeSplit(r['Clean Items'] || r.cleanItems, '|'));
+        const tempSet  = new Set(safeSplit(r['Temp Items']  || r.tempItems,  '|'));
+        const doorSet  = new Set(safeSplit(r['Door Items']  || r.doorItems,  '|'));
+        ALL_ITEMS.forEach((item, idx) => {
+            let checked = false;
+            if (item.cat === 'Clean') checked = cleanSet.has(String(idx + 1));
+            else if (item.cat === 'Temp') checked = tempSet.has(String(idx - 4));
+            else if (item.cat === 'Door') checked = doorSet.has(String(idx - 9));
+            if (!checked) attentionMap[item.text]++;
+        });
+    });
+    const anomalyRows = Object.keys(attentionMap).filter(k => attentionMap[k] > 0).map(k => [k, attentionMap[k]]);
+    if (anomalyRows.length === 0) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
+        doc.text('✅ No anomalies flagged in this period.', mL + 2, y + 3);
+    } else {
+        tableHeader(['Checklist Item', 'Times Flagged'], [cW - 30, 30]);
+        anomalyRows.forEach((row, i) => tableRow(row, [cW - 30, 30], { shade: i % 2 === 1 }));
+    }
+
+    // ---------- Footer ----------
+    doc.setFontSize(7); doc.setTextColor(150, 170, 190);
+    doc.text('CHUB Refrigerator Fleet PM System · PM Analysis Report', pageW / 2, pageH - 6, { align: 'center' });
+
+    // ---------- Save ----------
+    const fname = 'CHUB_Ref_PM_Analysis_' + opts.from + '_to_' + opts.to + '_' + (opts.dept === 'all' ? 'AllDepts' : opts.dept.replace(/\s+/g, '_')) + '.pdf';
+    const pdfBytes = doc.output('arraybuffer');
+    const signedBytes = await signPdfBytes(pdfBytes, fname);
+    if (signedBytes) { downloadBytes(signedBytes, fname); }
+    else { doc.save(fname); }
+}
             const signatureModal = document.getElementById('signatureModal');
             const sigFileInput = document.getElementById('sigFileInput');
             const inchargeSigInput = document.getElementById('inchargeSigInput');
