@@ -1287,47 +1287,152 @@
                 return data;
             }
 
-            async function pushTechnicianSignatureToCloud(techName, dataUrl) {
-                if (!techName) return;
-                try {
-                    let cleanBase64 = dataUrl;
-                    if (cleanBase64.startsWith('data:')) cleanBase64 = cleanBase64.split(',')[1];
-                    await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config_set_drive', key: 'TechSig_' + techName, value: cleanBase64, mimeType: 'image/png', fileName: 'Sig_' + techName.replace(/\s+/g, '_') + '.png' }) });
-                } catch (e) {}
-            }
-            async function pushPFXToCloud(techName, pfxBase64) {
-                if (!techName) return;
-                try {
-                    await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config_set_drive', key: 'TechPFX_' + techName, value: pfxBase64, mimeType: 'application/x-pkcs12', fileName: 'Cert_' + techName.replace(/\s+/g, '_') + '.pfx' }) });
-                } catch (e) {}
-            }
-            async function pushInchargeSignatureToCloud(inchargeName, sigB64) {
-                if (!inchargeName) return false;
-                try {
-                    let cleanBase64 = sigB64;
-                    if (cleanBase64.startsWith('data:')) cleanBase64 = cleanBase64.split(',')[1];
-                    await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config_set_drive', key: 'InchargeSig_' + inchargeName, value: cleanBase64, mimeType: 'image/png', fileName: 'InchargeSig_' + inchargeName.replace(/\s+/g, '_') + '.png' }) });
-                    return true;
-                } catch (e) { return false; }
-            }
-            async function pushInchargeMetaToCloud(inchargeName) {
-                if (!inchargeName) return;
-                try {
-                    await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config_set', key: 'InchargeSigner_' + inchargeName, value: inchargeName }) });
-                    await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'config_set', key: 'InchargeUpdatedAt_' + inchargeName, value: new Date().toISOString() }) });
-                } catch (e) {}
-            }
-            async function fetchDepartmentsFromCloud() {
-                try {
-                    const res = await fetch(GOOGLE_SHEET_URL + '?type=config&_ts=' + Date.now(), { cache: 'no-store' });
-                    const json = await res.json();
-                    const raw = json.config && json.config[DEPT_CLOUD_KEY];
-                    if (!raw) return null;
-                    const parsed = JSON.parse(raw);
-                    if (parsed && typeof parsed === 'object') return parsed;
-                    return null;
-                } catch(e) { return null; }
-            }
+            // ---------- Firestore config helpers ----------
+// Converts a key like "TechSig_Hillaly KUBWIMANA" into a safe document ID.
+function firestoreConfigDocId(key) {
+    return String(key || '')
+        .replace(/\//g, '_')
+        .replace(/\s+/g, '_')
+        .replace(/[^A-Za-z0-9_\-\.]/g, '');
+}
+
+async function firestoreConfigSet(key, value, mimeType, fileName) {
+    try {
+        if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
+        const docId = firestoreConfigDocId(key);
+        await window.FB.setDoc(
+            window.FB.doc(window.FB.db, 'config', docId),
+            {
+                key:       key,
+                value:     value || '',
+                mimeType:  mimeType || '',
+                fileName:  fileName || '',
+                updatedAt: window.FB.serverTimestamp()
+            },
+            { merge: true }
+        );
+        console.log('✅ Config saved to Firestore:', key);
+        return true;
+    } catch (e) {
+        console.error('❌ firestoreConfigSet failed:', key, e);
+        return false;
+    }
+}
+
+async function firestoreConfigGet(key) {
+    try {
+        if (!window.FB || !window.FB.ready) return null;
+        const docId = firestoreConfigDocId(key);
+        const snap = await window.FB.getDoc(
+            window.FB.doc(window.FB.db, 'config', docId)
+        );
+        if (!snap.exists()) return null;
+        return snap.data().value || '';
+    } catch (e) {
+        console.error('❌ firestoreConfigGet failed:', key, e);
+        return null;
+    }
+}
+
+async function firestoreConfigGetAll() {
+    try {
+        if (!window.FB || !window.FB.ready) return {};
+        const snap = await window.FB.getDocs(
+            window.FB.collection(window.FB.db, 'config')
+        );
+        const out = {};
+        snap.forEach(doc => {
+            const d = doc.data();
+            if (d && d.key) out[d.key] = d.value || '';
+        });
+        return out;
+    } catch (e) {
+        console.error('❌ firestoreConfigGetAll failed:', e);
+        return {};
+    }
+}
+          async function pushTechnicianSignatureToCloud(techName, dataUrl) {
+    if (!techName) return false;
+    try {
+        let cleanBase64 = dataUrl;
+        if (cleanBase64.startsWith('data:')) cleanBase64 = cleanBase64.split(',')[1];
+        await firestoreConfigSet(
+            'TechSig_' + techName,
+            cleanBase64,
+            'image/png',
+            'Sig_' + techName.replace(/\s+/g, '_') + '.png'
+        );
+        return true;
+    } catch (e) { return false; }
+}
+
+async function pushPFXToCloud(techName, pfxBase64) {
+    if (!techName) return false;
+    try {
+        await firestoreConfigSet(
+            'TechPFX_' + techName,
+            pfxBase64,
+            'application/x-pkcs12',
+            'Cert_' + techName.replace(/\s+/g, '_') + '.pfx'
+        );
+        return true;
+    } catch (e) { return false; }
+}
+
+async function pushInchargeSignatureToCloud(inchargeName, sigB64) {
+    if (!inchargeName) return false;
+    try {
+        let cleanBase64 = sigB64;
+        if (cleanBase64.startsWith('data:')) cleanBase64 = cleanBase64.split(',')[1];
+        await firestoreConfigSet(
+            'InchargeSig_' + inchargeName,
+            cleanBase64,
+            'image/png',
+            'InchargeSig_' + inchargeName.replace(/\s+/g, '_') + '.png'
+        );
+        return true;
+    } catch (e) { return false; }
+}
+
+async function pushInchargeMetaToCloud(inchargeName) {
+    if (!inchargeName) return;
+    try {
+        await firestoreConfigSet('InchargeSigner_' + inchargeName, inchargeName);
+        await firestoreConfigSet('InchargeUpdatedAt_' + inchargeName, new Date().toISOString());
+    } catch (e) {}
+}
+           async function fetchDepartmentsFromCloud() {
+    try {
+        const raw = await firestoreConfigGet(DEPT_CLOUD_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+        return null;
+    } catch (e) { return null; }
+}
+
+async function fetchInchargeSignatureFromCloud(inchargeName) {
+    if (!inchargeName) return '';
+    try {
+        let sig = await firestoreConfigGet('InchargeSig_' + inchargeName) || '';
+        if (sig && !sig.startsWith('data:')) sig = 'data:image/png;base64,' + sig;
+        if (sig) setInchargeSignatureCached(inchargeName, sig);
+        return sig;
+    } catch (e) { return ''; }
+}
+
+async function fetchKnownIncharges() {
+    try {
+        const cfg = await firestoreConfigGetAll();
+        const names = new Set();
+        Object.keys(cfg).forEach(k => {
+            if (k.startsWith('InchargeSig_')) names.add(k.substring('InchargeSig_'.length));
+            else if (k.startsWith('InchargeSigner_')) names.add(k.substring('InchargeSigner_'.length));
+        });
+        Object.values(DEPARTMENTS).forEach(d => { if (d.defaultIncharge) names.add(d.defaultIncharge); });
+        return Array.from(names).filter(Boolean).sort();
+    } catch (e) { return []; }
+}
             function cacheDepartmentsLocally(depts) { try { localStorage.setItem(DEPT_CACHE_KEY, JSON.stringify(depts)); } catch(e) {} }
             function loadCachedDepartments() {
                 try { const raw = localStorage.getItem(DEPT_CACHE_KEY); return raw ? JSON.parse(raw) : null; } catch(e) { return null; }
@@ -1371,53 +1476,52 @@
                 });
             }
 
-            async function fetchTechnicianAssetsFromCloud(techName) {
-                try {
-                    const res = await fetch(GOOGLE_SHEET_URL + '?type=config&_ts=' + Date.now(), { cache: 'no-store' });
-                    const json = await res.json();
-                    const config = json.config || {};
-                    const visualSigRaw = config['TechSig_' + techName];
-                    if (visualSigRaw) {
-                        const visualSig = visualSigRaw.startsWith('data:') ? visualSigRaw : ('data:image/png;base64,' + visualSigRaw);
-                        saveSignatureFor(techName, visualSig);
-                        updateTechnicianDisplay();
-                    }
-                    const pfxBase64 = config['TechPFX_' + techName];
-                    if (!pfxBase64) return;
-                    const password = await askPfxPassword();
-                    if (password) {
-                        try {
-                            let cleanBase64 = pfxBase64;
-                            if (cleanBase64.startsWith('data:')) cleanBase64 = cleanBase64.split(',')[1];
-                            const binary = forge.util.decode64(cleanBase64);
-                            const asn1 = forge.asn1.fromDer(binary);
-                            const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, password);
-                            const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-                            const certBag = certBags[forge.pki.oids.certBag] && certBags[forge.pki.oids.certBag][0];
-                            const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
-                            let keyBag = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] && keyBags[forge.pki.oids.pkcs8ShroudedKeyBag][0];
-                            if (!keyBag) { const plainBags = p12.getBags({ bagType: forge.pki.oids.keyBag }); keyBag = plainBags[forge.pki.oids.keyBag] && plainBags[forge.pki.oids.keyBag][0]; }
-                            if (certBag && certBag.cert && keyBag && keyBag.key) {
-                                CERT_STATE.certificate = certBag.cert;
-                                CERT_STATE.privateKey = keyBag.key;
-                                const getField = (obj, nm) => { try { const f = obj.getField(nm); return f ? f.value : ''; } catch (e) { return ''; } };
-                                CERT_STATE.subject = sanitizeForPDF(getField(certBag.cert.subject, 'CN') || '(unknown)');
-                                CERT_STATE.issuer = sanitizeForPDF(getField(certBag.cert.issuer, 'CN') || '(unknown)');
-                                CERT_STATE.serial = certBag.cert.serialNumber || '';
-                                CERT_STATE.validFrom = certBag.cert.validity.notBefore;
-                                CERT_STATE.validTo = certBag.cert.validity.notAfter;
-                                const derBytes = forge.asn1.toDer(forge.pki.certificateToAsn1(certBag.cert)).getBytes();
-                                const md = forge.md.sha256.create(); md.update(derBytes);
-                                CERT_STATE.fingerprint = md.digest().toHex().match(/.{1,2}/g).join(':').toUpperCase();
-                                window.__cachedPfxBinary = binary;
-                                window.__cachedPfxPassword = password;
-                                updateTechnicianDisplay();
-                                showStatus('🔐 Digital signature auto-loaded!', true);
-                            }
-                        } catch (e) { alert('❌ Wrong PFX password.'); }
-                    }
-                } catch (e) {}
+           async function fetchTechnicianAssetsFromCloud(techName) {
+    try {
+        const cfg = await firestoreConfigGetAll();
+
+        const visualSigRaw = cfg['TechSig_' + techName];
+        if (visualSigRaw) {
+            const visualSig = visualSigRaw.startsWith('data:') ? visualSigRaw : ('data:image/png;base64,' + visualSigRaw);
+            saveSignatureFor(techName, visualSig);
+            updateTechnicianDisplay();
+        }
+
+        const pfxBase64 = cfg['TechPFX_' + techName];
+        if (!pfxBase64) return;
+        const password = await askPfxPassword();
+        if (!password) return;
+        try {
+            let cleanBase64 = pfxBase64;
+            if (cleanBase64.startsWith('data:')) cleanBase64 = cleanBase64.split(',')[1];
+            const binary = forge.util.decode64(cleanBase64);
+            const asn1 = forge.asn1.fromDer(binary);
+            const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, password);
+            const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
+            const certBag = certBags[forge.pki.oids.certBag] && certBags[forge.pki.oids.certBag][0];
+            const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+            let keyBag = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] && keyBags[forge.pki.oids.pkcs8ShroudedKeyBag][0];
+            if (!keyBag) { const plainBags = p12.getBags({ bagType: forge.pki.oids.keyBag }); keyBag = plainBags[forge.pki.oids.keyBag] && plainBags[forge.pki.oids.keyBag][0]; }
+            if (certBag && certBag.cert && keyBag && keyBag.key) {
+                CERT_STATE.certificate = certBag.cert;
+                CERT_STATE.privateKey = keyBag.key;
+                const getField = (obj, nm) => { try { const f = obj.getField(nm); return f ? f.value : ''; } catch (e) { return ''; } };
+                CERT_STATE.subject = sanitizeForPDF(getField(certBag.cert.subject, 'CN') || '(unknown)');
+                CERT_STATE.issuer = sanitizeForPDF(getField(certBag.cert.issuer, 'CN') || '(unknown)');
+                CERT_STATE.serial = certBag.cert.serialNumber || '';
+                CERT_STATE.validFrom = certBag.cert.validity.notBefore;
+                CERT_STATE.validTo = certBag.cert.validity.notAfter;
+                const derBytes = forge.asn1.toDer(forge.pki.certificateToAsn1(certBag.cert)).getBytes();
+                const md = forge.md.sha256.create(); md.update(derBytes);
+                CERT_STATE.fingerprint = md.digest().toHex().match(/.{1,2}/g).join(':').toUpperCase();
+                window.__cachedPfxBinary = binary;
+                window.__cachedPfxPassword = password;
+                updateTechnicianDisplay();
+                showStatus('🔐 Digital signature auto-loaded!', true);
             }
+        } catch (e) { alert('❌ Wrong PFX password.'); }
+    } catch (e) { console.error('❌ fetchTechnicianAssetsFromCloud failed:', e); }
+}
 
             async function fetchInchargeSignatureFromCloud(inchargeName) {
                 if (!inchargeName) return '';
@@ -3007,35 +3111,27 @@ function mapFirestorePmLog(docId, data) {
                 return out;
             }
 
-            async function loadInchargeRegistry() {
-                try {
-                    const res = await fetch(GOOGLE_SHEET_URL + '?type=config&_ts=' + Date.now(), { cache: 'no-store' });
-                    const json = await res.json();
-                    const raw = json && json.config && json.config[INCHARGE_REGISTRY_KEY];
-                    if (raw) {
-                        const parsed = JSON.parse(raw);
-                        const normalized = normalizeInchargeRegistry(parsed);
-                        if (Object.keys(normalized).length > 0) {
-                            INCHARGE_PINS = normalized;
-                            return;
-                        }
-                    }
-                } catch (e) {}
-                INCHARGE_PINS = JSON.parse(JSON.stringify(DEFAULT_INCHARGE_PINS));
+       async function loadInchargeRegistry() {
+    try {
+        const raw = await firestoreConfigGet(INCHARGE_REGISTRY_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            const normalized = normalizeInchargeRegistry(parsed);
+            if (Object.keys(normalized).length > 0) {
+                INCHARGE_PINS = normalized;
+                return;
             }
+        }
+    } catch (e) {}
+    INCHARGE_PINS = JSON.parse(JSON.stringify(DEFAULT_INCHARGE_PINS));
+}
 
-            async function saveInchargeRegistryToCloud(registry) {
-                await fetch(GOOGLE_SHEET_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'config_set',
-                        key: INCHARGE_REGISTRY_KEY,
-                        value: JSON.stringify(registry)
-                    })
-                });
-            }
+         async function saveInchargeRegistryToCloud(registry) {
+    try {
+        await firestoreConfigSet(INCHARGE_REGISTRY_KEY, JSON.stringify(registry));
+        return true;
+    } catch (e) { return false; }
+}
 
             function renderInchargeEditor() {
                 const wrap = document.getElementById('inchargeEditorList');
