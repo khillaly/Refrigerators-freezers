@@ -1604,7 +1604,69 @@ function mapFirestoreEquipment(docId, data) {
     equipCategory: data.type          || 'fridge'       // 'fridge' | 'ac' | 'generator' | 'ups'
   };
 }
-          async function fetchAllInventory() {
+         // ---------- Firestore users (technician + in-charge PINs) ----------
+// Firestore collection: users
+// Document ID derived from name: spaces → underscores, remove special chars
+function userDocId(name) {
+    return String(name || '')
+        .replace(/\s+/g, '_')
+        .replace(/[^A-Za-z0-9_\-\.]/g, '');
+}
+
+// Load all users from Firestore into a map: { name: { role, pin, dept } }
+async function loadUsersFromFirestore() {
+    try {
+        if (!window.FB || !window.FB.ready) return {};
+        const snap = await window.FB.getDocs(
+            window.FB.collection(window.FB.db, 'users')
+        );
+        const out = {};
+        snap.forEach(doc => {
+            const d = doc.data();
+            if (d && d.name) out[d.name] = {
+                role: d.role || 'technician',
+                pin:  String(d.pin || ''),
+                dept: d.dept || ''
+            };
+        });
+        return out;
+    } catch (e) {
+        console.error('❌ loadUsersFromFirestore failed:', e);
+        return {};
+    }
+}
+
+// Seed Firestore with the current hard-coded PINs IF the users collection is empty.
+async function seedUsersIfEmpty() {
+    try {
+        if (!window.FB || !window.FB.ready) return;
+        const existing = await loadUsersFromFirestore();
+        if (Object.keys(existing).length > 0) {
+            console.log('👥 users collection already has ' + Object.keys(existing).length + ' entries — skipping seed.');
+            return;
+        }
+        console.log('👥 users collection empty — seeding defaults…');
+        for (const [name, pin] of Object.entries(TECHNICIAN_PINS)) {
+            const role = (name === SUPERVISOR_NAME) ? 'supervisor' : 'technician';
+            await window.FB.setDoc(
+                window.FB.doc(window.FB.db, 'users', userDocId(name)),
+                { name, role, pin: String(pin), dept: '', updatedAt: window.FB.serverTimestamp() },
+                { merge: true }
+            );
+        }
+        for (const [name, rec] of Object.entries(DEFAULT_INCHARGE_PINS)) {
+            await window.FB.setDoc(
+                window.FB.doc(window.FB.db, 'users', userDocId(name)),
+                { name, role: 'incharge', pin: String(rec.pin || ''), dept: rec.dept || '', updatedAt: window.FB.serverTimestamp() },
+                { merge: true }
+            );
+        }
+        console.log('✅ Seeded users collection with technicians and in-charges.');
+    } catch (e) {
+        console.error('❌ seedUsersIfEmpty failed:', e);
+    }
+}
+            async function fetchAllInventory() {
     try {
         // Wait for Firebase to be ready (it loads async as an ES module)
         if (!window.FB || !window.FB.ready) {
