@@ -1450,20 +1450,78 @@
             function getCacheKey(techName) { return CACHE_KEY_PREFIX + (techName || 'default').replace(/\s+/g, '_'); }
             function cacheInventoryLocally(techName, inv) { try { localStorage.setItem(getCacheKey(techName), JSON.stringify(inv)); } catch(e) {} }
             function loadCachedInventory(techName) { try { const raw = localStorage.getItem(getCacheKey(techName)); return raw ? JSON.parse(raw) : null; } catch(e) { return null; } }
-            async function fetchInventoryFromCloud(techName) {
-                const res = await fetch(GOOGLE_SHEET_URL + '?type=ref_inventory&tech=' + encodeURIComponent(techName), { method: 'GET' });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const json = await res.json();
-                return json.records || [];
+           async function fetchInventoryFromCloud(techName) {
+    // For Firestore, "per technician" is just a filter on the equipment collection.
+    // The technician arg is kept for backward compatibility but is used as an owner filter.
+    try {
+        if (!window.FB || !window.FB.ready) {
+            console.warn('⚠️ Firebase not ready yet — returning empty inventory.');
+            return [];
+        }
+        const snap = await window.FB.getDocs(
+            window.FB.collection(window.FB.db, 'equipment')
+        );
+        const records = [];
+        snap.forEach(doc => {
+            const mapped = mapFirestoreEquipment(doc.id, doc.data());
+            if (!mapped) return;
+            // If a technician name was passed, filter by owner (case-insensitive)
+            if (techName) {
+                const owner = normalizeText(mapped.owner || '');
+                const tech  = normalizeText(techName);
+                if (owner !== tech) return;
             }
-            async function fetchAllInventory() {
-                try {
-                    const res = await fetch(GOOGLE_SHEET_URL + '?type=ref_inventory_all&_ts=' + Date.now(), { cache: 'no-store' });
-                    if (!res.ok) return [];
-                    const json = await res.json();
-                    return json.records || [];
-                } catch (e) { return []; }
-            }
+            records.push(mapped);
+        });
+        console.log('📥 Loaded ' + records.length + ' equipment from Firestore (filter: ' + (techName || 'all') + ')');
+        return records;
+    } catch (e) {
+        console.error('❌ Firestore fetchInventoryFromCloud failed:', e);
+        return [];
+    }
+}
+            // ---------- Firestore ↔ App field mapper ----------
+// Converts a Firestore equipment document into the shape the app expects.
+function mapFirestoreEquipment(docId, data) {
+  if (!data) return null;
+  return {
+    _docId: docId,                    // keep the Firestore doc ID for edit/remove
+    tag:           data.tag           || '',
+    dept:          data.dept          || '',
+    loc:           data.loc           || '',
+    type:          data.equipType     || 'Fridge',      // rename: equipType → type
+    brand:         data.brand         || '(unspecified)',
+    model:         data.model         || '',
+    serial:        data.serial        || 'N/A',
+    workingStatus: data.workingStatus || 'Working',
+    owner:         data.owner         || data.technician || '',
+    lastPmDate:    data.lastPmDate    || '',
+    nextPmDate:    data.nextPmDate    || '',
+    equipCategory: data.type          || 'fridge'       // 'fridge' | 'ac' | 'generator' | 'ups'
+  };
+}
+          async function fetchAllInventory() {
+    try {
+        // Wait for Firebase to be ready (it loads async as an ES module)
+        if (!window.FB || !window.FB.ready) {
+            console.warn('⚠️ Firebase not ready yet — returning empty inventory.');
+            return [];
+        }
+        const snap = await window.FB.getDocs(
+            window.FB.collection(window.FB.db, 'equipment')
+        );
+        const records = [];
+        snap.forEach(doc => {
+            const mapped = mapFirestoreEquipment(doc.id, doc.data());
+            if (mapped) records.push(mapped);
+        });
+        console.log('📥 Loaded ' + records.length + ' equipment from Firestore');
+        return records;
+    } catch (e) {
+        console.error('❌ Firestore fetchAllInventory failed:', e);
+        return [];
+    }
+}
             async function pushInventoryToCloud(techName, inv) {
                 const payload = { action: 'ref_inventory_update', technician: techName, inventory: inv };
                 await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
