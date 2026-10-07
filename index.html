@@ -1523,32 +1523,9 @@ async function fetchKnownIncharges() {
     } catch (e) { console.error('❌ fetchTechnicianAssetsFromCloud failed:', e); }
 }
 
-            async function fetchInchargeSignatureFromCloud(inchargeName) {
-                if (!inchargeName) return '';
-                try {
-                    const res = await fetch(GOOGLE_SHEET_URL + '?type=config&_ts=' + Date.now(), { cache: 'no-store' });
-                    const json = await res.json();
-                    let sig = (json && json.config && json.config['InchargeSig_' + inchargeName]) || '';
-                    if (sig && !sig.startsWith('data:')) sig = 'data:image/png;base64,' + sig;
-                    if (sig) setInchargeSignatureCached(inchargeName, sig);
-                    return sig;
-                } catch (e) { return ''; }
-            }
+         
 
-            async function fetchKnownIncharges() {
-                try {
-                    const res = await fetch(GOOGLE_SHEET_URL + '?type=config&_ts=' + Date.now(), { cache: 'no-store' });
-                    const json = await res.json();
-                    const config = json.config || {};
-                    const names = new Set();
-                    Object.keys(config).forEach(k => {
-                        if (k.startsWith('InchargeSig_')) names.add(k.substring('InchargeSig_'.length));
-                        else if (k.startsWith('InchargeSigner_')) names.add(k.substring('InchargeSigner_'.length));
-                    });
-                    Object.values(DEPARTMENTS).forEach(d => { if (d.defaultIncharge) names.add(d.defaultIncharge); });
-                    return Array.from(names).filter(Boolean).sort();
-                } catch (e) { return []; }
-            }
+          
 
             const CACHE_KEY_PREFIX = 'chub_ref_cache_v4_';
             function getCacheKey(techName) { return CACHE_KEY_PREFIX + (techName || 'default').replace(/\s+/g, '_'); }
@@ -4986,7 +4963,7 @@ loginBtn.addEventListener('click', async function() {
     saveSession({ name: iname, dept: inDept, role: 'incharge' });
     unlockApp({ name: iname, dept: inDept, role: 'incharge' });
 });
-                                     );
+                                   
             loginPinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); } });
             logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lockApp(); showStatus('Logged out.', true); } });
 
@@ -5000,31 +4977,30 @@ loginBtn.addEventListener('click', async function() {
                 updatePendingCount();
                 populateInchargeSuggestions();
                 (async () => {
-    // Ensure Firestore is loaded first
-    await new Promise(resolve => {
-        if (window.FB && window.FB.ready) return resolve();
-        window.addEventListener('firebase-ready', resolve, { once: true });
-    });
+                (async () => {
+                    // Ensure Firestore is loaded first
+                    await new Promise(resolve => {
+                        if (window.FB && window.FB.ready) return resolve();
+                        window.addEventListener('firebase-ready', resolve, { once: true });
+                    });
 
-    // Seed the users collection on first run
-    await seedUsersIfEmpty();
+                    // Seed the users collection on first run
+                    await seedUsersIfEmpty();
 
-    await ensureDepartmentsLoaded();
-    await loadInchargeRegistry();
-    const existingSession = loadSession();
+                    await ensureDepartmentsLoaded();
+                    await loadInchargeRegistry();
+                    const existingSession = loadSession();
 
-    if (existingSession && (TECHNICIAN_PINS[existingSession.name] || existingSession.role === 'incharge' || existingSession.name === SUPERVISOR_NAME)) {
-        unlockApp(existingSession);
-    } else {
-        lockApp();
-    }
-})();
                     if (existingSession && (TECHNICIAN_PINS[existingSession.name] || existingSession.role === 'incharge' || existingSession.name === SUPERVISOR_NAME)) {
                         unlockApp(existingSession);
                     } else {
                         lockApp();
                     }
                 })();
+
+                setTimeout(() => { if (getQueue().length > 0) flushQueue(); }, 1200);
+            }
+        })();
 
                 setTimeout(() => { if (getQueue().length > 0) flushQueue(); }, 1200);
             }
