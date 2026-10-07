@@ -1527,21 +1527,118 @@ function mapFirestoreEquipment(docId, data) {
                 await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 return true;
             }
-            async function addInventoryItemToCloud(item, techName) {
-                const payload = { action: 'ref_inventory_add', technician: techName, item: item };
-                await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-                return true;
+           // ---------- Firestore: ADD ----------
+async function addInventoryItemToCloud(item, techName) {
+    try {
+        if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
+        const now = window.FB.serverTimestamp();
+        const docRef = await window.FB.addDoc(
+            window.FB.collection(window.FB.db, 'equipment'),
+            {
+                type: 'fridge',               // equipment category
+                equipType: item.type || 'Fridge',
+                tag:           item.tag,
+                dept:          item.dept,
+                loc:           item.loc,
+                brand:         item.brand || '(unspecified)',
+                model:         item.model || '',
+                serial:        item.serial || 'N/A',
+                workingStatus: item.workingStatus || 'Working',
+                owner:         item.owner || techName || '',
+                lastPmDate:    item.lastPmDate || '',
+                nextPmDate:    item.nextPmDate || '',
+                createdAt:     now,
+                updatedAt:     now
             }
-            async function editInventoryItemInCloud(original, updated, techName) {
-                const payload = { action: 'ref_inventory_edit', technician: techName, original: original, updated: updated };
-                await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-                return true;
+        );
+        console.log('✅ Equipment added to Firestore. Doc ID:', docRef.id);
+        return { id: docRef.id, ok: true };
+    } catch (e) {
+        console.error('❌ addInventoryItemToCloud failed:', e);
+        throw e;
+    }
+}
+
+// ---------- Firestore: EDIT ----------
+async function editInventoryItemInCloud(original, updated, techName) {
+    try {
+        if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
+
+        // If we know the Firestore doc ID, use it directly.
+        // Otherwise, find the doc by tag + loc + serial + model.
+        let docId = original._docId;
+
+        if (!docId) {
+            const snap = await window.FB.getDocs(
+                window.FB.collection(window.FB.db, 'equipment')
+            );
+            const match = snap.docs.find(d => {
+                const x = d.data();
+                return normalizeText(x.tag) === normalizeText(original.tag) &&
+                       normalizeText(x.loc) === normalizeText(original.loc) &&
+                       normalizeText(x.serial) === normalizeText(original.serial) &&
+                       normalizeText(x.model) === normalizeText(original.model);
+            });
+            if (!match) throw new Error('Equipment not found in Firestore.');
+            docId = match.id;
+        }
+
+        await window.FB.updateDoc(
+            window.FB.doc(window.FB.db, 'equipment', docId),
+            {
+                tag:           updated.tag,
+                dept:          updated.dept,
+                loc:           updated.loc,
+                equipType:     updated.type || 'Fridge',
+                brand:         updated.brand || '(unspecified)',
+                model:         updated.model || '',
+                serial:        updated.serial || 'N/A',
+                workingStatus: updated.workingStatus || 'Working',
+                lastPmDate:    updated.lastPmDate || '',
+                nextPmDate:    updated.nextPmDate || '',
+                updatedAt:     window.FB.serverTimestamp()
             }
-            async function removeInventoryItemInCloud(original, techName) {
-                const payload = { action: 'ref_inventory_remove', technician: techName, original: original };
-                await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-                return true;
-            }
+        );
+        console.log('✅ Equipment updated in Firestore. Doc ID:', docId);
+        return { id: docId, ok: true };
+    } catch (e) {
+        console.error('❌ editInventoryItemInCloud failed:', e);
+        throw e;
+    }
+}
+
+// ---------- Firestore: REMOVE ----------
+async function removeInventoryItemInCloud(original, techName) {
+    try {
+        if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
+
+        let docId = original._docId;
+
+        if (!docId) {
+            const snap = await window.FB.getDocs(
+                window.FB.collection(window.FB.db, 'equipment')
+            );
+            const match = snap.docs.find(d => {
+                const x = d.data();
+                return normalizeText(x.tag) === normalizeText(original.tag) &&
+                       normalizeText(x.loc) === normalizeText(original.loc) &&
+                       normalizeText(x.serial) === normalizeText(original.serial) &&
+                       normalizeText(x.model) === normalizeText(original.model);
+            });
+            if (!match) throw new Error('Equipment not found in Firestore.');
+            docId = match.id;
+        }
+
+        await window.FB.deleteDoc(
+            window.FB.doc(window.FB.db, 'equipment', docId)
+        );
+        console.log('✅ Equipment removed from Firestore. Doc ID:', docId);
+        return { id: docId, ok: true };
+    } catch (e) {
+        console.error('❌ removeInventoryItemInCloud failed:', e);
+        throw e;
+    }
+}
 
             const DEFAULT_REF_INVENTORY = [
                 { tag: 'CHUB/MCH NBM/292', dept: 'Laboratory', loc: 'Sterilization',        type: 'Fridge',          brand: '(unspecified)',      model: 'BPR-5V1000',                     serial: 'YC100025211042',                 lastPmDate: '', nextPmDate: '', workingStatus: 'Working' },
