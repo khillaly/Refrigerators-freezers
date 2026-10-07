@@ -1751,12 +1751,63 @@ async function removeInventoryItemInCloud(original, techName) {
                 syncStatus.className = 'sync-status' + (state ? ' ' + state : '');
                 syncStatusText.textContent = text;
             }
-            async function sendToSheet(data) {
-                try {
-                    await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
-                    return true;
-                } catch (err) { return false; }
-            }
+          async function sendToSheet(data) {
+    try {
+        if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
+
+        // Ensure every PM log has a Report Hash (used for co-sign)
+        if (!data.reportHash && typeof ensureReportHash === 'function') {
+            await ensureReportHash(data);
+        }
+
+        const payload = {
+            timestamp:      window.FB.serverTimestamp(),
+            reportId:       data.reportId       || '',
+            reportHash:     data.reportHash     || '',
+            technician:     data.technician     || '',
+            site:           data.site           || 'CHUB',
+            workDate:       data.workDate       || '',
+            generatedAt:    data.generatedAt    || '',
+            refTag:         data.refTag         || '',
+            refLocation:    data.refLocation    || '',
+            refDept:        data.refDept        || '',
+            refType:        data.refType        || '',
+            refBrand:       data.refBrand       || '',
+            refModel:       data.refModel       || '',
+            refSerial:      data.refSerial      || '',
+            refWorkingStatus: data.refWorkingStatus || 'Working',
+            cleanItems:     data.cleanItems     || '',
+            cleanRemarks:   data.cleanRemarks   || '',
+            cleanRating:    data.cleanRating    || '',
+            tempItems:      data.tempItems      || '',
+            tempRemarks:    data.tempRemarks    || '',
+            tempRating:     data.tempRating     || '',
+            doorItems:      data.doorItems      || '',
+            doorRemarks:    data.doorRemarks    || '',
+            doorRating:     data.doorRating     || '',
+            pkcs7Signature: data.pkcs7Signature || '',
+            signatureSubject:     data.signatureSubject     || '',
+            signatureIssuer:      data.signatureIssuer      || '',
+            signatureSerial:      data.signatureSerial      || '',
+            signatureFingerprint: data.signatureFingerprint || '',
+            signatureValidTo:     data.signatureValidTo     || '',
+            signatureSignedAt:    data.signatureSignedAt    || '',
+            inchargeName:     data.inchargeName     || '',
+            inchargeSignedAt: '',
+            inchargeSigner:   ''
+        };
+
+        const docRef = await window.FB.addDoc(
+            window.FB.collection(window.FB.db, 'pmLogs'),
+            payload
+        );
+        console.log('✅ PM log saved to Firestore. Doc ID:', docRef.id);
+        return true;
+    } catch (err) {
+        console.error('❌ sendToSheet (Firestore) failed:', err);
+        return false;
+    }
+}
             async function flushQueue() {
                 const q = getQueue();
                 if (q.length === 0) { setSyncStatus('', 'All synced'); return; }
@@ -2198,14 +2249,105 @@ async function removeInventoryItemInCloud(original, techName) {
                     doorRating: document.querySelector('input[name="ratingDoor"]:checked')?.value || '—'
                 };
             }
+            // ---------- Firestore ↔ App field mapper for PM logs ----------
+function mapFirestorePmLog(docId, data) {
+  if (!data) return null;
+  // Firestore stores timestamps as Timestamp objects. Convert to strings the app understands.
+  const toIso = (v) => {
+    if (!v) return '';
+    if (v.toDate && typeof v.toDate === 'function') return v.toDate().toISOString();
+    if (v instanceof Date) return v.toISOString();
+    return String(v);
+  };
+  return {
+    _docId:         docId,
+    Timestamp:      toIso(data.timestamp),
+    timestamp:      toIso(data.timestamp),
+    reportId:       data.reportId       || '',
+    technician:     data.technician     || '',
+    site:           data.site           || 'CHUB',
+    workDate:       data.workDate       || '',
+    generatedAt:    data.generatedAt    || '',
+    refTag:         data.refTag         || '',
+    refLocation:    data.refLocation    || '',
+    refDept:        data.refDept        || '',
+    refType:        data.refType        || '',
+    refBrand:       data.refBrand       || '',
+    refModel:       data.refModel       || '',
+    refSerial:      data.refSerial      || '',
+    refWorkingStatus: data.refWorkingStatus || 'Working',
+    cleanItems:     data.cleanItems     || '',
+    cleanRemarks:   data.cleanRemarks   || '',
+    cleanRating:    data.cleanRating    || '',
+    tempItems:      data.tempItems      || '',
+    tempRemarks:    data.tempRemarks    || '',
+    tempRating:     data.tempRating     || '',
+    doorItems:      data.doorItems      || '',
+    doorRemarks:    data.doorRemarks    || '',
+    doorRating:     data.doorRating     || '',
+    reportHash:     data.reportHash     || '',
+    pkcs7Signature: data.pkcs7Signature || '',
+    signatureSubject: data.signatureSubject || '',
+    signatureIssuer:  data.signatureIssuer  || '',
+    signatureSerial:  data.signatureSerial  || '',
+    signatureFingerprint: data.signatureFingerprint || '',
+    signatureValidTo:     data.signatureValidTo     || '',
+    signatureSignedAt:    data.signatureSignedAt    || '',
+    inchargeName:     data.inchargeName     || '',
+    inchargeSignedAt: data.inchargeSignedAt || '',
+    inchargeSigner:   data.inchargeSigner   || '',
 
-            async function fetchAllLogs() {
-                const url = GOOGLE_SHEET_URL + '?type=ref_logs&_ts=' + Date.now();
-                const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const json = await res.json();
-                return json.records || [];
-            }
+    // Aliases that the existing code paths read (kept for compatibility)
+    'Ref Tag':       data.refTag         || '',
+    'Location':      data.refLocation    || '',
+    'Department':    data.refDept        || '',
+    'Type':          data.refType        || '',
+    'Brand':         data.refBrand       || '',
+    'Model':         data.refModel       || '',
+    'Serial Number': data.refSerial      || '',
+    'Working Status': data.refWorkingStatus || 'Working',
+    'Work Date':     data.workDate       || '',
+    'Technician':    data.technician     || '',
+    'Timestamp':     toIso(data.timestamp),
+    'Report Hash':   data.reportHash     || '',
+    'Report ID':     data.reportId       || '',
+    'Clean Items':   data.cleanItems     || '',
+    'Clean Remarks': data.cleanRemarks   || '',
+    'Clean Rating':  data.cleanRating    || '',
+    'Temp Items':    data.tempItems      || '',
+    'Temp Remarks':  data.tempRemarks    || '',
+    'Temp Rating':   data.tempRating     || '',
+    'Door Items':    data.doorItems      || '',
+    'Door Remarks':  data.doorRemarks    || '',
+    'Door Rating':   data.doorRating     || '',
+    'In-Charge Name':      data.inchargeName     || '',
+    'In-Charge Signed At': data.inchargeSignedAt || '',
+    'In-Charge Signer':    data.inchargeSigner   || ''
+  };
+}
+         async function fetchAllLogs() {
+    try {
+        if (!window.FB || !window.FB.ready) {
+            console.warn('⚠️ Firebase not ready yet — returning empty logs.');
+            return [];
+        }
+        const snap = await window.FB.getDocs(
+            window.FB.collection(window.FB.db, 'pmLogs')
+        );
+        const out = [];
+        snap.forEach(doc => {
+            const mapped = mapFirestorePmLog(doc.id, doc.data());
+            if (mapped) out.push(mapped);
+        });
+        // Sort newest first by work date (or timestamp as fallback)
+        out.sort((a, b) => recordTime(b) - recordTime(a));
+        console.log('📥 Loaded ' + out.length + ' PM logs from Firestore');
+        return out;
+    } catch (e) {
+        console.error('❌ Firestore fetchAllLogs failed:', e);
+        return [];
+    }
+}
             async function checkRemoteDuplicate(acIdentity, workDate) {
                 try {
                     const records = await fetchAllLogs();
@@ -2217,14 +2359,32 @@ async function removeInventoryItemInCloud(original, techName) {
                     return { checked: true, duplicate: !!found, record: found || null };
                 } catch (e) { return { checked: false, error: e.message }; }
             }
-            async function fetchAcInfoFromCloud(acTag) {
-                try {
-                    const url = GOOGLE_SHEET_URL + '?type=ref_info&tag=' + encodeURIComponent(acTag) + '&_ts=' + Date.now();
-                    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-                    if (!res.ok) return { ok: false, error: 'HTTP ' + res.status };
-                    return await res.json();
-                } catch (e) { return { ok: false, error: e.message }; }
-            }
+           async function fetchAcInfoFromCloud(acTag) {
+    try {
+        if (!window.FB || !window.FB.ready) {
+            return { ok: false, error: 'Firebase not ready' };
+        }
+        const target = normalizeText(acTag);
+        if (!target) return { ok: false, error: 'Missing tag' };
+
+        // Query: all pmLogs where refTag == acTag, sorted by workDate desc
+        const q = window.FB.query(
+            window.FB.collection(window.FB.db, 'pmLogs'),
+            window.FB.where('refTag', '==', acTag)
+        );
+        const snap = await window.FB.getDocs(q);
+        const records = [];
+        snap.forEach(doc => {
+            const mapped = mapFirestorePmLog(doc.id, doc.data());
+            if (mapped) records.push(mapped);
+        });
+        records.sort((a, b) => recordTime(b) - recordTime(a));
+        return { ok: true, records };
+    } catch (e) {
+        console.error('❌ fetchAcInfoFromCloud failed:', e);
+        return { ok: false, error: e.message };
+    }
+}
 
             signOffBtn.addEventListener('click', async function() {
                 const data = collectFormData();
