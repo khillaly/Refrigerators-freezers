@@ -4900,47 +4900,93 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
                 loginTechSelect.focus();
             }
 
-            loginBtn.addEventListener('click', function() {
-                const role = loginRoleSelect.value;
-                const pin = loginPinInput.value.trim();
-                loginError.textContent = '';
+           let LIVE_USERS = {};  // { name: { role, pin, dept } }  — filled from Firestore at login time
 
-                if (!pin) { loginError.textContent = 'Enter your PIN.'; return; }
+loginBtn.addEventListener('click', async function() {
+    const role = loginRoleSelect.value;
+    const pin = loginPinInput.value.trim();
+    loginError.textContent = '';
 
-                if (role === 'technician') {
-                    const name = loginTechSelect.value;
-                    if (!name) { loginError.textContent = 'Select your name.'; return; }
-                    if (TECHNICIAN_PINS[name] !== pin) {
-                        loginError.textContent = 'Wrong PIN for ' + name;
-                        loginPinInput.value = ''; loginPinInput.focus();
-                        return;
-                    }
-                    const autoRole = (name === SUPERVISOR_NAME) ? 'supervisor' : 'technician';
-                    saveSession({ name, role: autoRole });
-                    unlockApp({ name, role: autoRole });
-                    return;
-                }
+    if (!pin) { loginError.textContent = 'Enter your PIN.'; return; }
 
-                const inDept = document.getElementById('loginInchargeDept').value;
-                const iname = loginInchargeName.value.trim();
-                if (!inDept) { loginError.textContent = 'Please choose your department.'; return; }
-                if (!iname) { loginError.textContent = 'Please enter your full name.'; return; }
-                const record = INCHARGE_PINS[iname];
-                if (!record) {
-                    loginError.textContent = 'This name is not registered as an In-Charge. Contact the manager.';
-                    loginPinInput.value = ''; loginPinInput.focus();
-                    return;
-                }
-                const expectedPin = record.pin || '';
-                if (pin !== expectedPin) {
-                    loginError.textContent = 'Wrong PIN for ' + iname;
-                    loginPinInput.value = ''; loginPinInput.focus();
-                    return;
-                }
+    // Fetch fresh users from Firestore (or fall back to cached copy)
+    loginBtn.disabled = true;
+    const origBtn = loginBtn.innerHTML;
+    loginBtn.innerHTML = '⏳ Checking…';
 
-                saveSession({ name: iname, dept: inDept, role: 'incharge' });
-                unlockApp({ name: iname, dept: inDept, role: 'incharge' });
-            });
+    try {
+        LIVE_USERS = await loadUsersFromFirestore();
+
+        // If Firestore is empty (first run), seed defaults and reload
+        if (Object.keys(LIVE_USERS).length === 0) {
+            console.warn('⚠️ No users in Firestore — seeding defaults…');
+            await seedUsersIfEmpty();
+            LIVE_USERS = await loadUsersFromFirestore();
+        }
+    } catch (e) {
+        console.error('❌ Could not load users:', e);
+    }
+
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = origBtn;
+
+    // ============ TECHNICIAN / SUPERVISOR LOGIN ============
+    if (role === 'technician') {
+        const name = loginTechSelect.value;
+        if (!name) { loginError.textContent = 'Select your name.'; return; }
+
+        // Look up the PIN in Firestore-loaded users
+        let expectedPin = null;
+        if (LIVE_USERS[name] && LIVE_USERS[name].pin) {
+            expectedPin = String(LIVE_USERS[name].pin);
+        } else if (TECHNICIAN_PINS[name]) {
+            // fallback while seeding is in progress
+            expectedPin = String(TECHNICIAN_PINS[name]);
+        }
+
+        if (expectedPin === null) {
+            loginError.textContent = 'User "' + name + '" not found in database. Contact the manager.';
+            loginPinInput.value = ''; loginPinInput.focus();
+            return;
+        }
+        if (expectedPin !== pin) {
+            loginError.textContent = 'Wrong PIN for ' + name;
+            loginPinInput.value = ''; loginPinInput.focus();
+            return;
+        }
+
+        const autoRole = (name === SUPERVISOR_NAME) ? 'supervisor' : 'technician';
+        saveSession({ name, role: autoRole });
+        unlockApp({ name, role: autoRole });
+        return;
+    }
+
+    // ============ IN-CHARGE LOGIN ============
+    const inDept = document.getElementById('loginInchargeDept').value;
+    const iname = loginInchargeName.value.trim();
+    if (!inDept) { loginError.textContent = 'Please choose your department.'; return; }
+    if (!iname) { loginError.textContent = 'Please enter your full name.'; return; }
+
+    // Look up the PIN in Firestore-loaded users
+    let rec = LIVE_USERS[iname];
+    if (!rec) rec = INCHARGE_PINS[iname]; // fallback
+    if (!rec) {
+        loginError.textContent = 'This name is not registered as an In-Charge. Contact the manager.';
+        loginPinInput.value = ''; loginPinInput.focus();
+        return;
+    }
+
+    const expectedPin = String(rec.pin || '');
+    if (pin !== expectedPin) {
+        loginError.textContent = 'Wrong PIN for ' + iname;
+        loginPinInput.value = ''; loginPinInput.focus();
+        return;
+    }
+
+    saveSession({ name: iname, dept: inDept, role: 'incharge' });
+    unlockApp({ name: iname, dept: inDept, role: 'incharge' });
+});
+                                     );
             loginPinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); } });
             logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lockApp(); showStatus('Logged out.', true); } });
 
@@ -4954,10 +5000,25 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
                 updatePendingCount();
                 populateInchargeSuggestions();
                 (async () => {
-                    await ensureDepartmentsLoaded();
-                    await loadInchargeRegistry();
-                    const existingSession = loadSession();
+    // Ensure Firestore is loaded first
+    await new Promise(resolve => {
+        if (window.FB && window.FB.ready) return resolve();
+        window.addEventListener('firebase-ready', resolve, { once: true });
+    });
 
+    // Seed the users collection on first run
+    await seedUsersIfEmpty();
+
+    await ensureDepartmentsLoaded();
+    await loadInchargeRegistry();
+    const existingSession = loadSession();
+
+    if (existingSession && (TECHNICIAN_PINS[existingSession.name] || existingSession.role === 'incharge' || existingSession.name === SUPERVISOR_NAME)) {
+        unlockApp(existingSession);
+    } else {
+        lockApp();
+    }
+})();
                     if (existingSession && (TECHNICIAN_PINS[existingSession.name] || existingSession.role === 'incharge' || existingSession.name === SUPERVISOR_NAME)) {
                         unlockApp(existingSession);
                     } else {
