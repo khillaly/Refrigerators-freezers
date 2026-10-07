@@ -4976,7 +4976,6 @@ logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lock
                 updatePendingCount();
                 populateInchargeSuggestions();
                 (async () => {
-                (async () => {
                     // Ensure Firestore is loaded first
                     await new Promise(resolve => {
                         if (window.FB && window.FB.ready) return resolve();
