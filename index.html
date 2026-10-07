@@ -4960,12 +4960,11 @@ loginBtn.addEventListener('click', async function() {
         return;
     }
 
-    saveSession({ name: iname, dept: inDept, role: 'incharge' });
+        saveSession({ name: iname, dept: inDept, role: 'incharge' });
     unlockApp({ name: iname, dept: inDept, role: 'incharge' });
 });
-                                   
-            loginPinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); } });
-            logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lockApp(); showStatus('Logged out.', true); } });
+loginPinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); } });
+logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lockApp(); showStatus('Logged out.', true); } });
 
             if (!showingPublicInfo) {
                 workDateInput.addEventListener('change', updateWorkDateDisplay);
@@ -5002,9 +5001,6 @@ loginBtn.addEventListener('click', async function() {
             }
         })();
 
-                setTimeout(() => { if (getQueue().length > 0) flushQueue(); }, 1200);
-            }
-        })();
     </script>
     <script>
         if ('serviceWorker' in navigator) {
