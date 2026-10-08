@@ -12,7 +12,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-        <!-- Firebase SDK (modular v10, loaded as ES module, exposed on window.FB) -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
       import {
@@ -33,8 +32,6 @@
         Timestamp
       } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-      // ============ YOUR FIREBASE CONFIG ============
-      // 🔴 Replace ALL values below with your own from Firebase Console
       const firebaseConfig = {
         apiKey: "AIzaSyAK-hbd1QQbREBdI3sFHexX14TcyFalRyA",
         authDomain: "chub-equipment-maintenance.firebaseapp.com",
@@ -43,12 +40,10 @@
         messagingSenderId: "680949913078",
         appId: "1:680949913078:web:f354a5b8ce2e6db4de23d7"
       };
-      // ==============================================
 
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      // Expose on window so the non-module <script> below can use it
       window.FB = {
         app, db,
         collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
@@ -290,6 +285,36 @@
                 <div class="badge" id="infoBadge">CHUB · Preventive Maintenance</div>
             </div>
             <div id="infoBody">
+
+                <div class="info-card" style="margin-top: 16px; border: 2px solid #1e4a6d;">
+    <h2>📄 Download PM Report</h2>
+    <p style="font-size: 0.85rem; color: #5b7b96; margin-bottom: 12px;">
+        Pick a period to download every PM record for this equipment.
+    </p>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="field-group" style="flex: 1; min-width: 140px; margin-bottom: 12px;">
+            <label for="qrReportFrom" style="font-size: 0.82rem;">From date</label>
+            <input type="date" id="qrReportFrom">
+        </div>
+        <div class="field-group" style="flex: 1; min-width: 140px; margin-bottom: 12px;">
+            <label for="qrReportTo" style="font-size: 0.82rem;">To date</label>
+            <input type="date" id="qrReportTo">
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button id="qrReportQuick30" class="refresh-btn" style="background: #e7f0f8; color: #1e4a6d;">📅 Last 30 days</button>
+        <button id="qrReportQuick90" class="refresh-btn" style="background: #e7f0f8; color: #1e4a6d;">📅 Last 90 days</button>
+        <button id="qrReportQuickAll" class="refresh-btn" style="background: #e7f0f8; color: #1e4a6d;">📅 All time</button>
+    </div>
+
+    <button id="qrDownloadBtn" class="refresh-btn" style="background: #1b6b3f; margin-top: 12px; width: 100%;">
+        📄 Download PM PDF
+    </button>
+
+    <div id="qrReportStatus" style="font-size: 0.85rem; margin-top: 10px; min-height: 18px;"></div>
+</div>
                 <div class="info-loading">⏳ Loading latest information…</div>
             </div>
             <div class="info-actions">
@@ -464,7 +489,7 @@
                 </div>
                 <div class="signoff-right">
                     <div class="signature-pad" id="signaturePad">—</div>
-                    <button class="btn-primary" id="signOffBtn"><span>✍️</span> Sign-off & Save to Sheet</button>
+                    <button class="btn-primary" id="signOffBtn"><span>✍️</span> Sign-off & Save to Database</button>
                 </div>
             </div>
         </div>
@@ -1287,70 +1312,68 @@
                 return data;
             }
 
-            // ---------- Firestore config helpers ----------
-// Converts a key like "TechSig_Hillaly KUBWIMANA" into a safe document ID.
-function firestoreConfigDocId(key) {
-    return String(key || '')
-        .replace(/\//g, '_')
-        .replace(/\s+/g, '_')
-        .replace(/[^A-Za-z0-9_\-\.]/g, '');
-}
+            function firestoreConfigDocId(key) {
+                return String(key || '')
+                    .replace(/\//g, '_')
+                    .replace(/\s+/g, '_')
+                    .replace(/[^A-Za-z0-9_\-\.]/g, '');
+            }
 
-async function firestoreConfigSet(key, value, mimeType, fileName) {
-    try {
-        if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
-        const docId = firestoreConfigDocId(key);
-        await window.FB.setDoc(
-            window.FB.doc(window.FB.db, 'config', docId),
-            {
-                key:       key,
-                value:     value || '',
-                mimeType:  mimeType || '',
-                fileName:  fileName || '',
-                updatedAt: window.FB.serverTimestamp()
-            },
-            { merge: true }
-        );
-        console.log('✅ Config saved to Firestore:', key);
-        return true;
-    } catch (e) {
-        console.error('❌ firestoreConfigSet failed:', key, e);
-        return false;
-    }
-}
+            async function firestoreConfigSet(key, value, mimeType, fileName) {
+                try {
+                    if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
+                    const docId = firestoreConfigDocId(key);
+                    await window.FB.setDoc(
+                        window.FB.doc(window.FB.db, 'config', docId),
+                        {
+                            key:       key,
+                            value:     value || '',
+                            mimeType:  mimeType || '',
+                            fileName:  fileName || '',
+                            updatedAt: window.FB.serverTimestamp()
+                        },
+                        { merge: true }
+                    );
+                    console.log('✅ Config saved to Firestore:', key);
+                    return true;
+                } catch (e) {
+                    console.error('❌ firestoreConfigSet failed:', key, e);
+                    return false;
+                }
+            }
 
-async function firestoreConfigGet(key) {
-    try {
-        if (!window.FB || !window.FB.ready) return null;
-        const docId = firestoreConfigDocId(key);
-        const snap = await window.FB.getDoc(
-            window.FB.doc(window.FB.db, 'config', docId)
-        );
-        if (!snap.exists()) return null;
-        return snap.data().value || '';
-    } catch (e) {
-        console.error('❌ firestoreConfigGet failed:', key, e);
-        return null;
-    }
-}
+            async function firestoreConfigGet(key) {
+                try {
+                    if (!window.FB || !window.FB.ready) return null;
+                    const docId = firestoreConfigDocId(key);
+                    const snap = await window.FB.getDoc(
+                        window.FB.doc(window.FB.db, 'config', docId)
+                    );
+                    if (!snap.exists()) return null;
+                    return snap.data().value || '';
+                } catch (e) {
+                    console.error('❌ firestoreConfigGet failed:', key, e);
+                    return null;
+                }
+            }
 
-async function firestoreConfigGetAll() {
-    try {
-        if (!window.FB || !window.FB.ready) return {};
-        const snap = await window.FB.getDocs(
-            window.FB.collection(window.FB.db, 'config')
-        );
-        const out = {};
-        snap.forEach(doc => {
-            const d = doc.data();
-            if (d && d.key) out[d.key] = d.value || '';
-        });
-        return out;
-    } catch (e) {
-        console.error('❌ firestoreConfigGetAll failed:', e);
-        return {};
-    }
-}
+            async function firestoreConfigGetAll() {
+                try {
+                    if (!window.FB || !window.FB.ready) return {};
+                    const snap = await window.FB.getDocs(
+                        window.FB.collection(window.FB.db, 'config')
+                    );
+                    const out = {};
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        if (d && d.key) out[d.key] = d.value || '';
+                    });
+                    return out;
+                } catch (e) {
+                    console.error('❌ firestoreConfigGetAll failed:', e);
+                    return {};
+                }
+            }
           async function pushTechnicianSignatureToCloud(techName, dataUrl) {
     if (!techName) return false;
     try {
@@ -1523,17 +1546,11 @@ async function fetchKnownIncharges() {
     } catch (e) { console.error('❌ fetchTechnicianAssetsFromCloud failed:', e); }
 }
 
-         
-
-          
-
             const CACHE_KEY_PREFIX = 'chub_ref_cache_v4_';
             function getCacheKey(techName) { return CACHE_KEY_PREFIX + (techName || 'default').replace(/\s+/g, '_'); }
             function cacheInventoryLocally(techName, inv) { try { localStorage.setItem(getCacheKey(techName), JSON.stringify(inv)); } catch(e) {} }
             function loadCachedInventory(techName) { try { const raw = localStorage.getItem(getCacheKey(techName)); return raw ? JSON.parse(raw) : null; } catch(e) { return null; } }
            async function fetchInventoryFromCloud(techName) {
-    // For Firestore, "per technician" is just a filter on the equipment collection.
-    // The technician arg is kept for backward compatibility but is used as an owner filter.
     try {
         if (!window.FB || !window.FB.ready) {
             console.warn('⚠️ Firebase not ready yet — returning empty inventory.');
@@ -1546,7 +1563,6 @@ async function fetchKnownIncharges() {
         snap.forEach(doc => {
             const mapped = mapFirestoreEquipment(doc.id, doc.data());
             if (!mapped) return;
-            // If a technician name was passed, filter by owner (case-insensitive)
             if (techName) {
                 const owner = normalizeText(mapped.owner || '');
                 const tech  = normalizeText(techName);
@@ -1561,16 +1577,14 @@ async function fetchKnownIncharges() {
         return [];
     }
 }
-            // ---------- Firestore ↔ App field mapper ----------
-// Converts a Firestore equipment document into the shape the app expects.
 function mapFirestoreEquipment(docId, data) {
   if (!data) return null;
   return {
-    _docId: docId,                    // keep the Firestore doc ID for edit/remove
+    _docId: docId,
     tag:           data.tag           || '',
     dept:          data.dept          || '',
     loc:           data.loc           || '',
-    type:          data.equipType     || 'Fridge',      // rename: equipType → type
+    type:          data.equipType     || 'Fridge',
     brand:         data.brand         || '(unspecified)',
     model:         data.model         || '',
     serial:        data.serial        || 'N/A',
@@ -1578,19 +1592,15 @@ function mapFirestoreEquipment(docId, data) {
     owner:         data.owner         || data.technician || '',
     lastPmDate:    data.lastPmDate    || '',
     nextPmDate:    data.nextPmDate    || '',
-    equipCategory: data.type          || 'fridge'       // 'fridge' | 'ac' | 'generator' | 'ups'
+    equipCategory: data.type          || 'fridge'
   };
 }
-         // ---------- Firestore users (technician + in-charge PINs) ----------
-// Firestore collection: users
-// Document ID derived from name: spaces → underscores, remove special chars
 function userDocId(name) {
     return String(name || '')
         .replace(/\s+/g, '_')
         .replace(/[^A-Za-z0-9_\-\.]/g, '');
 }
 
-// Load all users from Firestore into a map: { name: { role, pin, dept } }
 async function loadUsersFromFirestore() {
     try {
         if (!window.FB || !window.FB.ready) return {};
@@ -1603,7 +1613,8 @@ async function loadUsersFromFirestore() {
             if (d && d.name) out[d.name] = {
                 role: d.role || 'technician',
                 pin:  String(d.pin || ''),
-                dept: d.dept || ''
+                dept: d.dept || '',
+                depts: Array.isArray(d.depts) ? d.depts : []
             };
         });
         return out;
@@ -1613,7 +1624,6 @@ async function loadUsersFromFirestore() {
     }
 }
 
-// Seed Firestore with the current hard-coded PINs IF the users collection is empty.
 async function seedUsersIfEmpty() {
     try {
         if (!window.FB || !window.FB.ready) return;
@@ -1627,7 +1637,7 @@ async function seedUsersIfEmpty() {
             const role = (name === SUPERVISOR_NAME) ? 'supervisor' : 'technician';
             await window.FB.setDoc(
                 window.FB.doc(window.FB.db, 'users', userDocId(name)),
-                { name, role, pin: String(pin), dept: '', updatedAt: window.FB.serverTimestamp() },
+                { name, role, pin: String(pin), dept: '', depts: [], updatedAt: window.FB.serverTimestamp() },
                 { merge: true }
             );
         }
@@ -1645,7 +1655,6 @@ async function seedUsersIfEmpty() {
 }
             async function fetchAllInventory() {
     try {
-        // Wait for Firebase to be ready (it loads async as an ES module)
         if (!window.FB || !window.FB.ready) {
             console.warn('⚠️ Firebase not ready yet — returning empty inventory.');
             return [];
@@ -1670,7 +1679,6 @@ async function seedUsersIfEmpty() {
                 await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 return true;
             }
-           // ---------- Firestore: ADD ----------
 async function addInventoryItemToCloud(item, techName) {
     try {
         if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
@@ -1678,7 +1686,7 @@ async function addInventoryItemToCloud(item, techName) {
         const docRef = await window.FB.addDoc(
             window.FB.collection(window.FB.db, 'equipment'),
             {
-                type: 'fridge',               // equipment category
+                type: 'fridge',
                 equipType: item.type || 'Fridge',
                 tag:           item.tag,
                 dept:          item.dept,
@@ -1702,13 +1710,10 @@ async function addInventoryItemToCloud(item, techName) {
     }
 }
 
-// ---------- Firestore: EDIT ----------
 async function editInventoryItemInCloud(original, updated, techName) {
     try {
         if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
 
-        // If we know the Firestore doc ID, use it directly.
-        // Otherwise, find the doc by tag + loc + serial + model.
         let docId = original._docId;
 
         if (!docId) {
@@ -1750,7 +1755,6 @@ async function editInventoryItemInCloud(original, updated, techName) {
     }
 }
 
-// ---------- Firestore: REMOVE ----------
 async function removeInventoryItemInCloud(original, techName) {
     try {
         if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
@@ -1898,7 +1902,6 @@ async function removeInventoryItemInCloud(original, techName) {
     try {
         if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
 
-        // Ensure every PM log has a Report Hash (used for co-sign)
         if (!data.reportHash && typeof ensureReportHash === 'function') {
             await ensureReportHash(data);
         }
@@ -1964,7 +1967,7 @@ async function removeInventoryItemInCloud(original, techName) {
             async function queueAndSend(data) {
                 setSyncStatus('', 'Sending...');
                 const ok = await sendToSheet(data);
-                if (ok) { setSyncStatus('', 'Saved ✓'); showStatus('✅ Signed off & saved to Google Sheet.', true); return true; }
+                if (ok) { setSyncStatus('', 'Saved ✓'); showStatus('✅ Signed off & saved to database.', true); return true; }
                 else { const q = getQueue(); q.push(data); saveQueue(q); setSyncStatus('offline', 'Offline — queued'); showStatus('📥 Saved locally — will sync when online.', false); return false; }
             }
 
@@ -2392,10 +2395,8 @@ async function removeInventoryItemInCloud(original, techName) {
                     doorRating: document.querySelector('input[name="ratingDoor"]:checked')?.value || '—'
                 };
             }
-            // ---------- Firestore ↔ App field mapper for PM logs ----------
 function mapFirestorePmLog(docId, data) {
   if (!data) return null;
-  // Firestore stores timestamps as Timestamp objects. Convert to strings the app understands.
   const toIso = (v) => {
     if (!v) return '';
     if (v.toDate && typeof v.toDate === 'function') return v.toDate().toISOString();
@@ -2440,7 +2441,6 @@ function mapFirestorePmLog(docId, data) {
     inchargeSignedAt: data.inchargeSignedAt || '',
     inchargeSigner:   data.inchargeSigner   || '',
 
-    // Aliases that the existing code paths read (kept for compatibility)
     'Ref Tag':       data.refTag         || '',
     'Location':      data.refLocation    || '',
     'Department':    data.refDept        || '',
@@ -2463,9 +2463,12 @@ function mapFirestorePmLog(docId, data) {
     'Door Items':    data.doorItems      || '',
     'Door Remarks':  data.doorRemarks    || '',
     'Door Rating':   data.doorRating     || '',
-    'In-Charge Name':      data.inchargeName     || '',
+     'In-Charge Name':      data.inchargeName     || '',
     'In-Charge Signed At': data.inchargeSignedAt || '',
-    'In-Charge Signer':    data.inchargeSigner   || ''
+    'In-Charge Signer':    data.inchargeSigner   || '',
+    inchargePkcs7Signature:        data.inchargePkcs7Signature        || '',
+    inchargeSignatureSerial:       data.inchargeSignatureSerial       || '',
+    'In-Charge Signature Serial':  data.inchargeSignatureSerial       || '',
   };
 }
          async function fetchAllLogs() {
@@ -2482,7 +2485,6 @@ function mapFirestorePmLog(docId, data) {
             const mapped = mapFirestorePmLog(doc.id, doc.data());
             if (mapped) out.push(mapped);
         });
-        // Sort newest first by work date (or timestamp as fallback)
         out.sort((a, b) => recordTime(b) - recordTime(a));
         console.log('📥 Loaded ' + out.length + ' PM logs from Firestore');
         return out;
@@ -2510,7 +2512,6 @@ function mapFirestorePmLog(docId, data) {
         const target = normalizeText(acTag);
         if (!target) return { ok: false, error: 'Missing tag' };
 
-        // Query: all pmLogs where refTag == acTag, sorted by workDate desc
         const q = window.FB.query(
             window.FB.collection(window.FB.db, 'pmLogs'),
             window.FB.where('refTag', '==', acTag)
@@ -2537,7 +2538,7 @@ function mapFirestorePmLog(docId, data) {
                 const acIdentity = buildAcIdentity(data);
                 const orig = this.innerHTML;
                 this.disabled = true;
-                this.innerHTML = '<span>⏳</span> Checking Google Sheet...';
+                this.innerHTML = '<span>⏳</span> Checking duplicates...';
 
                 const queuedDup = getQueue().some(item =>
                     buildAcIdentity(item) === acIdentity &&
@@ -2552,12 +2553,12 @@ function mapFirestorePmLog(docId, data) {
                 const remote = await checkRemoteDuplicate(acIdentity, data.workDate);
                 if (remote.checked && remote.duplicate) {
                     const rec = remote.record || {};
-                    showStatus('⚠️ Already saved in Google Sheet for this date!', false);
+                    showStatus('⚠️ Already saved for this date!', false);
                     alert('⛔ DUPLICATE FOUND\n\nRef Tag: ' + data.refTag + '\nWork Date: ' + data.workDate + '\nSaved by: ' + (rec.technician || rec['Technician'] || 'unknown'));
                     this.disabled = false; this.innerHTML = orig; return;
                 }
                 if (!remote.checked) {
-                    if (!confirm('⚠️ Could not verify with Google Sheet. Save anyway?')) {
+                    if (!confirm('⚠️ Could not verify duplicates. Save anyway?')) {
                         this.disabled = false; this.innerHTML = orig; return;
                     }
                 }
@@ -2829,6 +2830,99 @@ function mapFirestorePmLog(docId, data) {
                         }).join('')}
                     </div>
                 `;
+                    // =========================================================
+    // QR DOWNLOAD PM REPORT — wiring
+    // =========================================================
+    window.__qrCurrentTag = tag;
+
+    const fromInput = document.getElementById('qrReportFrom');
+    const toInput   = document.getElementById('qrReportTo');
+
+    // Default the range to the last 90 days on first load
+    if (fromInput && !fromInput.value) {
+        const today = new Date();
+        const past  = new Date();
+        past.setDate(today.getDate() - 90);
+        const fmt = d => d.toISOString().slice(0, 10);
+        toInput.value   = fmt(today);
+        fromInput.value = fmt(past);
+    }
+
+    const setQuickRange = days => {
+        const today = new Date();
+        const fmt = d => d.toISOString().slice(0, 10);
+        toInput.value = fmt(today);
+        if (days === 'all') {
+            fromInput.value = '2026-07-03';   // RECORDING_START
+        } else {
+            const past = new Date();
+            past.setDate(today.getDate() - days);
+            fromInput.value = fmt(past);
+        }
+    };
+
+    document.getElementById('qrReportQuick30')?.addEventListener('click', () => setQuickRange(30));
+    document.getElementById('qrReportQuick90')?.addEventListener('click', () => setQuickRange(90));
+    document.getElementById('qrReportQuickAll')?.addEventListener('click', () => setQuickRange('all'));
+
+    document.getElementById('qrDownloadBtn')?.addEventListener('click', async () => {
+        const btn    = document.getElementById('qrDownloadBtn');
+        const status = document.getElementById('qrReportStatus');
+        const from   = fromInput.value;
+        const to     = toInput.value;
+
+        if (!from || !to) {
+            status.textContent = '⚠️ Please pick both dates.';
+            status.style.color = '#b33a3a';
+            return;
+        }
+        if (from > to) {
+            status.textContent = '⚠️ From must be before To.';
+            status.style.color = '#b33a3a';
+            return;
+        }
+
+        status.textContent = '⏳ Fetching PM records…';
+        status.style.color = '#5b7b96';
+        btn.disabled = true;
+
+        try {
+            const allLogs = await window.__DEV.fetchAcInfoFromCloud(tag);
+            if (!allLogs || !allLogs.ok) {
+                throw new Error(allLogs?.error || 'Could not fetch records.');
+            }
+
+            const fromTs = new Date(from + 'T00:00:00').getTime();
+            const toTs   = new Date(to   + 'T23:59:59').getTime();
+
+            const filtered = (allLogs.records || []).filter(r => {
+                const d = r['Work Date'] || r['Timestamp'] || r.workDate || '';
+                if (!d) return false;
+                const t = new Date(d).getTime();
+                return !isNaN(t) && t >= fromTs && t <= toTs;
+            });
+
+            if (filtered.length === 0) {
+                status.textContent = '📭 No PM records in that period.';
+                status.style.color = '#b33a3a';
+                btn.disabled = false;
+                return;
+            }
+
+            status.textContent = '⏳ Generating PDF for ' + filtered.length + ' record(s)…';
+
+            await window.__DEV.generatePDF(filtered);
+
+            status.textContent = '✅ PDF downloaded (' + filtered.length + ' record' + (filtered.length > 1 ? 's' : '') + ').';
+            status.style.color = '#1b6b3f';
+        } catch (e) {
+            console.error('❌ QR PM download failed:', e);
+            status.textContent = '⚠️ ' + (e.message || 'Could not generate PDF.');
+            status.style.color = '#b33a3a';
+        }
+
+        btn.disabled = false;
+    });
             }
 
             const showingPublicInfo = initAcInfoPage();
@@ -2856,18 +2950,25 @@ function mapFirestorePmLog(docId, data) {
                     const myDept = currentInchargeDept || '';
                     const myName = normalizeText(currentLoggedInName);
 
-                    const pending = records.filter(r => {
+                                        const pending = records.filter(r => {
                         const at = safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim();
                         if (at) return false;
 
                         if (inchargeFilterScope === 'mine') {
                             const recDept = normalizeText(r['Department'] || r.refDept);
                             const recIncharge = normalizeText(r['In-Charge Name'] || r.inchargeName);
-                            if (myDept && recDept === normalizeText(myDept)) return true;
-                            if (recIncharge === myName) return true;
-                            if (!recDept && !recIncharge) return true;
+
+                            // Match by department
+                            if (myDept && recDept && recDept === normalizeText(myDept)) return true;
+
+                            // Match by explicit in-charge name assigned on the PM
+                            if (myName && recIncharge && recIncharge === myName) return true;
+
+                            // Otherwise NOT mine
                             return false;
                         }
+
+                        // "All Departments" scope — show everything pending
                         return true;
                     }).sort((a, b) => recordTime(b) - recordTime(a));
 
@@ -2907,23 +3008,81 @@ function mapFirestorePmLog(docId, data) {
                     pendingApprovalsList.innerHTML = '<div style="text-align:center; color:#b33a3a; padding: 12px;">⚠️ Could not load: ' + e.message + '</div>';
                 }
             }
+async function cosignRecord(reportHash, inchargeName) {
+    if (!inchargeName) { alert('You must be signed in.'); return false; }
+    if (!reportHash) { alert('Record has no Report Hash.'); return false; }
 
-            async function cosignRecord(reportHash, inchargeName) {
-                if (!inchargeName) { alert('You must be signed in.'); return false; }
-                if (!currentInchargeSignature) {
-                    await fetchInchargeSignatureFromCloud(inchargeName);
-                    currentInchargeSignature = getInchargeSignatureCached(inchargeName);
-                }
-                if (!currentInchargeSignature) {
-                    alert('⚠️ Please upload your in-charge signature first (top-right → 🖊️ Signature & Cert).');
-                    return false;
-                }
-                try {
-                    await fetch(GOOGLE_SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'cosign', reportHash: reportHash, inchargeSignedAt: new Date().toISOString(), inchargeSigner: inchargeName }) });
-                    showStatus('✅ Record co-signed successfully.', true);
-                    return true;
-                } catch (e) { showStatus('⚠️ Co-sign failed: ' + e.message, false); return false; }
+    // Ensure we have the in-charge's visual signature cached
+    if (!currentInchargeSignature) {
+        await fetchInchargeSignatureFromCloud(inchargeName);
+        currentInchargeSignature = getInchargeSignatureCached(inchargeName);
+    }
+    if (!currentInchargeSignature) {
+        alert('⚠️ Please upload your in-charge signature first (top-right → 🖊️ Signature & Cert).');
+        return false;
+    }
+
+    if (!window.FB || !window.FB.ready) {
+        showStatus('⚠️ Firebase not ready.', false);
+        return false;
+    }
+
+    try {
+        const q = window.FB.query(
+            window.FB.collection(window.FB.db, 'pmLogs'),
+            window.FB.where('reportHash', '==', reportHash)
+        );
+        const snap = await window.FB.getDocs(q);
+
+        if (snap.empty) {
+            showStatus('⚠️ No matching PM log found for this report.', false);
+            return false;
+        }
+
+        const signedAt = new Date().toISOString();
+
+        // Optional: cryptographically sign the co-sign if a cert is loaded
+        let certSig = null;
+        if (isCertLoaded()) {
+            const canonical = 'COSIGN|' + reportHash + '|' + inchargeName + '|' + signedAt;
+            certSig = signCanonical(canonical);
+        }
+
+        let updatedCount = 0;
+        for (const docSnap of snap.docs) {
+            const update = {
+                inchargeSignedAt: signedAt,
+                inchargeSigner:   inchargeName
+            };
+
+            if (certSig) {
+                update.inchargePkcs7Signature         = certSig.base64;
+                update.inchargeSignatureSubject       = certSig.subject;
+                update.inchargeSignatureIssuer        = certSig.issuer;
+                update.inchargeSignatureSerial        = certSig.serial;
+                update.inchargeSignatureFingerprint   = certSig.fingerprint;
+                update.inchargeSignatureValidTo       = certSig.validTo;
             }
+
+            await window.FB.updateDoc(
+                window.FB.doc(window.FB.db, 'pmLogs', docSnap.id),
+                update
+            );
+            updatedCount++;
+        }
+
+        console.log(
+            '✅ Co-signed ' + updatedCount + ' PM log(s) in Firestore.',
+            certSig ? '(PKCS#7 sealed)' : '(name + timestamp only)'
+        );
+        showStatus('✅ Record co-signed successfully' + (certSig ? ' (sealed).' : '.'), true);
+        return true;
+    } catch (e) {
+        console.error('❌ cosignRecord failed:', e);
+        showStatus('⚠️ Co-sign failed: ' + e.message, false);
+        return false;
+    }
+}
             document.getElementById('refreshPendingBtn').addEventListener('click', refreshPendingApprovals);
             document.getElementById('approveAllBtn').addEventListener('click', async function() {
                 const myName = currentLoggedInName;
@@ -3686,7 +3845,8 @@ function mapFirestorePmLog(docId, data) {
                         doc.setDrawColor(180, 140, 60); doc.setLineWidth(0.3);
                         doc.line(rightBoxX + 3, y + 25, rightBoxX + halfWidth - 3, y + 25);
                         doc.setFontSize(6); doc.setFont('helvetica', 'bold'); doc.setTextColor(27, 107, 63);
-                        doc.text('Co-signed (approved)', rightBoxX + 3, y + 28.5);
+                                              const coSignedSealed = safeStr(data['In-Charge Signature Serial'] || data.inchargeSignatureSerial);
+                        doc.text(coSignedSealed ? 'Co-signed + PKCS#7 sealed' : 'Co-signed (approved)', rightBoxX + 3, y + 28.5);
                     } else {
                         doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(10, 42, 63);
                         doc.text(sanitizeForPDF(inchargeNameForBox), rightBoxX + 3, y + 11);
@@ -3985,7 +4145,6 @@ function mapFirestorePmLog(docId, data) {
                 } catch (e) { return null; }
             }
 
-            // ================== END PDF GENERATORS ==================
             pdfBtn.addEventListener('click', async function() {
                 const current = collectFormData();
                 if (!current) return;
@@ -4016,7 +4175,6 @@ function mapFirestorePmLog(docId, data) {
                 }
                 this.disabled = false; this.innerHTML = orig;
             });
- // ==================== PM ANALYSIS (PERIOD + DEPARTMENT) ====================
 
 const analysisModal = document.getElementById('analysisModal');
 const analysisFrom  = document.getElementById('analysisFrom');
@@ -4048,7 +4206,6 @@ document.getElementById('analysisBtn').addEventListener('click', () => {
     populateAnalysisDeptSelect();
     setDefaultAnalysisDates();
     analysisError.textContent = '';
-    // Show the logged-in technician's name in the scope note
     const nameSpan = document.getElementById('analysisScopeName');
     if (nameSpan) nameSpan.textContent = (currentLoggedInName || 'your own');
     analysisModal.classList.add('show');
@@ -4063,7 +4220,6 @@ document.getElementById('analysisGenerate').addEventListener('click', async func
     const to   = analysisTo.value;
     const dept = analysisDept.value || 'all';
 
-    // 🔒 ALWAYS force "only my PMs" for technicians
     const techFilter = currentLoggedInName || technicianSelect.value;
     if (!techFilter) {
         analysisError.textContent = 'You must be logged in.';
@@ -4085,7 +4241,7 @@ document.getElementById('analysisGenerate').addEventListener('click', async func
 
         await generatePmAnalysisPDF(allLogs, allInv, {
             from, to, dept,
-            tech: techFilter      // 🔒 locked to the logged-in technician
+            tech: techFilter
         });
         showStatus('📊 PM Analysis PDF generated.', true);
         analysisModal.classList.remove('show');
@@ -4096,14 +4252,15 @@ document.getElementById('analysisGenerate').addEventListener('click', async func
     this.disabled = false;
     this.innerHTML = orig;
 });
-
 async function generatePmAnalysisPDF(logs, inventory, opts) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = 210, pageH = 297, mL = 14, mR = 14;
     const cW = pageW - mL - mR;
 
-    // ---------- Filter logs (period + dept + technician) ----------
+    // ============================================================
+    // Filters
+    // ============================================================
     const fromTs = new Date(opts.from + 'T00:00:00').getTime();
     const toTs   = new Date(opts.to   + 'T23:59:59').getTime();
 
@@ -4124,116 +4281,58 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
 
     const filteredLogs = logs.filter(r => inRange(r) && deptMatches(r) && techMatches(r));
 
-    // ---------- Inventory filter ----------
     const invInDept = inventory.filter(ac => {
         if (opts.dept === 'all') return true;
         return normalizeText(ac.dept) === normalizeText(opts.dept);
     });
+    const fridgesOnly = invInDept.filter(ac => (ac.equipCategory || 'fridge').toLowerCase() !== 'ac');
+    const acsOnly     = invInDept.filter(ac => (ac.equipCategory || '').toLowerCase() === 'ac');
 
-    const notWorking = invInDept.filter(ac => {
+    // ============================================================
+    // Helpers
+    // ============================================================
+    function isNotWorking(ac) {
         return normalizeText(safeStr(ac.workingStatus || 'Working')) === 'NOT WORKING';
-    });
-
-    const servicedIds = new Set(filteredLogs.map(r => buildAcIdentity({
-        refTag: r['Ref Tag'] || r['AC Tag'] || r.refTag,
-        refLocation: r['Location'] || r.refLocation,
-        refSerial: r['Serial Number'] || r.refSerial,
-        refModel: r['Model'] || r.refModel
-    })));
-   const notServiced = invInDept.filter(ac => {
-    // Exclude Not-Working fridges — they belong in their own section
-    const ws = normalizeText(safeStr(ac.workingStatus || 'Working'));
-    if (ws === 'NOT WORKING') return false;
-    // Include only fridges that had no PM in the period
-    return !servicedIds.has(buildAcIdentity({
-        refTag: ac.tag, refLocation: ac.loc,
-        refSerial: ac.serial, refModel: ac.model
-    }));
-});
-
-    // ---------- Fetch technician signature ----------
-    const techName = opts.tech;
-    let techVisualSig = getSignatureFor(techName);
-    if (!techVisualSig) {
-        try {
-            const res = await fetch(GOOGLE_SHEET_URL + '?type=config&_ts=' + Date.now(), { cache: 'no-store' });
-            const json = await res.json();
-            const cfg = json.config || {};
-            const cloudSig = cfg['TechSig_' + techName];
-            if (cloudSig) {
-                techVisualSig = cloudSig.startsWith('data:') ? cloudSig : ('data:image/png;base64,' + cloudSig);
-                saveSignatureFor(techName, techVisualSig);
-            }
-        } catch (e) {}
     }
-    let techSigDims = null;
-    if (techVisualSig) techSigDims = await loadImageDimensions(techVisualSig);
+    function equipIdentity_(src) {
+        return buildAcIdentity({
+            refTag: src.tag || src['Ref Tag'] || src['AC Tag'] || src.refTag,
+            refLocation: src.loc || src['Location'] || src.refLocation,
+            refSerial: src.serial || src['Serial Number'] || src.refSerial,
+            refModel: src.model || src['Model'] || src.refModel
+        });
+    }
+    function hasBeenServicedInPeriod(ac) {
+        const id = equipIdentity_(ac);
+        return filteredLogs.some(r => equipIdentity_(r) === id);
+    }
+    function lastPmFor_(ac) {
+        const id = equipIdentity_(ac);
+        const myLogs = logs.filter(r => equipIdentity_(r) === id)
+                           .sort((a, b) => recordTime(b) - recordTime(a));
+        return myLogs[0] ? formatDateOnly(myLogs[0]['Work Date'] || myLogs[0].workDate) : '—';
+    }
 
-    // ---------- Header ----------
+    // ============================================================
+    // HEADER
+    // ============================================================
     doc.setFillColor(30, 74, 109); doc.rect(0, 0, pageW, 6, 'F');
     doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(18, 64, 94);
-    doc.text('Refrigerator PM Analysis', mL, 20);
+    doc.text('PM Analysis — ' + (opts.dept === 'all' ? 'All Departments' : opts.dept), mL, 20);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(58, 101, 131);
-    doc.text('Site: CHUB · Refrigerator Fleet Preventive Maintenance', mL, 26);
-
+    doc.text('Period: ' + formatDateOnly(opts.from) + '  to  ' + formatDateOnly(opts.to), mL, 26);
     doc.setFontSize(8); doc.setTextColor(91, 123, 150);
     const genAt = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     doc.text('Generated: ' + genAt, pageW - mR, 20, { align: 'right' });
-    doc.text('Records: ' + filteredLogs.length, pageW - mR, 25, { align: 'right' });
-
-    // Filters strip
-    doc.setFillColor(238, 246, 252);
-    doc.rect(mL, 32, cW, 12, 'F');
-    doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(18, 64, 94);
-    doc.text('Period:', mL + 3, 37);
-    doc.text('Department:', mL + 3, 41);
-    doc.setFont('helvetica', 'normal'); doc.setTextColor(58, 101, 131);
-    doc.text(formatDateOnly(opts.from) + '  →  ' + formatDateOnly(opts.to), mL + 22, 37);
-    doc.text(opts.dept === 'all' ? 'All Departments' : opts.dept, mL + 22, 41);
-    if (opts.tech) {
-        doc.setFont('helvetica', 'bold'); doc.setTextColor(18, 64, 94);
-        doc.text('Technician:', mL + 90, 41);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(58, 101, 131);
-        doc.text(opts.tech, mL + 113, 41);
-    }
+    if (opts.tech) doc.text('Technician: ' + opts.tech, pageW - mR, 25, { align: 'right' });
     doc.setDrawColor(30, 74, 109); doc.setLineWidth(0.5);
-    doc.line(mL, 46, pageW - mR, 46);
+    doc.line(mL, 30, pageW - mR, 30);
 
-    // ---------- KPI cards ----------
-    let y = 54;
-    const totalPm       = filteredLogs.length;
-    const uniqueServiced = servicedIds.size;
-    const totalFridges  = invInDept.length;
-    const neverServiced = notServiced.length;
-    const nwCount       = notWorking.length;
+    // ============================================================
+    // Layout helpers
+    // ============================================================
+    let y = 38;
 
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(18, 64, 94);
-    doc.text('KEY PERFORMANCE INDICATORS', mL, y); y += 6;
-
-    const kpis = [
-        ['Total PMs in period',    String(totalPm)],
-        ['Fridges serviced',       String(uniqueServiced)],
-        ['Total fridges in dept',  String(totalFridges)],
-        ['Never serviced in period',String(neverServiced)],
-        ['Not-working fridges',    String(nwCount)]
-    ];
-    const perRow = 3;
-    const boxW = (cW - (perRow - 1) * 4) / perRow;
-    const boxH = 20;
-    kpis.forEach((k, i) => {
-        const col = i % perRow, row = Math.floor(i / perRow);
-        const bx = mL + col * (boxW + 4);
-        const by = y + row * (boxH + 4);
-        doc.setFillColor(249, 252, 255); doc.setDrawColor(212, 227, 239); doc.setLineWidth(0.3);
-        doc.roundedRect(bx, by, boxW, boxH, 2, 2, 'FD');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(91, 123, 150);
-        doc.text(k[0].toUpperCase(), bx + 3, by + 6);
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(18, 64, 94);
-        doc.text(k[1], bx + 3, by + 16);
-    });
-    y += Math.ceil(kpis.length / perRow) * (boxH + 4) + 4;
-
-    // ---------- Helpers ----------
     function sectionHeader(title, color) {
         if (y > pageH - 30) { doc.addPage(); y = 20; }
         doc.setFillColor.apply(doc, color);
@@ -4248,172 +4347,167 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
         cols.forEach((c, i) => { doc.text(c, x, y + 4); x += widths[i]; });
         y += 6;
     }
-    function tableRow(cells, widths, opts2) {
-        opts2 = opts2 || {};
+    function tableRow(cells, widths, rowOpts) {
+        rowOpts = rowOpts || {};
         if (y > pageH - 12) { doc.addPage(); y = 20; }
-        if (opts2.shade) { doc.setFillColor(249, 252, 255); doc.rect(mL, y, cW, 6, 'F'); }
-        doc.setFont('helvetica', opts2.bold ? 'bold' : 'normal'); doc.setFontSize(8);
-        doc.setTextColor.apply(doc, opts2.color || [31, 60, 84]);
+        if (rowOpts.shade) { doc.setFillColor(249, 252, 255); doc.rect(mL, y, cW, 6, 'F'); }
+        doc.setFont('helvetica', rowOpts.bold ? 'bold' : 'normal'); doc.setFontSize(8);
+        doc.setTextColor.apply(doc, rowOpts.color || [31, 60, 84]);
         let x = mL + 2;
         cells.forEach((c, i) => { doc.text(String(c).substring(0, 80), x, y + 4); x += widths[i]; });
         y += 6;
     }
+    function renderMiniKpis(items) {
+        const perRow2 = items.length;
+        const miniW = (cW - (perRow2 - 1) * 3) / perRow2;
+        const miniH = 18;
+        items.forEach((k, i) => {
+            const bx = mL + i * (miniW + 3);
+            const by = y;
+            doc.setFillColor(249, 252, 255); doc.setDrawColor(212, 227, 239); doc.setLineWidth(0.3);
+            doc.roundedRect(bx, by, miniW, miniH, 2, 2, 'FD');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(5.8); doc.setTextColor(91, 123, 150);
+            doc.text(k[0].toUpperCase(), bx + 2, by + 5);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(18, 64, 94);
+            doc.text(k[1], bx + 2, by + 14);
+        });
+        y += miniH + 4;
+    }
 
-    // --- PMs by fridge ---
-    sectionHeader('PMs BY REFRIGERATOR (in period)', [238, 246, 252]);
-    const byAc = {};
-    filteredLogs.forEach(r => {
-        const key = safeStr(r['Ref Tag'] || r['AC Tag'] || r.refTag) + ' — ' + safeStr(r['Location'] || r.refLocation);
-        byAc[key] = (byAc[key] || 0) + 1;
-    });
-    const acRows = Object.keys(byAc).sort().map(k => [k, byAc[k]]);
-    if (acRows.length === 0) {
+    // ============================================================
+    // KPI CARDS
+    // ============================================================
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(18, 64, 94);
+    doc.text('KEY NUMBERS', mL, y); y += 6;
+
+    // --- Fridges ---
+   
+const fridgeTotal      = fridgesOnly.length;
+const fridgeServiced   = fridgesOnly.filter(hasBeenServicedInPeriod).length;
+const fridgeNotWorking = fridgesOnly.filter(isNotWorking).length;
+const fridgeWorking    = fridgeTotal - fridgeNotWorking;
+
+// PM Rate = coverage: how many of the total fridges got serviced this period?
+const fridgePmRate = fridgeTotal > 0
+    ? Math.round((fridgeServiced / fridgeTotal) * 100) + '%'
+    : '—';
+
+doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(91, 123, 150);
+doc.text('REFRIGERATORS & FREEZERS', mL, y); y += 4;
+renderMiniKpis([
+    ['Total fridges',  String(fridgeTotal)],
+    ['Serviced',       String(fridgeServiced)],
+    ['Working',        String(fridgeWorking)],
+    ['Not working',    String(fridgeNotWorking)],
+    ['PM Rate',        fridgePmRate]   // serviced / total
+]);
+    const acTotal      = acsOnly.length;
+const acServiced   = acsOnly.filter(hasBeenServicedInPeriod).length;
+const acNotWorking = acsOnly.filter(isNotWorking).length;
+const acWorking    = acTotal - acNotWorking;
+
+// PM Rate = coverage: how many of the total ACs got serviced this period?
+const acPmRate = acTotal > 0
+    ? Math.round((acServiced / acTotal) * 100) + '%'
+    : '—';
+
+doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(91, 123, 150);
+doc.text('AIR CONDITIONERS', mL, y); y += 4;
+renderMiniKpis([
+    ['Total ACs',    String(acTotal)],
+    ['Serviced',     String(acServiced)],
+    ['Working',      String(acWorking)],
+    ['Not working',  String(acNotWorking)],
+    ['PM Rate',      acPmRate]   // serviced / total
+]);
+    y += 2;
+
+   
+
+    sectionHeader('REFRIGERATORS & FREEZERS — FULL INVENTORY', [235, 245, 252]);
+    if (fridgesOnly.length === 0) {
         doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(91, 123, 150);
-        doc.text('No PM records in this period.', mL + 2, y + 3); y += 8;
+        doc.text('No refrigerators in scope.', mL + 2, y + 3); y += 6;
     } else {
-        tableHeader(['Refrigerator', 'PMs'], [cW - 30, 30]);
-        acRows.forEach((row, i) => tableRow(row, [cW - 30, 30], { shade: i % 2 === 1 }));
-    }
-    y += 4;
-
-    // --- PMs by department (only if dept = all) ---
-    if (opts.dept === 'all') {
-        sectionHeader('PMs BY DEPARTMENT', [238, 246, 252]);
-        const byDept = {};
-        filteredLogs.forEach(r => {
-            const d = safeStr(r['Department'] || r.refDept || '—');
-            byDept[d] = (byDept[d] || 0) + 1;
-        });
-        const deptRows = Object.keys(byDept).sort().map(k => [k, byDept[k]]);
-        if (deptRows.length === 0) {
-            doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(91, 123, 150);
-            doc.text('No PM records in this period.', mL + 2, y + 3); y += 8;
-        } else {
-            tableHeader(['Department', 'PMs'], [cW - 30, 30]);
-            deptRows.forEach((row, i) => tableRow(row, [cW - 30, 30], { shade: i % 2 === 1 }));
-        }
-        y += 4;
-    }
-
-    // --- Not-working fridges ---
-    sectionHeader('NOT-WORKING FRIDGES', [255, 235, 235]);
-    if (notWorking.length === 0) {
-        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
-        doc.text('No fridges currently flagged as Not Working.', mL + 2, y + 3); y += 8;
-    } else {
-        tableHeader(['Tag', 'Location', 'Brand / Model', 'Last PM'], [40, 45, cW - 40 - 45 - 25, 25]);
-        notWorking.forEach((ac, i) => {
-            const id = buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model });
-            const relevant = logs.filter(r => buildAcIdentity({
-                refTag: r['Ref Tag'] || r['AC Tag'] || r.refTag,
-                refLocation: r['Location'] || r.refLocation,
-                refSerial: r['Serial Number'] || r.refSerial,
-                refModel: r['Model'] || r.refModel
-            }) === id).sort((a,b) => recordTime(b) - recordTime(a));
-            const lastPm = relevant[0] ? formatDateOnly(relevant[0]['Work Date'] || relevant[0].workDate) : '—';
-            tableRow(
-                [ac.tag || '—', ac.loc || '—', (ac.brand || '') + ' ' + (ac.model || ''), lastPm],
-                [40, 45, cW - 40 - 45 - 25, 25],
-                { shade: i % 2 === 1, color: [179, 58, 58] }
-            );
-        });
-    }
-    y += 4;
-
-    // --- Never serviced in period ---
-    sectionHeader('NEVER SERVICED IN PERIOD', [255, 243, 205]);
-    if (notServiced.length === 0) {
-        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
-        doc.text('All fridges in scope were serviced at least once in the period.', mL + 2, y + 3); y += 8;
-    } else {
-        tableHeader(['Tag', 'Location', 'Brand / Model', 'Working?'], [40, 45, cW - 40 - 45 - 25, 25]);
-        notServiced.forEach((ac, i) => {
+        tableHeader(['Tag', 'Location', 'Brand / Model', 'Working?', 'Last PM'],
+                    [35, 40, cW - 35 - 40 - 25 - 22, 25, 22]);
+        fridgesOnly.slice(0, 25).forEach((ac, i) => {
             const ws = safeStr(ac.workingStatus || 'Working');
             tableRow(
-                [ac.tag || '—', ac.loc || '—', (ac.brand || '') + ' ' + (ac.model || ''), ws],
-                [40, 45, cW - 40 - 45 - 25, 25],
-                { shade: i % 2 === 1, color: ws === 'Not Working' ? [179, 58, 58] : [122, 83, 0] }
+                [ac.tag || '—', ac.loc || '—',
+                 ((ac.brand || '') + ' ' + (ac.model || '')).substring(0, 40),
+                 ws, lastPmFor_(ac)],
+                [35, 40, cW - 35 - 40 - 25 - 22, 25, 22],
+                { shade: i % 2 === 1,
+                  color: ws === 'Not Working' ? [179, 58, 58] : [31, 60, 84] }
             );
         });
+        if (fridgesOnly.length > 25) {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(91, 123, 150);
+            doc.text('... and ' + (fridgesOnly.length - 25) + ' more refrigerators', mL + 2, y + 3);
+            y += 5;
+        }
+    }
+    y += 5;
+
+    if (y > pageH - 40) { doc.addPage(); y = 20; }
+    sectionHeader('AIR CONDITIONERS — FULL INVENTORY', [232, 244, 255]);
+    if (acsOnly.length === 0) {
+        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(91, 123, 150);
+        doc.text('No air conditioners in scope.', mL + 2, y + 3); y += 6;
+    } else {
+        tableHeader(['Tag', 'Location', 'Brand / Model', 'Working?', 'Last PM'],
+                    [35, 40, cW - 35 - 40 - 25 - 22, 25, 22]);
+        acsOnly.slice(0, 25).forEach((ac, i) => {
+            const ws = safeStr(ac.workingStatus || 'Working');
+            tableRow(
+                [ac.tag || '—', ac.loc || '—',
+                 ((ac.brand || '') + ' ' + (ac.model || '')).substring(0, 40),
+                 ws, lastPmFor_(ac)],
+                [35, 40, cW - 35 - 40 - 25 - 22, 25, 22],
+                { shade: i % 2 === 1,
+                  color: ws === 'Not Working' ? [179, 58, 58] : [31, 60, 84] }
+            );
+        });
+        if (acsOnly.length > 25) {
+            doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(91, 123, 150);
+            doc.text('... and ' + (acsOnly.length - 25) + ' more AC units', mL + 2, y + 3);
+            y += 5;
+        }
     }
     y += 6;
 
-    // --- Anomalies ---
-    sectionHeader('CHECKLIST ANOMALIES (in period)', [255, 235, 235]);
-    const ALL_ITEMS = [
-        { cat: 'Clean', text: 'Clean interior shelves, walls and drawers' },
-        { cat: 'Clean', text: 'Clean door gaskets and seals' },
-        { cat: 'Clean', text: 'Clean condenser coils and ventilation grills' },
-        { cat: 'Clean', text: 'Clean/empty drain pan and clear drain line' },
-        { cat: 'Clean', text: 'Clean exterior surfaces and control panel' },
-        { cat: 'Temp',  text: 'Check refrigerator temperature (2 – 8 °C)' },
-        { cat: 'Temp',  text: 'Check freezer temperature (≤ –18 °C)' },
-        { cat: 'Temp',  text: 'Verify thermostat calibration and stability' },
-        { cat: 'Temp',  text: 'Check evaporator fan and condenser fan operation' },
-        { cat: 'Temp',  text: 'Verify defrost cycle is functioning properly' },
-        { cat: 'Door',  text: 'Inspect door seal (gasket) for cracks, gaps or mould' },
-        { cat: 'Door',  text: 'Test door seal with dollar bill test' },
-        { cat: 'Door',  text: 'Check door hinge alignment and self-closing function' },
-        { cat: 'Door',  text: 'Verify door alarm and interior light function' },
-        { cat: 'Door',  text: 'Inspect shelving, drawers and door bins integrity' }
-    ];
-    const attentionMap = {};
-    ALL_ITEMS.forEach(it => { attentionMap[it.text] = 0; });
-    filteredLogs.forEach(r => {
-        const cleanSet = new Set(safeSplit(r['Clean Items'] || r.cleanItems, '|'));
-        const tempSet  = new Set(safeSplit(r['Temp Items']  || r.tempItems,  '|'));
-        const doorSet  = new Set(safeSplit(r['Door Items']  || r.doorItems,  '|'));
-        ALL_ITEMS.forEach((item, idx) => {
-            let checked = false;
-            if (item.cat === 'Clean') checked = cleanSet.has(String(idx + 1));
-            else if (item.cat === 'Temp') checked = tempSet.has(String(idx - 4));
-            else if (item.cat === 'Door') checked = doorSet.has(String(idx - 9));
-            if (!checked) attentionMap[item.text]++;
-        });
-    });
-    const anomalyRows = Object.keys(attentionMap).filter(k => attentionMap[k] > 0).map(k => [k, attentionMap[k]]);
-    if (anomalyRows.length === 0) {
-        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
-        doc.text('No anomalies flagged in this period.', mL + 2, y + 3); y += 6;
-    } else {
-        tableHeader(['Checklist Item', 'Times Flagged'], [cW - 30, 30]);
-        anomalyRows.forEach((row, i) => tableRow(row, [cW - 30, 30], { shade: i % 2 === 1 }));
-    }
 
-    // ---------- SIGNATURE BLOCK (NEW) ----------
-    // Reserve space. If not enough room on current page, add one.
+    const techName = opts.tech;
+    let techVisualSig = getSignatureFor(techName);
+    let techSigDims = null;
+    if (techVisualSig) techSigDims = await loadImageDimensions(techVisualSig);
+
     const sigBoxH = 40;
     if (y > pageH - sigBoxH - 12) { doc.addPage(); y = 20; }
     y += 4;
 
-    // Section header
     doc.setFillColor(240, 246, 252); doc.setDrawColor(207, 224, 238); doc.setLineWidth(0.3);
     doc.roundedRect(mL, y, cW, sigBoxH, 2, 2, 'FD');
-
     doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(91, 123, 150);
     doc.text('PREPARED AND ANALYSED BY (TECHNICIAN)', mL + 3, y + 5);
-
-    // Left column: technician name + date
     doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(10, 42, 63);
     doc.text(sanitizeForPDF(opts.tech || '—'), mL + 3, y + 12);
     doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(58, 101, 131);
-    doc.text('Report period: ' + formatDateOnly(opts.from) + ' → ' + formatDateOnly(opts.to), mL + 3, y + 17);
+    doc.text('Report period: ' + formatDateOnly(opts.from) + ' to ' + formatDateOnly(opts.to), mL + 3, y + 17);
     doc.text('Generated on: ' + new Date().toLocaleString('en-GB'), mL + 3, y + 21);
     doc.text('Scope: ' + (opts.dept === 'all' ? 'All departments' : opts.dept), mL + 3, y + 25);
 
-    // Right column: visual signature box
     const sigAreaW = 70;
     const sigAreaH = 22;
     const sigAreaX = mL + cW - sigAreaW - 4;
     const sigAreaY = y + 6;
     doc.setDrawColor(200, 215, 230); doc.setLineWidth(0.3);
     doc.roundedRect(sigAreaX, sigAreaY, sigAreaW, sigAreaH, 1.5, 1.5, 'S');
-
     let drawn = false;
     if (techVisualSig) {
         try {
-            let w = sigAreaW - 6;
-            let h = sigAreaH - 6;
+            let w = sigAreaW - 6, h = sigAreaH - 6;
             if (techSigDims && techSigDims.width > 0 && techSigDims.height > 0) {
                 const aspect = techSigDims.width / techSigDims.height;
                 h = w / aspect;
@@ -4432,7 +4526,6 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     doc.setFontSize(6); doc.setFont('helvetica', 'italic'); doc.setTextColor(91, 123, 150);
     doc.text('Signature', sigAreaX + sigAreaW / 2, sigAreaY + sigAreaH + 3, { align: 'center' });
 
-    // Digital signature note if cert loaded
     if (isCertLoaded()) {
         doc.setFillColor(226, 240, 230); doc.setDrawColor(27, 107, 63); doc.setLineWidth(0.3);
         doc.roundedRect(mL + 3, y + sigBoxH - 12, cW - 6, 9, 1.5, 1.5, 'FD');
@@ -4442,12 +4535,10 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
         doc.text('Subject: ' + sanitizeForPDF(CERT_STATE.subject || '—').substring(0, 90), mL + 5, y + sigBoxH - 4.5);
     }
 
-    // ---------- Footer ----------
     doc.setFontSize(7); doc.setTextColor(150, 170, 190);
     doc.text('CHUB Refrigerator Fleet PM System · PM Analysis Report',
         pageW / 2, pageH - 6, { align: 'center' });
 
-    // ---------- Save ----------
     const fname = 'CHUB_Ref_PM_Analysis_' + opts.from + '_to_' + opts.to + '_' +
                   (opts.dept === 'all' ? 'AllDepts' : opts.dept.replace(/\s+/g, '_')) +
                   '_' + (opts.tech || 'user').replace(/\s+/g, '_') + '.pdf';
@@ -4456,6 +4547,7 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     if (signedBytes) { downloadBytes(signedBytes, fname); }
     else { doc.save(fname); }
 }
+
             const signatureModal = document.getElementById('signatureModal');
             const sigFileInput = document.getElementById('sigFileInput');
             const inchargeSigInput = document.getElementById('inchargeSigInput');
@@ -4726,7 +4818,6 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
                         updated,
                         currentLoggedInName
                     );
-                    // Update local
                     const idx = AC_INVENTORY.findIndex(x =>
                         buildAcIdentity({ refTag: x.tag, refLocation: x.loc, refSerial: x.serial, refModel: x.model }) ===
                         buildAcIdentity({ refTag: original.tag, refLocation: original.loc, refSerial: original.serial, refModel: original.model })
@@ -4828,35 +4919,80 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
                     setTimeout(() => refreshSupervisorInventory(), 300);
                     showStatus('👑 Welcome ' + payload.name + ' — fleet overview ready.', true);
                 } else {
-                    // TECHNICIAN: load the GLOBAL inventory and filter to "mine" client-side.
-                    AC_INVENTORY = [];
-                    renderAcSelector();
-                    showStatus('⏳ Loading your refrigerator list...', true);
-                    try {
-                        const all = await fetchAllInventory();
-                        AC_INVENTORY = all
-                            .map(a => ({
-                                owner: a.owner || a.technician || '',
-                                technician: a.technician || a.owner || '',
-                                tag: a.tag, dept: a.dept, loc: a.loc, type: a.type,
-                                brand: a.brand, model: a.model, serial: a.serial,
-                                workingStatus: a.workingStatus || 'Working',
-                                lastPmDate: a.lastPmDate || '',
-                                nextPmDate: a.nextPmDate || ''
-                            }))
-                            .filter(a => sameOwner(a.owner, payload.name) || sameOwner(a.technician, payload.name));
-                        cacheInventoryLocally(payload.name, AC_INVENTORY);
-                        renderAcSelector();
-                        showStatus('✅ Welcome, ' + payload.name + '! ' + AC_INVENTORY.length + ' refrigerator(s) loaded.', true);
-                    } catch (err) {
-                        console.error('❌ Refrigerator load failed:', err);
-                        const cached = loadCachedInventory(payload.name) || [];
-                        AC_INVENTORY = cached;
-                        renderAcSelector();
-                        if (cached.length > 0) showStatus('📥 Offline — ' + cached.length + ' from cache.', false);
-                        else showStatus('⚠️ Could not load refrigerator list: ' + (err.message || err), false);
-                    }
+    AC_INVENTORY = [];
+    renderAcSelector();
+    showStatus('⏳ Loading your department equipment...', true);
+
+    let myDepts = [];
+
+    try {
+        const users = await loadUsersFromFirestore();
+        let rec = users[payload.name];
+
+        if (!rec) {
+            const uSnap = await window.FB.getDoc(
+                window.FB.doc(window.FB.db, 'users', userDocId(payload.name))
+            );
+            if (uSnap.exists()) {
+                const d = uSnap.data();
+                rec = {
+                    role:  d.role || 'technician',
+                    pin:   String(d.pin || ''),
+                    dept:  d.dept || '',
+                    depts: Array.isArray(d.depts) ? d.depts : []
+                };
+            }
+        }
+
+        if (rec) {
+            if (Array.isArray(rec.depts) && rec.depts.length > 0) {
+                myDepts = rec.depts.map(d => String(d).trim()).filter(Boolean);
+            } else if (rec.dept) {
+                myDepts = [String(rec.dept).trim()].filter(Boolean);
+            }
+        }
+    } catch (e) {
+        console.warn('Could not determine technician departments:', e);
+    }
+
+    console.log('👨‍🔧 Technician departments:', myDepts.length ? myDepts.join(' + ') : '(none — showing own equipment only)');
+
+    try {
+        const all = await fetchAllInventory();
+        AC_INVENTORY = all
+            .map(a => ({
+                owner: a.owner || a.technician || '',
+                technician: a.technician || a.owner || '',
+                tag: a.tag, dept: a.dept, loc: a.loc, type: a.type,
+                brand: a.brand, model: a.model, serial: a.serial,
+                workingStatus: a.workingStatus || 'Working',
+                lastPmDate: a.lastPmDate || '',
+                nextPmDate: a.nextPmDate || '',
+                equipCategory: a.equipCategory || 'fridge'
+            }))
+            .filter(a => {
+                if (myDepts.length > 0) {
+                    const equipDept = normalizeText(a.dept);
+                    return myDepts.some(d => normalizeText(d) === equipDept);
                 }
+                return sameOwner(a.owner, payload.name) || sameOwner(a.technician, payload.name);
+            });
+
+        cacheInventoryLocally(payload.name, AC_INVENTORY);
+        try { sessionStorage.setItem('tech_depts_' + payload.name, JSON.stringify(myDepts)); } catch (e) {}
+
+        renderAcSelector();
+        const deptLabel = myDepts.length ? myDepts.join(' + ') : 'own equipment';
+        showStatus('✅ Welcome, ' + payload.name + '! ' + AC_INVENTORY.length + ' unit(s) in ' + deptLabel + ' loaded.', true);
+    } catch (err) {
+        console.error('❌ Department equipment load failed:', err);
+        const cached = loadCachedInventory(payload.name) || [];
+        AC_INVENTORY = cached;
+        renderAcSelector();
+        if (cached.length > 0) showStatus('📥 Offline — ' + cached.length + ' from cache.', false);
+        else showStatus('⚠️ Could not load equipment list: ' + (err.message || err), false);
+    }
+}
             }
             function lockApp() {
                 clearCert();
@@ -4877,7 +5013,7 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
                 loginTechSelect.focus();
             }
 
-           let LIVE_USERS = {};  // { name: { role, pin, dept } }  — filled from Firestore at login time
+           let LIVE_USERS = {};
 
 loginBtn.addEventListener('click', async function() {
     const role = loginRoleSelect.value;
@@ -4886,7 +5022,6 @@ loginBtn.addEventListener('click', async function() {
 
     if (!pin) { loginError.textContent = 'Enter your PIN.'; return; }
 
-    // Fetch fresh users from Firestore (or fall back to cached copy)
     loginBtn.disabled = true;
     const origBtn = loginBtn.innerHTML;
     loginBtn.innerHTML = '⏳ Checking…';
@@ -4894,7 +5029,6 @@ loginBtn.addEventListener('click', async function() {
     try {
         LIVE_USERS = await loadUsersFromFirestore();
 
-        // If Firestore is empty (first run), seed defaults and reload
         if (Object.keys(LIVE_USERS).length === 0) {
             console.warn('⚠️ No users in Firestore — seeding defaults…');
             await seedUsersIfEmpty();
@@ -4907,17 +5041,14 @@ loginBtn.addEventListener('click', async function() {
     loginBtn.disabled = false;
     loginBtn.innerHTML = origBtn;
 
-    // ============ TECHNICIAN / SUPERVISOR LOGIN ============
     if (role === 'technician') {
         const name = loginTechSelect.value;
         if (!name) { loginError.textContent = 'Select your name.'; return; }
 
-        // Look up the PIN in Firestore-loaded users
         let expectedPin = null;
         if (LIVE_USERS[name] && LIVE_USERS[name].pin) {
             expectedPin = String(LIVE_USERS[name].pin);
         } else if (TECHNICIAN_PINS[name]) {
-            // fallback while seeding is in progress
             expectedPin = String(TECHNICIAN_PINS[name]);
         }
 
@@ -4938,15 +5069,13 @@ loginBtn.addEventListener('click', async function() {
         return;
     }
 
-    // ============ IN-CHARGE LOGIN ============
     const inDept = document.getElementById('loginInchargeDept').value;
     const iname = loginInchargeName.value.trim();
     if (!inDept) { loginError.textContent = 'Please choose your department.'; return; }
     if (!iname) { loginError.textContent = 'Please enter your full name.'; return; }
 
-    // Look up the PIN in Firestore-loaded users
     let rec = LIVE_USERS[iname];
-    if (!rec) rec = INCHARGE_PINS[iname]; // fallback
+    if (!rec) rec = INCHARGE_PINS[iname];
     if (!rec) {
         loginError.textContent = 'This name is not registered as an In-Charge. Contact the manager.';
         loginPinInput.value = ''; loginPinInput.focus();
@@ -4976,13 +5105,11 @@ logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lock
                 updatePendingCount();
                 populateInchargeSuggestions();
                 (async () => {
-                    // Ensure Firestore is loaded first
                     await new Promise(resolve => {
                         if (window.FB && window.FB.ready) return resolve();
                         window.addEventListener('firebase-ready', resolve, { once: true });
                     });
 
-                    // Seed the users collection on first run
                     await seedUsersIfEmpty();
 
                     await ensureDepartmentsLoaded();
@@ -4998,6 +5125,9 @@ logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lock
 
                 setTimeout(() => { if (getQueue().length > 0) flushQueue(); }, 1200);
             }
+
+
+            
         })();
 
     </script>
