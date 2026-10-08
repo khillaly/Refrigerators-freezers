@@ -269,11 +269,12 @@
             .qr-sticker-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media print {
-            body * { visibility: hidden !important; }
-            #qrPrintArea, #qrPrintArea * { visibility: visible !important; }
-            #qrPrintArea { position: absolute; left: 0; top: 0; width: 100%; background: white; }
-            .qr-sticker { border: 1px solid #1e4a6d; }
-        }
+    body::before { display: none !important; }
+    body * { visibility: hidden !important; }
+    #qrPrintArea, #qrPrintArea * { visibility: visible !important; }
+    #qrPrintArea { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+    .qr-sticker { border: 1px solid #1e4a6d; }
+}
     </style>
 </head>
 <body>
@@ -1051,30 +1052,11 @@
             }
 
             const DEFAULT_LIST_OWNER = 'Hillaly KUBWIMANA';
+// In-charge and technician accounts are stored in Firestore (users collection).
+// No PINs live in this HTML file anymore.
+           
 
-            const DEFAULT_INCHARGE_PINS = {
-                'Laboratory In-Charge':        { pin: '2201', dept: 'Laboratory' },
-                'Operating Theatre In-Charge': { pin: '2202', dept: 'Operating Theatre' },
-                'Pharmacy In-Charge':          { pin: '2203', dept: 'Pharmacy' },
-                'Radiology In-Charge':         { pin: '2204', dept: 'Radiology' },
-                'Administration In-Charge':    { pin: '2205', dept: 'Administration' },
-                'Cancer Center In-Charge':     { pin: '2206', dept: 'Cancer Center' },
-                'Simulation Center In-Charge': { pin: '2207', dept: 'Simulation Center' },
-                'I.M OPD In-Charge':           { pin: '2208', dept: 'I.M OPD' },
-                'Gynecology In-Charge':        { pin: '2209', dept: 'Gynecology' },
-                'Surgery In-Charge':           { pin: '2210', dept: 'Surgery' }
-            };
-            let INCHARGE_PINS = JSON.parse(JSON.stringify(DEFAULT_INCHARGE_PINS));
-            const INCHARGE_REGISTRY_KEY = 'CHUB_INCHARGE_PINS_V1';
-
-            const TECHNICIAN_PINS = {
-                'Hillaly KUBWIMANA':      '0806',
-                'YANDEREYE Felecien':     '1723',
-                'HIRWA Jean Deluce':      '2451',
-                'HABARUREMA Jean Claude': '3904',
-                'GATANGANWA Raissa':      '0401'
-            };
-
+         
             const SUPERVISOR_NAME = 'GATANGANWA Raissa';
 
             const DEFAULT_DEPARTMENTS = {
@@ -1579,6 +1561,11 @@ async function fetchKnownIncharges() {
 }
 function mapFirestoreEquipment(docId, data) {
   if (!data) return null;
+
+  // ---- Filter out anything that is NOT a fridge ----
+  const category = String(data.type || 'fridge').toLowerCase().trim();
+  if (category !== 'fridge') return null;   // skips 'ac', 'aircon', etc.
+
   return {
     _docId: docId,
     tag:           data.tag           || '',
@@ -1592,7 +1579,7 @@ function mapFirestoreEquipment(docId, data) {
     owner:         data.owner         || data.technician || '',
     lastPmDate:    data.lastPmDate    || '',
     nextPmDate:    data.nextPmDate    || '',
-    equipCategory: data.type          || 'fridge'
+    equipCategory: 'fridge'           // hard-coded, since we only allow fridges
   };
 }
 function userDocId(name) {
@@ -1625,33 +1612,9 @@ async function loadUsersFromFirestore() {
 }
 
 async function seedUsersIfEmpty() {
-    try {
-        if (!window.FB || !window.FB.ready) return;
-        const existing = await loadUsersFromFirestore();
-        if (Object.keys(existing).length > 0) {
-            console.log('👥 users collection already has ' + Object.keys(existing).length + ' entries — skipping seed.');
-            return;
-        }
-        console.log('👥 users collection empty — seeding defaults…');
-        for (const [name, pin] of Object.entries(TECHNICIAN_PINS)) {
-            const role = (name === SUPERVISOR_NAME) ? 'supervisor' : 'technician';
-            await window.FB.setDoc(
-                window.FB.doc(window.FB.db, 'users', userDocId(name)),
-                { name, role, pin: String(pin), dept: '', depts: [], updatedAt: window.FB.serverTimestamp() },
-                { merge: true }
-            );
-        }
-        for (const [name, rec] of Object.entries(DEFAULT_INCHARGE_PINS)) {
-            await window.FB.setDoc(
-                window.FB.doc(window.FB.db, 'users', userDocId(name)),
-                { name, role: 'incharge', pin: String(rec.pin || ''), dept: rec.dept || '', updatedAt: window.FB.serverTimestamp() },
-                { merge: true }
-            );
-        }
-        console.log('✅ Seeded users collection with technicians and in-charges.');
-    } catch (e) {
-        console.error('❌ seedUsersIfEmpty failed:', e);
-    }
+    // Users are managed manually in Firestore.
+    // Nothing to seed from the client anymore.
+    return;
 }
             async function fetchAllInventory() {
     try {
@@ -2082,18 +2045,28 @@ async function removeInventoryItemInCloud(original, techName) {
             }
 
             async function populateInchargeSuggestions() {
-                const datalist = document.getElementById('inchargeSuggestions');
-                const loginDatalist = document.getElementById('loginInchargeSuggestions');
-                if (datalist) datalist.innerHTML = '';
-                if (loginDatalist) loginDatalist.innerHTML = '';
-                const names = await fetchKnownIncharges();
-                Object.keys(INCHARGE_PINS).forEach(n => { if (names.indexOf(n) === -1) names.push(n); });
-                names.sort();
-                names.forEach(n => {
-                    if (datalist) { const o1 = document.createElement('option'); o1.value = n; datalist.appendChild(o1); }
-                    if (loginDatalist) { const o2 = document.createElement('option'); o2.value = n; loginDatalist.appendChild(o2); }
-                });
-            }
+    const datalist = document.getElementById('inchargeSuggestions');
+    const loginDatalist = document.getElementById('loginInchargeSuggestions');
+    if (datalist) datalist.innerHTML = '';
+    if (loginDatalist) loginDatalist.innerHTML = '';
+
+    // 1. In-charges whose signatures are stored in the config collection
+    const names = await fetchKnownIncharges();
+
+    // 2. In-charges registered as users in the users collection
+    try {
+        const users = await loadUsersFromFirestore();
+        Object.keys(users).forEach(n => {
+            if (users[n].role === 'incharge' && names.indexOf(n) === -1) names.push(n);
+        });
+    } catch (e) { /* ignore */ }
+
+    names.sort();
+    names.forEach(n => {
+        if (datalist) { const o1 = document.createElement('option'); o1.value = n; datalist.appendChild(o1); }
+        if (loginDatalist) { const o2 = document.createElement('option'); o2.value = n; loginDatalist.appendChild(o2); }
+    });
+}
 
             const addAcModal = document.getElementById('addAcModal');
             const newAcDeptSelect = document.getElementById('newAcDept');
@@ -2353,11 +2326,11 @@ async function removeInventoryItemInCloud(original, techName) {
                     loadDepartmentInventory();
                 }
                 if (isSupervisor) {
-                    populateSupervisorDeptFilter();
-                    populateSupervisorOwnerFilter();
-                    refreshSupervisorInventory();
-                    renderInchargeEditor();
-                }
+    populateSupervisorDeptFilter();
+    populateSupervisorOwnerFilter();
+    refreshSupervisorInventory();
+    renderInchargeEditor();   // fires async, that's fine — nothing else needs to wait
+}
             }
 
             function getTickedItems(startNum, endNum) {
@@ -2504,10 +2477,16 @@ function mapFirestorePmLog(docId, data) {
                     return { checked: true, duplicate: !!found, record: found || null };
                 } catch (e) { return { checked: false, error: e.message }; }
             }
-           async function fetchAcInfoFromCloud(acTag) {
+          async function fetchAcInfoFromCloud(acTag) {
     try {
         if (!window.FB || !window.FB.ready) {
-            return { ok: false, error: 'Firebase not ready' };
+            await new Promise(resolve => {
+                window.addEventListener('firebase-ready', resolve, { once: true });
+                setTimeout(resolve, 5000);
+            });
+        }
+        if (!window.FB || !window.FB.ready) {
+            return { ok: false, error: 'Firebase did not initialize in time' };
         }
         const target = normalizeText(acTag);
         if (!target) return { ok: false, error: 'Missing tag' };
@@ -2629,11 +2608,14 @@ function mapFirestorePmLog(docId, data) {
                 wrapper.style.margin = '0 auto';
                 wrapper.appendChild(buildStickerHtml(ac, 180));
                 content.appendChild(wrapper);
+    const modal = document.getElementById('qrModal');
+    modal.classList.add('show');
+    modal._stickerTitle = 'CHUB Refrigerator QR Sticker — ' + ac.tag;
+    modal._stickerMode  = 'single';
+    modal._stickerAcs   = [ac];
+});
+                
 
-                document.getElementById('qrModal').classList.add('show');
-                document.getElementById('qrModal')._stickerHtml = wrapper.innerHTML;
-                document.getElementById('qrModal')._stickerTitle = 'CHUB Refrigerator QR Sticker — ' + ac.tag;
-            });
 
             document.getElementById('qrAllBtn')?.addEventListener('click', () => {
                 if (AC_INVENTORY.length === 0) { showStatus('⚠️ No refrigerators to print.', false); return; }
@@ -2643,10 +2625,12 @@ function mapFirestorePmLog(docId, data) {
                 wrapper.className = 'qr-sticker-grid';
                 AC_INVENTORY.forEach(ac => wrapper.appendChild(buildStickerHtml(ac, 130)));
                 content.appendChild(wrapper);
-                document.getElementById('qrModal').classList.add('show');
-                document.getElementById('qrModal')._stickerHtml = wrapper.innerHTML;
-                document.getElementById('qrModal')._stickerTitle = 'CHUB Refrigerator QR Stickers — ' + AC_INVENTORY.length + ' units';
-            });
+                   const modal = document.getElementById('qrModal');
+    modal.classList.add('show');
+    modal._stickerTitle = 'CHUB Refrigerator QR Stickers — ' + AC_INVENTORY.length + ' units';
+    modal._stickerMode  = 'all';
+    modal._stickerAcs   = AC_INVENTORY.slice();
+});
 
             document.getElementById('inchargeQrAllBtn')?.addEventListener('click', async () => {
                 showStatus('⏳ Loading inventory…', true);
@@ -2661,24 +2645,56 @@ function mapFirestorePmLog(docId, data) {
                 wrapper.className = 'qr-sticker-grid';
                 mine.forEach(ac => wrapper.appendChild(buildStickerHtml(ac, 130)));
                 content.appendChild(wrapper);
-                document.getElementById('qrModal').classList.add('show');
-                document.getElementById('qrModal')._stickerHtml = wrapper.innerHTML;
-                document.getElementById('qrModal')._stickerTitle = 'CHUB Refrigerator QR Stickers — ' + dept;
-            });
+                   const modal = document.getElementById('qrModal');
+    modal.classList.add('show');
+    modal._stickerTitle = 'CHUB Refrigerator QR Stickers — ' + dept;
+    modal._stickerMode  = 'all';
+    modal._stickerAcs   = mine.slice();
+});
 
             document.getElementById('qrModalClose')?.addEventListener('click', () => {
                 document.getElementById('qrModal').classList.remove('show');
             });
-            document.getElementById('qrModalPrint')?.addEventListener('click', () => {
-                const modal = document.getElementById('qrModal');
-                const html = modal._stickerHtml || '';
-                const printArea = document.getElementById('qrPrintArea');
-                printArea.innerHTML = '<div style="text-align:center; font-weight:800; color:#0b3d91; padding:14px; font-size:1.1rem;">' + escapeHtml(modal._stickerTitle || 'QR Stickers') + '</div>' +
-                    '<div class="qr-sticker-grid">' + html + '</div>' +
-                    '<div style="text-align:center; font-size:0.7rem; color:#5b7b96; padding:10px;">CHUB Refrigerator Fleet PM · Scan any QR code to see live PM status, next PM due, last technician, and in-charge approval.</div>';
-                printArea.style.display = 'block';
-                setTimeout(() => { window.print(); setTimeout(() => { printArea.style.display = 'none'; }, 500); }, 200);
-            });
+           document.getElementById('qrModalPrint')?.addEventListener('click', () => {
+    const modal = document.getElementById('qrModal');
+    const printArea = document.getElementById('qrPrintArea');
+
+    const mode = modal._stickerMode || 'single';
+    const acs  = modal._stickerAcs  || [];
+
+    if (acs.length === 0) {
+        showStatus('⚠️ No refrigerators to print.', false);
+        return;
+    }
+
+    // Build fresh stickers (with real QR canvases) inside the print area
+    printArea.innerHTML = '';
+
+    const title = document.createElement('div');
+    title.style.cssText = 'text-align:center; font-weight:800; color:#0b3d91; padding:14px; font-size:1.1rem;';
+    title.textContent = modal._stickerTitle || 'QR Stickers';
+    printArea.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'qr-sticker-grid';
+    acs.forEach(ac => {
+        grid.appendChild(buildStickerHtml(ac, mode === 'single' ? 180 : 130));
+    });
+    printArea.appendChild(grid);
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'text-align:center; font-size:0.7rem; color:#5b7b96; padding:10px;';
+    footer.textContent = 'CHUB Refrigerator Fleet PM · Scan any QR code to see live PM status, next PM due, last technician, and in-charge approval.';
+    printArea.appendChild(footer);
+
+    printArea.style.display = 'block';
+
+    // Wait long enough for the QR canvases to actually render
+    setTimeout(() => {
+        window.print();
+        setTimeout(() => { printArea.style.display = 'none'; }, 800);
+    }, 600);
+});
 
             function initAcInfoPage() {
                 const params = new URLSearchParams(window.location.search);
@@ -2694,7 +2710,16 @@ function mapFirestorePmLog(docId, data) {
                 return true;
             }
 
+
             async function loadAcInfo(tag) {
+                    // Wait for Firebase to be ready before doing anything else
+    if (!window.FB || !window.FB.ready) {
+        await new Promise(resolve => {
+            window.addEventListener('firebase-ready', resolve, { once: true });
+            // Safety net: if the event never fires, give up after 5 seconds
+            setTimeout(resolve, 5000);
+        });
+    }
                 const body = document.getElementById('infoBody');
                 const title = document.getElementById('infoTitle');
                 const subtitle = document.getElementById('infoSubtitle');
@@ -2868,6 +2893,18 @@ function mapFirestorePmLog(docId, data) {
     document.getElementById('qrDownloadBtn')?.addEventListener('click', async () => {
         const btn    = document.getElementById('qrDownloadBtn');
         const status = document.getElementById('qrReportStatus');
+
+        // ---- Wait for Firebase to be ready ----
+        if (!window.FB || !window.FB.ready) {
+            status.textContent = '⏳ Waiting for database…';
+            status.style.color = '#5b7b96';
+            await new Promise(resolve => {
+                window.addEventListener('firebase-ready', resolve, { once: true });
+                setTimeout(resolve, 5000);
+            });
+            status.textContent = '';
+        }
+        // ---------------------------------------
         const from   = fromInput.value;
         const to     = toInput.value;
 
@@ -3282,18 +3319,22 @@ async function cosignRecord(reportHash, inchargeName) {
                     sel2.value = current2;
                 }
             }
-            function populateSupervisorOwnerFilter() {
-                const sel = document.getElementById('supervisorOwnerFilter');
-                if (!sel) return;
-                const current = sel.value || 'all';
-                sel.innerHTML = '<option value="all">👤 All Owners</option>';
-                Object.keys(TECHNICIAN_PINS).forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t; opt.textContent = t;
-                    sel.appendChild(opt);
-                });
-                sel.value = current;
-            }
+           async function populateSupervisorOwnerFilter() {
+    const sel = document.getElementById('supervisorOwnerFilter');
+    if (!sel) return;
+    const current = sel.value || 'all';
+    sel.innerHTML = '<option value="all">👤 All Owners</option>';
+    const users = await loadUsersFromFirestore();
+    Object.keys(users)
+        .filter(n => users[n].role === 'technician' || users[n].role === 'supervisor')
+        .sort()
+        .forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = name;
+            sel.appendChild(opt);
+        });
+    sel.value = current;
+}
 
             function normalizeInchargeRegistry(raw) {
                 const out = {};
@@ -3309,87 +3350,114 @@ async function cosignRecord(reportHash, inchargeName) {
                 return out;
             }
 
-       async function loadInchargeRegistry() {
-    try {
-        const raw = await firestoreConfigGet(INCHARGE_REGISTRY_KEY);
-        if (raw) {
-            const parsed = JSON.parse(raw);
-            const normalized = normalizeInchargeRegistry(parsed);
-            if (Object.keys(normalized).length > 0) {
-                INCHARGE_PINS = normalized;
-                return;
-            }
-        }
-    } catch (e) {}
-    INCHARGE_PINS = JSON.parse(JSON.stringify(DEFAULT_INCHARGE_PINS));
+ async function loadInchargeRegistry() {
+    // In-charges are now read directly from the users collection when needed.
+    return;
 }
 
-         async function saveInchargeRegistryToCloud(registry) {
+async function saveInchargeRegistryToCloud(registry) {
+    // Write in-charges to Firestore users collection instead
     try {
-        await firestoreConfigSet(INCHARGE_REGISTRY_KEY, JSON.stringify(registry));
+        for (const [name, rec] of Object.entries(registry)) {
+            await window.FB.setDoc(
+                window.FB.doc(window.FB.db, 'users', userDocId(name)),
+                { name, role: 'incharge', pin: String(rec.pin || ''), dept: String(rec.dept || ''), updatedAt: window.FB.serverTimestamp() },
+                { merge: true }
+            );
+        }
         return true;
     } catch (e) { return false; }
 }
 
-            function renderInchargeEditor() {
-                const wrap = document.getElementById('inchargeEditorList');
-                if (!wrap) return;
-                wrap.innerHTML = '';
-                const names = Object.keys(INCHARGE_PINS).sort();
-                if (names.length === 0) {
-                    wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">No In-Charges yet. Click "Add New In-Charge".</div>';
-                    return;
-                }
-                names.forEach(name => {
-                    const rec = INCHARGE_PINS[name] || { pin: '', dept: '' };
-                    const row = document.createElement('div');
-                    row.className = 'dept-editor-row';
-                    row.innerHTML = `
-                        <div>
-                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700;">FULL NAME</label>
-                            <input type="text" class="incharge-name-input" value="${escapeHtml(name)}" data-original-name="${escapeHtml(name)}" style="width:100%; font-weight:700;">
-                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700; margin-top:8px; display:block;">PIN (4–8 digits)</label>
-                            <input type="text" inputmode="numeric" class="incharge-pin-input" value="${escapeHtml(rec.pin || '')}" style="width:100%; letter-spacing:2px;">
-                        </div>
-                        <div>
-                            <label style="font-size:0.75rem; color:#5b7b96; font-weight:700;">DEPARTMENT</label>
-                            <select class="incharge-dept-input" style="width:100%;">
-                                <option value="">— choose —</option>
-                            </select>
-                        </div>
-                        <div class="actions">
-                            <button type="button" class="btn-danger" data-del-incharge="${escapeHtml(name)}">🗑️</button>
-                        </div>
-                    `;
-                    wrap.appendChild(row);
-                    const sel = row.querySelector('.incharge-dept-input');
-                    Object.keys(DEPARTMENTS).forEach(d => {
-                        const opt = document.createElement('option');
-                        opt.value = d; opt.textContent = d;
-                        if (d === rec.dept) opt.selected = true;
-                        sel.appendChild(opt);
-                    });
-                });
-                wrap.querySelectorAll('[data-del-incharge]').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const dn = this.getAttribute('data-del-incharge');
-                        if (!confirm('Delete In-Charge "' + dn + '"? They will no longer be able to log in.')) return;
-                        delete INCHARGE_PINS[dn];
-                        renderInchargeEditor();
-                    });
-                });
-            }
+            async function renderInchargeEditor() {
+    const wrap = document.getElementById('inchargeEditorList');
+    if (!wrap) return;
+    wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">Loading…</div>';
 
-            document.getElementById('addInchargeBtn')?.addEventListener('click', () => {
-                const name = prompt('New In-Charge name (as they will type it at login, e.g. "Dr. Jane DOE"):');
+    // Pull users from Firestore
+    const users = await loadUsersFromFirestore();
+
+    // Build a small local map of { name: { pin, dept } } for incharges only
+    const incharges = {};
+    Object.keys(users).forEach(n => {
+        if (users[n].role === 'incharge') {
+            incharges[n] = { pin: users[n].pin || '', dept: users[n].dept || '' };
+        }
+    });
+
+    wrap.innerHTML = '';
+    const names = Object.keys(incharges).sort();
+
+    if (names.length === 0) {
+        wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">No In-Charges yet. Click "Add New In-Charge".</div>';
+        return;
+    }
+
+    names.forEach(name => {
+        const rec = incharges[name] || { pin: '', dept: '' };
+        const row = document.createElement('div');
+        row.className = 'dept-editor-row';
+        row.innerHTML = `
+            <div>
+                <label style="font-size:0.75rem; color:#5b7b96; font-weight:700;">FULL NAME</label>
+                <input type="text" class="incharge-name-input" value="${escapeHtml(name)}" data-original-name="${escapeHtml(name)}" style="width:100%; font-weight:700;">
+                <label style="font-size:0.75rem; color:#5b7b96; font-weight:700; margin-top:8px; display:block;">PIN (4–8 digits)</label>
+                <input type="text" inputmode="numeric" class="incharge-pin-input" value="${escapeHtml(rec.pin || '')}" style="width:100%; letter-spacing:2px;">
+            </div>
+            <div>
+                <label style="font-size:0.75rem; color:#5b7b96; font-weight:700;">DEPARTMENT</label>
+                <select class="incharge-dept-input" style="width:100%;">
+                    <option value="">— choose —</option>
+                </select>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn-danger" data-del-incharge="${escapeHtml(name)}">🗑️</button>
+            </div>
+        `;
+        wrap.appendChild(row);
+
+        // Populate department dropdown
+        const sel = row.querySelector('.incharge-dept-input');
+        Object.keys(DEPARTMENTS).forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d;
+            if (d === rec.dept) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    });
+
+    // Delete handler — now deletes from Firestore
+    wrap.querySelectorAll('[data-del-incharge]').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const dn = this.getAttribute('data-del-incharge');
+            if (!confirm('Delete In-Charge "' + dn + '"? They will no longer be able to log in.')) return;
+            try {
+                await window.FB.deleteDoc(
+                    window.FB.doc(window.FB.db, 'users', userDocId(dn))
+                );
+                renderInchargeEditor();   // refresh list
+            } catch (e) {
+                alert('Delete failed: ' + e.message);
+            }
+        });
+    });
+}
+
+                      document.getElementById('addInchargeBtn')?.addEventListener('click', async () => {
+                const name = prompt('New In-Charge name (as they will type it at login):');
                 if (!name) return;
                 const trimmed = name.trim();
                 if (!trimmed) return;
-                if (INCHARGE_PINS[trimmed]) { alert('That name already exists.'); return; }
-                INCHARGE_PINS[trimmed] = { pin: '', dept: '' };
+                const users = await loadUsersFromFirestore();
+                if (users[trimmed]) { alert('That name already exists.'); return; }
+                await window.FB.setDoc(
+                    window.FB.doc(window.FB.db, 'users', userDocId(trimmed)),
+                    { name: trimmed, role: 'incharge', pin: '', dept: '', updatedAt: window.FB.serverTimestamp() },
+                    { merge: true }
+                );
                 renderInchargeEditor();
             });
-
             document.getElementById('saveInchargesBtn')?.addEventListener('click', async function() {
                 const rows = document.querySelectorAll('#inchargeEditorList .dept-editor-row');
                 const next = {};
@@ -3405,18 +3473,17 @@ async function cosignRecord(reportHash, inchargeName) {
                     next[name] = { pin: pin, dept: dept };
                 });
                 if (err) { alert(err); return; }
-                if (Object.keys(next).length === 0) { alert('At least one In-Charge is required.'); return; }
+                                if (Object.keys(next).length === 0) { alert('At least one In-Charge is required.'); return; }
                 this.disabled = true;
                 const orig = this.innerHTML;
                 this.innerHTML = '⏳ Saving...';
-                INCHARGE_PINS = next;
                 try {
                     await saveInchargeRegistryToCloud(next);
                     showStatus('✅ In-Charge registry saved to cloud.', true);
                 } catch (e) {
-                    showStatus('⚠️ Saved locally — cloud sync failed.', false);
+                    showStatus('⚠️ Cloud save failed.', false);
                 }
-                renderInchargeEditor();
+                await renderInchargeEditor();
                 populateInchargeSuggestions();
                 this.disabled = false;
                 this.innerHTML = orig;
@@ -4282,11 +4349,13 @@ async function generatePmAnalysisPDF(logs, inventory, opts) {
     const filteredLogs = logs.filter(r => inRange(r) && deptMatches(r) && techMatches(r));
 
     const invInDept = inventory.filter(ac => {
-        if (opts.dept === 'all') return true;
-        return normalizeText(ac.dept) === normalizeText(opts.dept);
-    });
-    const fridgesOnly = invInDept.filter(ac => (ac.equipCategory || 'fridge').toLowerCase() !== 'ac');
-    const acsOnly     = invInDept.filter(ac => (ac.equipCategory || '').toLowerCase() === 'ac');
+    if (opts.dept === 'all') return true;
+    return normalizeText(ac.dept) === normalizeText(opts.dept);
+});
+
+// Only fridges in this app — ACs are ignored completely
+const fridgesOnly = invInDept;
+const acsOnly     = [];
 
     // ============================================================
     // Helpers
@@ -4401,25 +4470,7 @@ renderMiniKpis([
     ['Not working',    String(fridgeNotWorking)],
     ['PM Rate',        fridgePmRate]   // serviced / total
 ]);
-    const acTotal      = acsOnly.length;
-const acServiced   = acsOnly.filter(hasBeenServicedInPeriod).length;
-const acNotWorking = acsOnly.filter(isNotWorking).length;
-const acWorking    = acTotal - acNotWorking;
-
-// PM Rate = coverage: how many of the total ACs got serviced this period?
-const acPmRate = acTotal > 0
-    ? Math.round((acServiced / acTotal) * 100) + '%'
-    : '—';
-
-doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(91, 123, 150);
-doc.text('AIR CONDITIONERS', mL, y); y += 4;
-renderMiniKpis([
-    ['Total ACs',    String(acTotal)],
-    ['Serviced',     String(acServiced)],
-    ['Working',      String(acWorking)],
-    ['Not working',  String(acNotWorking)],
-    ['PM Rate',      acPmRate]   // serviced / total
-]);
+    
     y += 2;
 
    
@@ -4450,31 +4501,6 @@ renderMiniKpis([
     }
     y += 5;
 
-    if (y > pageH - 40) { doc.addPage(); y = 20; }
-    sectionHeader('AIR CONDITIONERS — FULL INVENTORY', [232, 244, 255]);
-    if (acsOnly.length === 0) {
-        doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(91, 123, 150);
-        doc.text('No air conditioners in scope.', mL + 2, y + 3); y += 6;
-    } else {
-        tableHeader(['Tag', 'Location', 'Brand / Model', 'Working?', 'Last PM'],
-                    [35, 40, cW - 35 - 40 - 25 - 22, 25, 22]);
-        acsOnly.slice(0, 25).forEach((ac, i) => {
-            const ws = safeStr(ac.workingStatus || 'Working');
-            tableRow(
-                [ac.tag || '—', ac.loc || '—',
-                 ((ac.brand || '') + ' ' + (ac.model || '')).substring(0, 40),
-                 ws, lastPmFor_(ac)],
-                [35, 40, cW - 35 - 40 - 25 - 22, 25, 22],
-                { shade: i % 2 === 1,
-                  color: ws === 'Not Working' ? [179, 58, 58] : [31, 60, 84] }
-            );
-        });
-        if (acsOnly.length > 25) {
-            doc.setFont('helvetica', 'italic'); doc.setFontSize(7); doc.setTextColor(91, 123, 150);
-            doc.text('... and ' + (acsOnly.length - 25) + ' more AC units', mL + 2, y + 3);
-            y += 5;
-        }
-    }
     y += 6;
 
 
@@ -5045,18 +5071,13 @@ loginBtn.addEventListener('click', async function() {
         const name = loginTechSelect.value;
         if (!name) { loginError.textContent = 'Select your name.'; return; }
 
-        let expectedPin = null;
-        if (LIVE_USERS[name] && LIVE_USERS[name].pin) {
-            expectedPin = String(LIVE_USERS[name].pin);
-        } else if (TECHNICIAN_PINS[name]) {
-            expectedPin = String(TECHNICIAN_PINS[name]);
-        }
-
-        if (expectedPin === null) {
+               const rec = LIVE_USERS[name];
+        if (!rec || !rec.pin) {
             loginError.textContent = 'User "' + name + '" not found in database. Contact the manager.';
             loginPinInput.value = ''; loginPinInput.focus();
             return;
         }
+        const expectedPin = String(rec.pin);
         if (expectedPin !== pin) {
             loginError.textContent = 'Wrong PIN for ' + name;
             loginPinInput.value = ''; loginPinInput.focus();
@@ -5074,9 +5095,8 @@ loginBtn.addEventListener('click', async function() {
     if (!inDept) { loginError.textContent = 'Please choose your department.'; return; }
     if (!iname) { loginError.textContent = 'Please enter your full name.'; return; }
 
-    let rec = LIVE_USERS[iname];
-    if (!rec) rec = INCHARGE_PINS[iname];
-    if (!rec) {
+       const rec = LIVE_USERS[iname];
+    if (!rec || rec.role !== 'incharge') {
         loginError.textContent = 'This name is not registered as an In-Charge. Contact the manager.';
         loginPinInput.value = ''; loginPinInput.focus();
         return;
@@ -5116,29 +5136,46 @@ logoutBtn.addEventListener('click', function() { if (confirm('Log out?')) { lock
                     await loadInchargeRegistry();
                     const existingSession = loadSession();
 
-                    if (existingSession && (TECHNICIAN_PINS[existingSession.name] || existingSession.role === 'incharge' || existingSession.name === SUPERVISOR_NAME)) {
-                        unlockApp(existingSession);
+                                     if (existingSession && existingSession.name) {
+                        const users = await loadUsersFromFirestore();
+                        if (users[existingSession.name]) {
+                            unlockApp(existingSession);
+                        } else {
+                            lockApp();
+                        }
                     } else {
                         lockApp();
                     }
                 })();
 
-                setTimeout(() => { if (getQueue().length > 0) flushQueue(); }, 1200);
+                                setTimeout(() => { if (getQueue().length > 0) flushQueue(); }, 1200);
             }
 
-
-            
+            // ---- DEV BRIDGE (expose internals to console for one-time fixes) ----
+            window.__DEV = {
+                fetchAllLogs,
+                fetchAcInfoFromCloud,
+                ensureReportHash,
+                fetchAllInventory,
+                normalizeText,
+                mapFirestorePmLog,
+                recordTime,
+                generatePDF
+            };
         })();
+
 
     </script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=32')
+                navigator.serviceWorker.register('sw.js?v=33')
                     .then(reg => console.log('✅ Service Worker registered:', reg.scope))
                     .catch(err => console.warn('⚠️ Service Worker failed:', err));
             });
         }
+
+
     </script>
 </body>
 </html>
