@@ -131,6 +131,9 @@
         .btn-editCurrent { background: #f4a300; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-editCurrent:hover { background: #c98600; }
         .btn-editCurrent:disabled { background: #c0c8d0; cursor: not-allowed; }
+        .btn-dl-row { background: #0b3d91; color: white; border: none; padding: 6px 14px; border-radius: 40px; font-weight: 600; font-size: 0.78rem; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .btn-dl-row:hover { background: #082b66; }
+        .btn-dl-row:disabled { background: #c0c8d0; cursor: not-allowed; }
         .signoff-section { background: #f0f6fc; border-radius: 24px; padding: 26px 28px; margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border: 1px solid #cfe0ee; gap: 20px; }
         .signoff-left { display: flex; flex-direction: column; gap: 6px; }
         .signoff-left .label { font-weight: 600; color: #12405e; font-size: 1rem; letter-spacing: 0.3px; }
@@ -252,7 +255,7 @@
         .jc-feedback .meta { font-size: 0.8rem; opacity: 0.8; margin-bottom: 6px; }
         .jc-feedback .comment { font-style: italic; padding: 8px 12px; background: rgba(255,255,255,0.65); border-radius: 8px; margin-top: 6px; }
 
-        /* ===== ROW EDITORS (In-Charge + Technician) ===== */
+        /* ===== ROW EDITORS ===== */
         .dept-editor-row { display: grid; grid-template-columns: 1.2fr 1.4fr auto; gap: 12px; padding: 14px; background: #fbfdff; border: 1px solid #d4e3ef; border-radius: 14px; margin-bottom: 10px; align-items: start; }
         .dept-editor-row .actions { display: flex; gap: 6px; align-items: flex-start; padding-top: 24px; }
         .dept-editor-row input, .dept-editor-row select { padding: 10px 12px; border-radius: 12px; border: 1.5px solid #cfdfeb; background: #fff; font-size: 0.9rem; font-family: inherit; color: #0a2a3f; }
@@ -300,6 +303,7 @@
     </style>
 </head>
 <body>
+    
     <div id="acInfoPage">
         <div class="info-wrap">
             <div class="info-hero">
@@ -389,7 +393,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="technicianSection">
             <div class="generator-selector">
                 <div class="field-group" style="margin-bottom:0; min-width: 240px;">
@@ -549,7 +553,7 @@
                 </div>
                 <div class="card-body">
                     <p style="font-size: 0.88rem; color: #3a6583; margin-bottom: 14px;">
-                        Read-only view. All refrigerators in your department, with their last PM date, next PM date, and current status.
+                        Read-only view. All refrigerators in your department, with their last PM date, next PM date, and current status. Click <strong>📥 Download</strong> on any row to get the full PM history (signed by both Technician &amp; In-Charge).
                     </p>
                     <div class="filter-selector" id="inventoryFilterBar" style="margin-bottom: 12px;">
                         <div class="filter-chip active" data-status="all">📋 All</div>
@@ -570,10 +574,11 @@
                                     <th>Last PM</th>
                                     <th>Next PM</th>
                                     <th>Status</th>
+                                    <th>PM Cards</th>
                                 </tr>
                             </thead>
                             <tbody id="inventoryTableBody">
-                                <tr><td colspan="8" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>
+                                <tr><td colspan="9" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -702,6 +707,7 @@
         <div class="action-buttons" id="technicianActionButtons">
             <button class="btn-pdf" id="pdfBtn"><span>📄</span> Export Current as PDF</button>
             <button class="btn-pdf-all" id="historyPdfBtn"><span>📚</span> Download My PMs (Cloud)</button>
+            <button class="btn-pdf-all" id="eqPmDownloadBtn" style="background:#0b3d91;"><span>📥</span> Download PM Cards by Equipment</button>
             <button class="btn-pdf-all" id="analysisBtn" style="background:#0b6b3a;"><span>📊</span> PM Analysis (Period + Dept)</button>
             <button class="btn-sync" id="syncBtn"><span>🔄</span> Sync pending (<span id="pendingCount">0</span>)</button>
             <button class="btn-secondary" id="resetBtn">⟲ Reset form</button>
@@ -1048,7 +1054,6 @@
         </div>
     </div>
 
-    <!-- ================= JOB CARD MODAL ================= -->
     <div class="modal-overlay" id="jobCardModal">
         <div class="modal-box" style="max-width: 780px;">
             <h2>📋 Maintenance Job Card</h2>
@@ -1084,7 +1089,101 @@
         </div>
     </div>
 
-    <!-- ================= REJECTION WARNING (TECHNICIAN) ================= -->
+    <!-- ================= EQUIPMENT PM DOWNLOAD MODAL ================= -->
+    <div class="modal-overlay" id="eqPmDownloadModal">
+        <div class="modal-box" style="max-width: 520px;">
+            <h2>📥 Download PM Cards by Equipment</h2>
+            <p>Choose an equipment and a date range. The system will fetch all PM cards for that equipment (both Technician-signed and In-Charge-co-signed) and package them into a single PDF.</p>
+
+            <div class="field-group">
+                <label for="eqPmEquipSelect">Equipment *</label>
+                <select id="eqPmEquipSelect"></select>
+            </div>
+
+            <div class="field-group">
+                <label>Quick range</label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn-secondary" id="eqPmQuick30" style="padding: 8px 16px; font-size: 0.85rem;">📅 Last 30 days</button>
+                    <button type="button" class="btn-secondary" id="eqPmQuick90" style="padding: 8px 16px; font-size: 0.85rem;">📅 Last 90 days</button>
+                    <button type="button" class="btn-secondary" id="eqPmQuickYear" style="padding: 8px 16px; font-size: 0.85rem;">📅 Last 12 months</button>
+                    <button type="button" class="btn-secondary" id="eqPmQuickAll" style="padding: 8px 16px; font-size: 0.85rem;">📅 All time</button>
+                </div>
+            </div>
+
+            <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="field-group">
+                    <label for="eqPmFrom">From date *</label>
+                    <input type="date" id="eqPmFrom">
+                </div>
+                <div class="field-group">
+                    <label for="eqPmTo">To date *</label>
+                    <input type="date" id="eqPmTo">
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>What to include</label>
+                <div style="background:#eef6fc; border-left:3px solid #1e4a6d; padding:10px 14px; border-radius:8px; font-size:0.85rem; color:#12405e; font-weight:600;">
+                    ✅ Only PMs <strong>co-signed by both Technician &amp; In-Charge</strong> will be included in the PDF.
+                </div>
+            </div>
+
+            <div id="eqPmStatus" style="font-size: 0.85rem; min-height: 18px; color:#5b7b96;"></div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" id="eqPmCancel">Cancel</button>
+                <button class="btn-go" id="eqPmDownloadBtn">📄 Download PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= EQUIPMENT PM HISTORY MODAL ================= -->
+    <div class="modal-overlay" id="eqPmHistoryModal">
+        <div class="modal-box" style="max-width: 720px;">
+            <h2>📋 PM Cards for Equipment</h2>
+            <p id="eqPmHistorySubtitle">Choose a period to download the individual PM cards.</p>
+
+            <div class="info-card" style="background: #f9fcff;">
+                <div id="eqPmHistoryMeta"></div>
+            </div>
+
+            <div class="field-group">
+                <label>Quick range</label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn-secondary" id="eqPmHisQuick30" style="padding: 8px 16px; font-size: 0.85rem;">📅 Last 30 days</button>
+                    <button type="button" class="btn-secondary" id="eqPmHisQuick90" style="padding: 8px 16px; font-size: 0.85rem;">📅 Last 90 days</button>
+                    <button type="button" class="btn-secondary" id="eqPmHisQuickYear" style="padding: 8px 16px; font-size: 0.85rem;">📅 Last 12 months</button>
+                    <button type="button" class="btn-secondary" id="eqPmHisQuickAll" style="padding: 8px 16px; font-size: 0.85rem;">📅 All time</button>
+                </div>
+            </div>
+
+            <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="field-group">
+                    <label for="eqPmHisFrom">From date</label>
+                    <input type="date" id="eqPmHisFrom">
+                </div>
+                <div class="field-group">
+                    <label for="eqPmHisTo">To date</label>
+                    <input type="date" id="eqPmHisTo">
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label>Preview</label>
+                <div id="eqPmHistoryPreview" style="max-height: 240px; overflow-y: auto; border: 1px solid #e2eaf1; border-radius: 12px; padding: 8px; background: #fbfdff;">
+                    <div class="info-loading">⏳ Loading PM records…</div>
+                </div>
+            </div>
+
+            <div id="eqPmHistoryStatus" style="font-size: 0.85rem; min-height: 18px;"></div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" id="eqPmHistoryClose">Close</button>
+                <button class="btn-go" id="eqPmHistoryDownloadBtn" style="background:#1b6b3f;">📄 Download PM Cards PDF</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="rejectionWarningModal">
         <div class="modal-box" style="max-width: 640px; border: 2px solid #b33a3a;">
             <h2 style="color: #b33a3a; justify-content: flex-start;">⚠️ Rejected Maintenance Work</h2>
@@ -1100,7 +1199,7 @@
     <div id="qrPrintArea" style="display:none;"></div>
 
     <script>
-        (function() {
+                (function() {
             const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyc-xhUZaHszJA2EW-81Cc7H-pkis3EYLkXcF43HEb1xlMYPerEBIUzPhqgpo6hFwY/exec';
 
             (function warmupAppsScript() {
@@ -1114,9 +1213,6 @@
             const REF_QUARTER_MONTHS = [2, 5, 8, 11];
             const REF_QUARTER_DAY    = 15;
 
-            /* ============================================================
-               JOB CARD — checklist master lists (single source of truth)
-               ============================================================ */
             const JC_CLEAN_TEXTS = [
                 'Clean interior shelves, walls and drawers',
                 'Clean door gaskets and seals',
@@ -1141,7 +1237,6 @@
             const JC_CLEAN_RATINGS = { good: '✅ Good', fair: '🟡 Fair', attention: '🔴 Needs attention' };
             const JC_TEMP_RATINGS  = { good: '✅ Within range', partial: '🟡 Fluctuating', fault: '🔴 Out of range' };
             const JC_DOOR_RATINGS  = { good: '✅ Sealed & functional', delayed: '🟡 Minor issue', issue: '🔴 Needs repair' };
-            /* ============================================================ */
 
             function getNextRefPmDate_(dateVal) {
                 const d = (function(v){
@@ -1342,7 +1437,7 @@
                 if (!name) return;
                 try { localStorage.setItem(getInchargeSigCacheKey(name), dataUrl || ''); } catch(e) {}
             }
-            
+
             const CERT_STATE = { certificate: null, privateKey: null, subject: '', issuer: '', serial: '', validFrom: null, validTo: null, fingerprint: '' };
             function isCertLoaded() { return !!(CERT_STATE.certificate && CERT_STATE.privateKey); }
             function clearCert() {
@@ -1911,6 +2006,20 @@
             const USER_PM_KEYS = new Set();
             let acFilterMode = 'all';
 
+            let currentInchargeSignature = '';
+            let lastSubmittedSnapshot = null;
+            let currentRole = 'technician';
+            let inchargeFilterScope = 'mine';
+            let inventoryFilterStatus = 'all';
+            let currentInchargeDept = '';
+            let supervisorStatusFilter = 'all';
+            let supervisorOwnerFilter = 'all';
+            let currentLoggedInName = '';
+
+            let pendingRecordsByKey = {};
+            let currentJobCardRecord = null;
+            let currentEqPmHistoryAc = null;
+
             function buildAcIdentity(obj) {
                 const tag    = normalizeText(obj.refTag || obj.tag || '');
                 const loc    = normalizeText(obj.refLocation || obj.loc || '');
@@ -1925,7 +2034,7 @@
                 if (currentRole !== 'technician') return false;
                 return sameOwner(getInventoryOwner(item), currentLoggedInName);
             }
-
+            
             const acSelect = document.getElementById('acSelect');
             const acFilterSelect = document.getElementById('acFilterSelect');
             const technicianSelect = document.getElementById('technicianSelect');
@@ -1955,19 +2064,7 @@
             const addAcBtn = document.getElementById('addAcBtn');
             const editAcBtn = document.getElementById('editAcBtn');
             const removeAcBtn = document.getElementById('removeAcBtn');
-
-            let currentInchargeSignature = '';
-            let lastSubmittedSnapshot = null;
-            let currentRole = 'technician';
-            let inchargeFilterScope = 'mine';
-            let inventoryFilterStatus = 'all';
-            let currentInchargeDept = '';
-            let supervisorStatusFilter = 'all';
-            let supervisorOwnerFilter = 'all';
-            let currentLoggedInName = '';
-
-            let pendingRecordsByKey = {};
-            let currentJobCardRecord = null;
+            const eqPmDownloadBtn = document.getElementById('eqPmDownloadBtn');
 
             function showStatus(msg, isSuccess = true) {
                 statusText.textContent = msg;
@@ -1976,6 +2073,7 @@
                 statusMessage.classList.add('show');
                 setTimeout(() => statusMessage.classList.remove('show'), 7000);
             }
+
             const QUEUE_KEY = 'chub_ref_queue_v4';
             function getQueue() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e) { return []; } }
             function saveQueue(q) { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); updatePendingCount(); }
@@ -1988,11 +2086,9 @@
             async function sendToSheet(data) {
                 try {
                     if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
-
                     if (!data.reportHash && typeof ensureReportHash === 'function') {
                         await ensureReportHash(data);
                     }
-
                     const payload = {
                         timestamp:      window.FB.serverTimestamp(),
                         reportId:       data.reportId       || '',
@@ -2034,7 +2130,6 @@
                         inchargeReviewedBy: '',
                         technicianAcknowledgedRejection: false
                     };
-
                     const docRef = await window.FB.addDoc(
                         window.FB.collection(window.FB.db, 'pmLogs'),
                         payload
@@ -2101,15 +2196,11 @@
             function renderAcSelector() {
                 acSelect.innerHTML = '';
                 applyAcFilter();
-
                 if (AC_FILTERED.length === 0) {
                     const opt = document.createElement('option');
                     opt.value = '';
-                    if (AC_INVENTORY.length === 0) {
-                        opt.textContent = '— No Refrigerators in your list —';
-                    } else {
-                        opt.textContent = '— No matches for this filter —';
-                    }
+                    if (AC_INVENTORY.length === 0) opt.textContent = '— No Refrigerators in your list —';
+                    else opt.textContent = '— No matches for this filter —';
                     acSelect.appendChild(opt);
                     acTitle.textContent = AC_INVENTORY.length === 0 ? 'No Refrigerators Yet' : 'No Matches';
                     acSub.textContent = AC_INVENTORY.length === 0
@@ -2121,7 +2212,6 @@
                     updateEditButtonsState();
                     return;
                 }
-
                 AC_FILTERED.forEach((ac, index) => {
                     const opt = document.createElement('option');
                     opt.value = index;
@@ -2203,16 +2293,13 @@
                 const loginDatalist = document.getElementById('loginInchargeSuggestions');
                 if (datalist) datalist.innerHTML = '';
                 if (loginDatalist) loginDatalist.innerHTML = '';
-
                 const names = await fetchKnownIncharges();
-
                 try {
                     const users = await loadUsersFromFirestore();
                     Object.keys(users).forEach(n => {
                         if (users[n].role === 'incharge' && names.indexOf(n) === -1) names.push(n);
                     });
-                } catch (e) { /* ignore */ }
-
+                } catch (e) {}
                 names.sort();
                 names.forEach(n => {
                     if (datalist) { const o1 = document.createElement('option'); o1.value = n; datalist.appendChild(o1); }
@@ -2242,8 +2329,7 @@
                 sel.innerHTML = '<option value="">— Choose your department —</option>';
                 Object.keys(DEPARTMENTS).forEach(d => {
                     const opt = document.createElement('option');
-                    opt.value = d;
-                    opt.textContent = d;
+                    opt.value = d; opt.textContent = d;
                     sel.appendChild(opt);
                 });
             }
@@ -2294,9 +2380,7 @@
             }
             ['newAc', 'editAc'].forEach(prefix => {
                 const group = document.getElementById(prefix + 'WorkingGroup');
-                if (group) {
-                    group.addEventListener('change', () => syncWorkingGroupUI(prefix));
-                }
+                if (group) group.addEventListener('change', () => syncWorkingGroupUI(prefix));
             });
 
             async function findEquipmentByTag(tag) {
@@ -2329,10 +2413,7 @@
             addAcSave_init();
             function addAcSave_init() {
                 document.getElementById('addAcSave').addEventListener('click', async () => {
-                    if (currentRole !== 'technician') {
-                        alert('⛔ Only technicians can add refrigerators.');
-                        return;
-                    }
+                    if (currentRole !== 'technician') { alert('⛔ Only technicians can add refrigerators.'); return; }
                     const tag = document.getElementById('newAcTag').value.trim();
                     const dept = newAcDeptSelect.value;
                     const loc = newAcLocationSelect.value;
@@ -2343,38 +2424,21 @@
                     const workingStatus = document.querySelector('#newAcWorkingGroup input:checked')?.value || 'Working';
                     const lastPmDate = document.getElementById('newAcLastPm').value || '';
                     const nextPmDate = document.getElementById('newAcNextPm').value || '';
-
                     if (!tag || !dept || !loc || !brand || !model) { alert('Please fill in all required fields marked with *'); return; }
-
                     const ownerTech = currentLoggedInName;
                     if (!ownerTech) { alert('You must be logged in to add a refrigerator.'); return; }
-
                     const existing = await findEquipmentByTag(tag);
                     if (existing) {
                         const owner = getInventoryOwner(existing) || '(unknown)';
-                        const proceed = confirm(
-                            '⚠️ DUPLICATE TAG\n\n' +
-                            'Tag: ' + tag + '\n' +
-                            'Already added by: ' + owner + '\n' +
-                            'Location: ' + (existing.loc || '—') + '\n\n' +
-                            'The refrigerator will not be added twice.'
-                        );
+                        const proceed = confirm('⚠️ DUPLICATE TAG\n\nTag: ' + tag + '\nAlready added by: ' + owner + '\nLocation: ' + (existing.loc || '—') + '\n\nThe refrigerator will not be added twice.');
                         if (!proceed) return;
                         showStatus('⚠️ This tag already exists — not added.', false);
                         return;
                     }
-
                     const saveBtn = document.getElementById('addAcSave');
                     saveBtn.disabled = true;
                     saveBtn.innerHTML = '⏳ Saving...';
-
-                    const newAc = {
-                        owner: ownerTech,
-                        technician: ownerTech,
-                        tag, dept, loc, type, brand, model, serial,
-                        workingStatus, lastPmDate, nextPmDate
-                    };
-
+                    const newAc = { owner: ownerTech, technician: ownerTech, tag, dept, loc, type, brand, model, serial, workingStatus, lastPmDate, nextPmDate };
                     try {
                         await addInventoryItemToCloud(newAc, ownerTech);
                         AC_INVENTORY.push(newAc);
@@ -2385,10 +2449,7 @@
                         acSelect.value = AC_FILTERED.length - 1;
                         updateAcBanner();
                         showStatus('✅ Refrigerator saved to cloud.', true);
-                    } catch (err) {
-                        showStatus('⚠️ Save failed: ' + err.message, false);
-                    }
-
+                    } catch (err) { showStatus('⚠️ Save failed: ' + err.message, false); }
                     document.getElementById('newAcTag').value = '';
                     document.getElementById('newAcBrand').value = '';
                     document.getElementById('newAcModel').value = '';
@@ -2403,28 +2464,20 @@
             }
 
             removeAcBtn.addEventListener('click', async () => {
-                if (currentRole !== 'technician') {
-                    showStatus('⛔ Only technicians can remove refrigerators.', false);
-                    return;
-                }
+                if (currentRole !== 'technician') { showStatus('⛔ Only technicians can remove refrigerators.', false); return; }
                 const idx = acSelect.value;
                 if (idx === '' || !AC_FILTERED[idx]) { showStatus('⚠️ No refrigerator selected to remove.', false); return; }
                 const ac = AC_FILTERED[idx];
                 if (!canEditItem(ac)) { showStatus('⛔ Only the owner can remove this refrigerator.', false); return; }
                 if (!confirm(`Remove this refrigerator?\n\n${ac.tag} — ${ac.loc}\n(${ac.brand} ${ac.model})`)) return;
-
                 try {
-                    await removeInventoryItemInCloud({
-                        tag: ac.tag, loc: ac.loc, serial: ac.serial, model: ac.model
-                    }, currentLoggedInName);
+                    await removeInventoryItemInCloud({ tag: ac.tag, loc: ac.loc, serial: ac.serial, model: ac.model }, currentLoggedInName);
                     const origIdx = AC_INVENTORY.findIndex(x => x === ac);
                     if (origIdx !== -1) AC_INVENTORY.splice(origIdx, 1);
                     cacheInventoryLocally(currentLoggedInName, AC_INVENTORY);
                     showStatus('🗑️ Refrigerator removed.', true);
                     renderAcSelector();
-                } catch (err) {
-                    showStatus('⚠️ Removal failed: ' + err.message, false);
-                }
+                } catch (err) { showStatus('⚠️ Removal failed: ' + err.message, false); }
             });
 
             editAcBtn.addEventListener('click', () => {
@@ -2455,31 +2508,18 @@
             function applyRoleVisibility() {
                 const isIncharge = currentRole === 'incharge';
                 const isSupervisor = currentRole === 'supervisor';
-
                 document.getElementById('technicianSection').style.display = (isIncharge || isSupervisor) ? 'none' : 'block';
                 document.getElementById('inchargeSection').style.display = isIncharge ? 'block' : 'none';
                 document.getElementById('supervisorSection').style.display = isSupervisor ? 'block' : 'none';
                 document.getElementById('technicianActionButtons').style.display = (isIncharge || isSupervisor) ? 'none' : 'flex';
                 document.getElementById('workdateTag').style.display = (isIncharge || isSupervisor) ? 'none' : 'flex';
                 document.getElementById('inchargeSignatureSection').style.display = (isIncharge || isSupervisor) ? 'block' : 'none';
-
                 const roleIcon = document.getElementById('roleIcon');
                 const roleLabel = document.getElementById('roleLabel');
-                if (isSupervisor) {
-                    roleIcon.textContent = '👑';
-                    roleLabel.textContent = 'Manager:';
-                } else if (isIncharge) {
-                    roleIcon.textContent = '👔';
-                    roleLabel.textContent = 'In-Charge:';
-                } else {
-                    roleIcon.textContent = '👨‍🔧';
-                    roleLabel.textContent = 'Technician:';
-                }
-
-                if (isIncharge) {
-                    refreshPendingApprovals();
-                    loadDepartmentInventory();
-                }
+                if (isSupervisor) { roleIcon.textContent = '👑'; roleLabel.textContent = 'Manager:'; }
+                else if (isIncharge) { roleIcon.textContent = '👔'; roleLabel.textContent = 'In-Charge:'; }
+                else { roleIcon.textContent = '👨‍🔧'; roleLabel.textContent = 'Technician:'; }
+                if (isIncharge) { refreshPendingApprovals(); loadDepartmentInventory(); }
                 if (isSupervisor) {
                     populateSupervisorDeptFilter();
                     populateSupervisorOwnerFilter();
@@ -2505,7 +2545,6 @@
                 if (!inchargeName) { alert('⚠️ Please enter the department In-Charge name before saving.'); return null; }
                 const now = new Date();
                 const timestamp = now.toLocaleString('en-GB', { hour12: false, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
                 return {
                     refTag: ac.tag, refLocation: ac.loc, refDept: ac.dept, refType: ac.type,
                     refBrand: ac.brand, refModel: ac.model, refSerial: ac.serial,
@@ -2575,7 +2614,6 @@
                 inchargeReviewedAt:   data.inchargeReviewedAt   || '',
                 inchargeReviewedBy:   data.inchargeReviewedBy   || '',
                 technicianAcknowledgedRejection: data.technicianAcknowledgedRejection === true,
-
                 'Ref Tag':       data.refTag         || '',
                 'Location':      data.refLocation    || '',
                 'Department':    data.refDept        || '',
@@ -2614,9 +2652,7 @@
                         console.warn('⚠️ Firebase not ready yet — returning empty logs.');
                         return [];
                     }
-                    const snap = await window.FB.getDocs(
-                        window.FB.collection(window.FB.db, 'pmLogs')
-                    );
+                    const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'pmLogs'));
                     const out = [];
                     snap.forEach(doc => {
                         const mapped = mapFirestorePmLog(doc.id, doc.data());
@@ -2651,12 +2687,9 @@
                             setTimeout(resolve, 5000);
                         });
                     }
-                    if (!window.FB || !window.FB.ready) {
-                        return { ok: false, error: 'Firebase did not initialize in time' };
-                    }
+                    if (!window.FB || !window.FB.ready) return { ok: false, error: 'Firebase did not initialize in time' };
                     const target = normalizeText(acTag);
                     if (!target) return { ok: false, error: 'Missing tag' };
-
                     const q = window.FB.query(
                         window.FB.collection(window.FB.db, 'pmLogs'),
                         window.FB.where('refTag', '==', acTag)
@@ -2679,7 +2712,6 @@
                 const data = collectFormData();
                 if (!data) return;
                 await ensureReportHash(data);
-
                 const acIdentity = buildAcIdentity(data);
                 const orig = this.innerHTML;
                 this.disabled = true;
@@ -2823,36 +2855,23 @@
             document.getElementById('qrModalPrint')?.addEventListener('click', () => {
                 const modal = document.getElementById('qrModal');
                 const printArea = document.getElementById('qrPrintArea');
-
                 const mode = modal._stickerMode || 'single';
                 const acs  = modal._stickerAcs  || [];
-
-                if (acs.length === 0) {
-                    showStatus('⚠️ No refrigerators to print.', false);
-                    return;
-                }
-
+                if (acs.length === 0) { showStatus('⚠️ No refrigerators to print.', false); return; }
                 printArea.innerHTML = '';
-
                 const title = document.createElement('div');
                 title.style.cssText = 'text-align:center; font-weight:800; color:#0b3d91; padding:14px; font-size:1.1rem;';
                 title.textContent = modal._stickerTitle || 'QR Stickers';
                 printArea.appendChild(title);
-
                 const grid = document.createElement('div');
                 grid.className = 'qr-sticker-grid';
-                acs.forEach(ac => {
-                    grid.appendChild(buildStickerHtml(ac, mode === 'single' ? 180 : 130));
-                });
+                acs.forEach(ac => { grid.appendChild(buildStickerHtml(ac, mode === 'single' ? 180 : 130)); });
                 printArea.appendChild(grid);
-
                 const footer = document.createElement('div');
                 footer.style.cssText = 'text-align:center; font-size:0.7rem; color:#5b7b96; padding:10px;';
                 footer.textContent = 'CHUB Refrigerator Fleet PM · Scan any QR code to see live PM status, next PM due, last technician, and in-charge approval.';
                 printArea.appendChild(footer);
-
                 printArea.style.display = 'block';
-
                 setTimeout(() => {
                     window.print();
                     setTimeout(() => { printArea.style.display = 'none'; }, 800);
@@ -2962,7 +2981,7 @@
                             techPhone = safeStr(users[techName].phone || '');
                             techEmail = safeStr(users[techName].email || '');
                         }
-                    } catch (e) { /* ignore */ }
+                    } catch (e) {}
                 }
                 const techContactHtml = `
                     ${techPhone ? `<div class="info-row"><span class="k">📞 Phone</span><span class="v"><a href="tel:${escapeHtml(techPhone.replace(/\s+/g, ''))}">${escapeHtml(techPhone)}</a></span></div>` : ''}
@@ -3064,10 +3083,8 @@
                 `;
 
                 window.__qrCurrentTag = tag;
-
                 const fromInput = document.getElementById('qrReportFrom');
                 const toInput   = document.getElementById('qrReportTo');
-
                 if (fromInput && !fromInput.value) {
                     const today = new Date();
                     const past  = new Date();
@@ -3076,20 +3093,13 @@
                     toInput.value   = fmt(today);
                     fromInput.value = fmt(past);
                 }
-
                 const setQuickRange = days => {
                     const today = new Date();
                     const fmt = d => d.toISOString().slice(0, 10);
                     toInput.value = fmt(today);
-                    if (days === 'all') {
-                        fromInput.value = '2026-07-03';
-                    } else {
-                        const past = new Date();
-                        past.setDate(today.getDate() - days);
-                        fromInput.value = fmt(past);
-                    }
+                    if (days === 'all') fromInput.value = '2026-07-03';
+                    else { const past = new Date(); past.setDate(today.getDate() - days); fromInput.value = fmt(past); }
                 };
-
                 document.getElementById('qrReportQuick30')?.addEventListener('click', () => setQuickRange(30));
                 document.getElementById('qrReportQuick90')?.addEventListener('click', () => setQuickRange(90));
                 document.getElementById('qrReportQuickAll')?.addEventListener('click', () => setQuickRange('all'));
@@ -3097,7 +3107,6 @@
                 document.getElementById('qrDownloadBtn')?.addEventListener('click', async () => {
                     const btn    = document.getElementById('qrDownloadBtn');
                     const status = document.getElementById('qrReportStatus');
-
                     if (!window.FB || !window.FB.ready) {
                         status.textContent = '⏳ Waiting for database…';
                         status.style.color = '#5b7b96';
@@ -3107,51 +3116,28 @@
                         });
                         status.textContent = '';
                     }
-                    const from   = fromInput.value;
-                    const to     = toInput.value;
-
-                    if (!from || !to) {
-                        status.textContent = '⚠️ Please pick both dates.';
-                        status.style.color = '#b33a3a';
-                        return;
-                    }
-                    if (from > to) {
-                        status.textContent = '⚠️ From must be before To.';
-                        status.style.color = '#b33a3a';
-                        return;
-                    }
-
-                    status.textContent = '⏳ Fetching PM records…';
-                    status.style.color = '#5b7b96';
+                    const from = fromInput.value;
+                    const to   = toInput.value;
+                    if (!from || !to) { status.textContent = '⚠️ Please pick both dates.'; status.style.color = '#b33a3a'; return; }
+                    if (from > to) { status.textContent = '⚠️ From must be before To.'; status.style.color = '#b33a3a'; return; }
+                    status.textContent = '⏳ Fetching PM records…'; status.style.color = '#5b7b96';
                     btn.disabled = true;
-
                     try {
                         const allLogs = await window.__DEV.fetchAcInfoFromCloud(tag);
-                        if (!allLogs || !allLogs.ok) {
-                            throw new Error(allLogs?.error || 'Could not fetch records.');
-                        }
-
+                        if (!allLogs || !allLogs.ok) throw new Error(allLogs?.error || 'Could not fetch records.');
                         const fromTs = new Date(from + 'T00:00:00').getTime();
                         const toTs   = new Date(to   + 'T23:59:59').getTime();
-
                         const filtered = (allLogs.records || []).filter(r => {
                             const d = r['Work Date'] || r['Timestamp'] || r.workDate || '';
                             if (!d) return false;
                             const t = new Date(d).getTime();
                             return !isNaN(t) && t >= fromTs && t <= toTs;
                         });
-
                         if (filtered.length === 0) {
-                            status.textContent = '📭 No PM records in that period.';
-                            status.style.color = '#b33a3a';
-                            btn.disabled = false;
-                            return;
+                            status.textContent = '📭 No PM records in that period.'; status.style.color = '#b33a3a'; btn.disabled = false; return;
                         }
-
                         status.textContent = '⏳ Generating PDF for ' + filtered.length + ' record(s)…';
-
                         await window.__DEV.generatePDF(filtered);
-
                         status.textContent = '✅ PDF downloaded (' + filtered.length + ' record' + (filtered.length > 1 ? 's' : '') + ').';
                         status.style.color = '#1b6b3f';
                     } catch (e) {
@@ -3159,15 +3145,12 @@
                         status.textContent = '⚠️ ' + (e.message || 'Could not generate PDF.');
                         status.style.color = '#b33a3a';
                     }
-
                     btn.disabled = false;
                 });
             }
 
             const showingPublicInfo = initAcInfoPage();
-            if (showingPublicInfo) {
-                document.querySelector('.app-container').style.display = 'none';
-            }
+            if (showingPublicInfo) document.querySelector('.app-container').style.display = 'none';
 
             const pendingApprovalsList = document.getElementById('pendingApprovalsList');
             const pendingApprovalsCount = document.getElementById('pendingApprovalsCount');
@@ -3181,9 +3164,6 @@
                 });
             });
 
-            /* ============================================================
-               JOB CARD — rendering + modal + review panel
-               ============================================================ */
             function jcRow(k, v) {
                 return `<div class="info-row"><span class="k">${escapeHtml(k)}</span><span class="v">${v}</span></div>`;
             }
@@ -3226,15 +3206,11 @@
                 const inchargeName = safeStr(rec['In-Charge Name'] || rec.inchargeName) || '—';
                 const signedAt = safeStr(rec['In-Charge Signed At'] || rec.inchargeSignedAt);
                 const signer   = safeStr(rec['In-Charge Signer'] || rec.inchargeSigner);
-
                 const wsBadge = normalizeText(ws) === 'NOT WORKING'
                     ? '<span class="status-badge not-working">⛔ Not Working</span>'
                     : '<span class="status-badge working">✅ Working</span>';
-
                 const sigSealed = safeStr(rec.signatureSubject || rec['Signature Subject']);
-
                 let html = '';
-
                 html += `<div class="info-card">
                     <h2>🧊 Equipment</h2>
                     ${jcRow('Tag', escapeHtml(tag))}
@@ -3245,7 +3221,6 @@
                     ${jcRow('Serial Number', escapeHtml(serial))}
                     ${jcRow('Working Status', wsBadge)}
                 </div>`;
-
                 html += `<div class="info-card">
                     <h2>📅 Maintenance Summary</h2>
                     ${jcRow('Work date', formatDateOnly(wd))}
@@ -3255,33 +3230,10 @@
                     ${jcRow('Report ID', escapeHtml(reportId))}
                     ${jcRow('Report hash', `<span style="font-size:0.72rem; font-family:monospace;">${escapeHtml(hash)}</span>`)}
                 </div>`;
-
-                html += jcChecklistSection('🧼', 'Cleaning & Hygiene',
-                    JC_CLEAN_TEXTS,
-                    rec['Clean Items'] || rec.cleanItems,
-                    1,
-                    rec['Clean Rating'] || rec.cleanRating,
-                    JC_CLEAN_RATINGS,
-                    rec['Clean Remarks'] || rec.cleanRemarks);
-
-                html += jcChecklistSection('🌡️', 'Temperature & Performance',
-                    JC_TEMP_TEXTS,
-                    rec['Temp Items'] || rec.tempItems,
-                    6,
-                    rec['Temp Rating'] || rec.tempRating,
-                    JC_TEMP_RATINGS,
-                    rec['Temp Remarks'] || rec.tempRemarks);
-
-                html += jcChecklistSection('🚪', 'Door, Seals & Function',
-                    JC_DOOR_TEXTS,
-                    rec['Door Items'] || rec.doorItems,
-                    11,
-                    rec['Door Rating'] || rec.doorRating,
-                    JC_DOOR_RATINGS,
-                    rec['Door Remarks'] || rec.doorRemarks);
-
-                html += `<div class="info-card">
-                    <h2>👔 Approval</h2>`;
+                html += jcChecklistSection('🧼', 'Cleaning & Hygiene', JC_CLEAN_TEXTS, rec['Clean Items'] || rec.cleanItems, 1, rec['Clean Rating'] || rec.cleanRating, JC_CLEAN_RATINGS, rec['Clean Remarks'] || rec.cleanRemarks);
+                html += jcChecklistSection('🌡️', 'Temperature & Performance', JC_TEMP_TEXTS, rec['Temp Items'] || rec.tempItems, 6, rec['Temp Rating'] || rec.tempRating, JC_TEMP_RATINGS, rec['Temp Remarks'] || rec.tempRemarks);
+                html += jcChecklistSection('🚪', 'Door, Seals & Function', JC_DOOR_TEXTS, rec['Door Items'] || rec.doorItems, 11, rec['Door Rating'] || rec.doorRating, JC_DOOR_RATINGS, rec['Door Remarks'] || rec.doorRemarks);
+                html += `<div class="info-card"><h2>👔 Approval</h2>`;
                 if (signedAt) {
                     html += jcRow('Co-signed by', escapeHtml(signer || inchargeName));
                     html += jcRow('Co-signed at', formatDateOnly(signedAt));
@@ -3290,11 +3242,8 @@
                     html += jcRow('Assigned In-Charge', escapeHtml(inchargeName));
                     html += jcRow('Status', '<span style="color:#b33a3a; font-weight:700;">⏳ Awaiting your co-signature</span>');
                 }
-                html += jcRow('Digital seal', sigSealed
-                    ? '<span style="color:#1b6b3f; font-weight:700;">🔐 PKCS#7 signed</span>'
-                    : '<span style="color:#5b7b96;">Visual signature only</span>');
+                html += jcRow('Digital seal', sigSealed ? '<span style="color:#1b6b3f; font-weight:700;">🔐 PKCS#7 signed</span>' : '<span style="color:#5b7b96;">Visual signature only</span>');
                 html += `</div>`;
-
                 return html;
             }
 
@@ -3304,7 +3253,6 @@
                 const comment = safeStr(rec.inchargeComment || rec['In-Charge Comment']);
                 const reviewer = safeStr(rec.inchargeReviewedBy || rec.inchargeSigner || rec['In-Charge Signer']) || 'In-Charge';
                 const reviewedAt = safeStr(rec.inchargeReviewedAt || rec.inchargeSignedAt || '');
-
                 let html = '';
                 if (status === 'rejected') {
                     html = `<div class="jc-feedback rejected">
@@ -3324,7 +3272,6 @@
                         <div class="comment">${escapeHtml(comment)}</div>
                     </div>`;
                 }
-
                 el.innerHTML = html;
                 el.style.display = html ? 'block' : 'none';
             }
@@ -3332,12 +3279,9 @@
             function renderJobCardReviewSection(rec) {
                 const section = document.getElementById('jobCardReviewSection');
                 const ta      = document.getElementById('jobCardComment');
-
                 if (currentRole !== 'incharge') { section.style.display = 'none'; return; }
-
                 const alreadySigned = !!(safeStr(rec['In-Charge Signed At'] || rec.inchargeSignedAt).trim());
                 if (alreadySigned) { section.style.display = 'none'; return; }
-
                 ta.value = safeStr(rec.inchargeComment || rec['In-Charge Comment']) || '';
                 section.style.display = 'block';
             }
@@ -3346,14 +3290,10 @@
                 const rec = currentJobCardRecord;
                 if (!rec) return;
                 if (!rec._docId) { showStatus('⚠️ Record reference missing — try refreshing.', false); return; }
-
-                const btn = status === 'approved'
-                    ? document.getElementById('jobCardApproveBtn')
-                    : document.getElementById('jobCardRejectBtn');
+                const btn = status === 'approved' ? document.getElementById('jobCardApproveBtn') : document.getElementById('jobCardRejectBtn');
                 const orig = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = '⏳ Saving…';
-
                 try {
                     const now = new Date().toISOString();
                     const update = {
@@ -3362,7 +3302,6 @@
                         inchargeReviewedAt:   now,
                         inchargeReviewedBy:   currentLoggedInName
                     };
-
                     if (status === 'approved') {
                         update.inchargeSignedAt = now;
                         update.inchargeSigner   = currentLoggedInName;
@@ -3372,21 +3311,9 @@
                         update.inchargeSigner   = '';
                         update.technicianAcknowledgedRejection = false;
                     }
-
-                    await window.FB.updateDoc(
-                        window.FB.doc(window.FB.db, 'pmLogs', rec._docId),
-                        update
-                    );
-
+                    await window.FB.updateDoc(window.FB.doc(window.FB.db, 'pmLogs', rec._docId), update);
                     Object.assign(rec, update);
-
-                    showStatus(
-                        status === 'approved'
-                            ? '✅ Work approved and co-signed.'
-                            : '❌ Work rejected. The technician will be warned at next login.',
-                        status === 'approved'
-                    );
-
+                    showStatus(status === 'approved' ? '✅ Work approved and co-signed.' : '❌ Work rejected. The technician will be warned at next login.', status === 'approved');
                     document.getElementById('jobCardModal').classList.remove('show');
                     setTimeout(() => refreshPendingApprovals(), 500);
                 } catch (e) {
@@ -3418,15 +3345,11 @@
             function openJobCard(rec) {
                 if (!rec) return;
                 currentJobCardRecord = rec;
-
                 const tag = safeStr(rec['Ref Tag'] || rec['AC Tag'] || rec.refTag) || '—';
                 const loc = safeStr(rec['Location'] || rec.refLocation) || '—';
                 const wd  = formatDateOnly(rec['Work Date'] || rec.workDate);
                 const tech = safeStr(rec['Technician'] || rec.technician) || '—';
-
-                document.getElementById('jobCardSubtitle').textContent =
-                    tag + ' · ' + loc + ' · Work date: ' + wd + ' · Technician: ' + tech;
-
+                document.getElementById('jobCardSubtitle').textContent = tag + ' · ' + loc + ' · Work date: ' + wd + ' · Technician: ' + tech;
                 document.getElementById('jobCardBody').innerHTML = renderJobCardHtml(rec);
                 renderJobCardFeedback(rec);
                 renderJobCardReviewSection(rec);
@@ -3445,11 +3368,281 @@
                 try {
                     await generatePDF([currentJobCardRecord]);
                     showStatus('📄 Job card PDF generated.', true);
-                } catch (e) {
-                    showStatus('⚠️ ' + (e.message || 'Could not generate PDF.'), false);
-                }
+                } catch (e) { showStatus('⚠️ ' + (e.message || 'Could not generate PDF.'), false); }
                 this.disabled = false;
                 this.innerHTML = orig;
+            });
+
+            /* ============================================================
+               EQUIPMENT PM DOWNLOAD — TECHNICIAN VIEW
+               ============================================================ */
+            const eqPmDownloadModal = document.getElementById('eqPmDownloadModal');
+            const eqPmEquipSelect   = document.getElementById('eqPmEquipSelect');
+            const eqPmFrom          = document.getElementById('eqPmFrom');
+            const eqPmTo            = document.getElementById('eqPmTo');
+            const eqPmStatus        = document.getElementById('eqPmStatus');
+
+            function populateEqPmEquipSelect() {
+                eqPmEquipSelect.innerHTML = '';
+                const list = AC_FILTERED.length > 0 ? AC_FILTERED : AC_INVENTORY;
+                if (!list.length) {
+                    const o = document.createElement('option');
+                    o.value = ''; o.textContent = '— No equipment available —';
+                    eqPmEquipSelect.appendChild(o);
+                    return;
+                }
+                list.forEach((ac, i) => {
+                    const o = document.createElement('option');
+                    o.value = String(i);
+                    o.textContent = `${ac.tag} | ${ac.loc} | ${ac.brand} ${ac.model}`;
+                    eqPmEquipSelect.appendChild(o);
+                });
+                // pre-select the currently chosen fridge if any
+                const curIdx = acSelect.value;
+                if (curIdx !== '' && list[Number(curIdx)]) eqPmEquipSelect.value = curIdx;
+            }
+
+            function setEqPmQuickRange(which) {
+                const today = new Date();
+                const fmt = d => d.toISOString().slice(0, 10);
+                eqPmTo.value = fmt(today);
+                if (which === 'all') { eqPmFrom.value = '2026-07-03'; return; }
+                const past = new Date();
+                if (which === 30) past.setDate(today.getDate() - 30);
+                else if (which === 90) past.setDate(today.getDate() - 90);
+                else if (which === 365) past.setDate(today.getDate() - 365);
+                eqPmFrom.value = fmt(past);
+            }
+
+            document.getElementById('eqPmQuick30')?.addEventListener('click', () => setEqPmQuickRange(30));
+            document.getElementById('eqPmQuick90')?.addEventListener('click', () => setEqPmQuickRange(90));
+            document.getElementById('eqPmQuickYear')?.addEventListener('click', () => setEqPmQuickRange(365));
+            document.getElementById('eqPmQuickAll')?.addEventListener('click', () => setEqPmQuickRange('all'));
+
+            eqPmDownloadBtn?.addEventListener('click', () => {
+                if (currentRole !== 'technician') {
+                    showStatus('⛔ Only technicians can use this from their view.', false);
+                    return;
+                }
+                populateEqPmEquipSelect();
+                setEqPmQuickRange(90);
+                eqPmStatus.textContent = '';
+                eqPmDownloadModal.classList.add('show');
+            });
+
+            document.getElementById('eqPmCancel')?.addEventListener('click', () => {
+                eqPmDownloadModal.classList.remove('show');
+            });
+
+            document.getElementById('eqPmDownloadBtn')?.addEventListener('click', async function() {
+                const idxStr = eqPmEquipSelect.value;
+                if (idxStr === '') { eqPmStatus.textContent = '⚠️ Please pick an equipment.'; eqPmStatus.style.color = '#b33a3a'; return; }
+                const from = eqPmFrom.value;
+                const to   = eqPmTo.value;
+                if (!from || !to) { eqPmStatus.textContent = '⚠️ Please pick both dates.'; eqPmStatus.style.color = '#b33a3a'; return; }
+                if (from > to) { eqPmStatus.textContent = '⚠️ From must be before To.'; eqPmStatus.style.color = '#b33a3a'; return; }
+
+                const list = AC_FILTERED.length > 0 ? AC_FILTERED : AC_INVENTORY;
+                const ac = list[Number(idxStr)];
+                if (!ac) { eqPmStatus.textContent = '⚠️ Equipment not found.'; eqPmStatus.style.color = '#b33a3a'; return; }
+
+                const btn = this;
+                const orig = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Fetching...';
+                eqPmStatus.textContent = '⏳ Fetching PM records from cloud...';
+                eqPmStatus.style.color = '#5b7b96';
+
+                try {
+                    const logs = await fetchAllLogs();
+                    const targetIdentity = buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model });
+                    const fromTs = new Date(from + 'T00:00:00').getTime();
+                    const toTs   = new Date(to   + 'T23:59:59').getTime();
+                    const techName = currentLoggedInName;
+
+                    // Only PMs for this equipment + in range + signed by this technician + co-signed by In-Charge
+                    const matched = logs.filter(r => {
+                        const rIdentity = buildAcIdentity({ refTag: r.refTag || r['Ref Tag'], refLocation: r.refLocation || r['Location'], refSerial: r.refSerial || r['Serial Number'], refModel: r.refModel || r['Model'] });
+                        if (rIdentity !== targetIdentity) return false;
+                        const d = safeStr(r['Work Date'] || r.workDate || r['Timestamp'] || r.timestamp);
+                        if (!d) return false;
+                        const t = new Date(d).getTime();
+                        if (isNaN(t) || t < fromTs || t > toTs) return false;
+                        // must be signed by this technician
+                        if (normalizeText(r['Technician'] || r.technician) !== normalizeText(techName)) return false;
+                        // must be co-signed by in-charge (no rejected)
+                        const sigAt = safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim();
+                        if (!sigAt) return false;
+                        if (safeStr(r.inchargeReviewStatus) === 'rejected') return false;
+                        return true;
+                    });
+
+                    if (matched.length === 0) {
+                        eqPmStatus.textContent = '📭 No co-signed PMs found for this equipment in that period.';
+                        eqPmStatus.style.color = '#b33a3a';
+                        btn.disabled = false;
+                        btn.innerHTML = orig;
+                        return;
+                    }
+
+                    eqPmStatus.textContent = '⏳ Generating PDF for ' + matched.length + ' PM card(s)...';
+                    await generatePDF(matched);
+                    eqPmStatus.textContent = '✅ PDF downloaded (' + matched.length + ' PM card' + (matched.length > 1 ? 's' : '') + ').';
+                    eqPmStatus.style.color = '#1b6b3f';
+                } catch (e) {
+                    console.error('❌ eqPmDownload failed:', e);
+                    eqPmStatus.textContent = '⚠️ ' + (e.message || 'Could not generate PDF.');
+                    eqPmStatus.style.color = '#b33a3a';
+                }
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            });
+
+            /* ============================================================
+               EQUIPMENT PM HISTORY — IN-CHARGE VIEW (per-row download)
+               ============================================================ */
+            const eqPmHistoryModal = document.getElementById('eqPmHistoryModal');
+            let eqPmHistoryRecords = [];
+
+            function setEqPmHisQuickRange(which) {
+                const today = new Date();
+                const fmt = d => d.toISOString().slice(0, 10);
+                document.getElementById('eqPmHisTo').value = fmt(today);
+                if (which === 'all') { document.getElementById('eqPmHisFrom').value = '2026-07-03'; return; }
+                const past = new Date();
+                if (which === 30) past.setDate(today.getDate() - 30);
+                else if (which === 90) past.setDate(today.getDate() - 90);
+                else if (which === 365) past.setDate(today.getDate() - 365);
+                document.getElementById('eqPmHisFrom').value = fmt(past);
+            }
+
+            document.getElementById('eqPmHisQuick30')?.addEventListener('click', () => setEqPmHisQuickRange(30));
+            document.getElementById('eqPmHisQuick90')?.addEventListener('click', () => setEqPmHisQuickRange(90));
+            document.getElementById('eqPmHisQuickYear')?.addEventListener('click', () => setEqPmHisQuickRange(365));
+            document.getElementById('eqPmHisQuickAll')?.addEventListener('click', () => setEqPmHisQuickRange('all'));
+
+            function renderEqPmHistoryPreview(records, from, to) {
+                const el = document.getElementById('eqPmHistoryPreview');
+                const filtered = records.filter(r => {
+                    const d = safeStr(r['Work Date'] || r.workDate || r['Timestamp'] || r.timestamp);
+                    if (!d) return false;
+                    const t = new Date(d).getTime();
+                    return !isNaN(t) && t >= new Date(from + 'T00:00:00').getTime() && t <= new Date(to + 'T23:59:59').getTime();
+                });
+                if (filtered.length === 0) {
+                    el.innerHTML = '<div class="info-loading">📭 No co-signed PM records in this period.</div>';
+                    return;
+                }
+                el.innerHTML = filtered.map((r, i) => {
+                    const wd  = formatDateOnly(r['Work Date'] || r.workDate);
+                    const tech = escapeHtml(r['Technician'] || r.technician || '—');
+                    const sgn  = escapeHtml(r['In-Charge Signer'] || r.inchargeSigner || '—');
+                    const sgnAt = formatDateOnly(r['In-Charge Signed At'] || r.inchargeSignedAt);
+                    const cmt  = safeStr(r.inchargeComment || '');
+                    return `<div style="padding: 8px 12px; margin-bottom: 6px; background: white; border: 1px solid #d4e3ef; border-radius: 10px; font-size: 0.85rem;">
+                        <div style="font-weight: 700; color:#12405e;">${i + 1}. ${wd}</div>
+                        <div style="color:#3a6583; margin-top:2px;">👨‍🔧 ${tech} · 👔 ${sgn} on ${sgnAt}</div>
+                        ${cmt ? `<div style="color:#5b7b96; font-style:italic; margin-top:4px;">💬 ${escapeHtml(cmt)}</div>` : ''}
+                    </div>`;
+                }).join('');
+            }
+
+            async function openEqPmHistory(ac) {
+                if (!ac) return;
+                currentEqPmHistoryAc = ac;
+                eqPmHistoryRecords = [];
+
+                const meta = document.getElementById('eqPmHistoryMeta');
+                meta.innerHTML = `
+                    <div class="info-row"><span class="k">Tag</span><span class="v">${escapeHtml(ac.tag)}</span></div>
+                    <div class="info-row"><span class="k">Location</span><span class="v">${escapeHtml(ac.loc)}</span></div>
+                    <div class="info-row"><span class="k">Brand / Model</span><span class="v">${escapeHtml((ac.brand || '') + ' ' + (ac.model || ''))}</span></div>
+                    <div class="info-row"><span class="k">Serial</span><span class="v">${escapeHtml(ac.serial || '—')}</span></div>
+                `;
+                document.getElementById('eqPmHistorySubtitle').textContent = 'PM Cards signed by both Technician & In-Charge for this equipment.';
+                document.getElementById('eqPmHistoryStatus').textContent = '';
+
+                setEqPmHisQuickRange(90);
+                eqPmHistoryModal.classList.add('show');
+
+                const from = document.getElementById('eqPmHisFrom').value;
+                const to   = document.getElementById('eqPmHisTo').value;
+
+                document.getElementById('eqPmHistoryPreview').innerHTML = '<div class="info-loading">⏳ Loading PM records…</div>';
+
+                try {
+                    const logs = await fetchAllLogs();
+                    const targetIdentity = buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model });
+                    eqPmHistoryRecords = logs.filter(r => {
+                        const rIdentity = buildAcIdentity({ refTag: r.refTag || r['Ref Tag'], refLocation: r.refLocation || r['Location'], refSerial: r.refSerial || r['Serial Number'], refModel: r.refModel || r['Model'] });
+                        if (rIdentity !== targetIdentity) return false;
+                        const sigAt = safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim();
+                        if (!sigAt) return false;
+                        if (safeStr(r.inchargeReviewStatus) === 'rejected') return false;
+                        return true;
+                    });
+                    renderEqPmHistoryPreview(eqPmHistoryRecords, from, to);
+                } catch (e) {
+                    console.error('❌ openEqPmHistory failed:', e);
+                    document.getElementById('eqPmHistoryPreview').innerHTML = '<div class="info-error">⚠️ Could not load records.</div>';
+                }
+            }
+
+            document.getElementById('eqPmHistoryClose')?.addEventListener('click', () => {
+                eqPmHistoryModal.classList.remove('show');
+            });
+
+            document.getElementById('eqPmHisFrom')?.addEventListener('change', () => {
+                if (!currentEqPmHistoryAc) return;
+                const from = document.getElementById('eqPmHisFrom').value;
+                const to   = document.getElementById('eqPmHisTo').value;
+                if (from && to) renderEqPmHistoryPreview(eqPmHistoryRecords, from, to);
+            });
+            document.getElementById('eqPmHisTo')?.addEventListener('change', () => {
+                if (!currentEqPmHistoryAc) return;
+                const from = document.getElementById('eqPmHisFrom').value;
+                const to   = document.getElementById('eqPmHisTo').value;
+                if (from && to) renderEqPmHistoryPreview(eqPmHistoryRecords, from, to);
+            });
+
+            document.getElementById('eqPmHistoryDownloadBtn')?.addEventListener('click', async function() {
+                if (!currentEqPmHistoryAc) return;
+                const from = document.getElementById('eqPmHisFrom').value;
+                const to   = document.getElementById('eqPmHisTo').value;
+                const status = document.getElementById('eqPmHistoryStatus');
+                if (!from || !to) { status.textContent = '⚠️ Please pick both dates.'; status.style.color = '#b33a3a'; return; }
+                if (from > to) { status.textContent = '⚠️ From must be before To.'; status.style.color = '#b33a3a'; return; }
+
+                const filtered = eqPmHistoryRecords.filter(r => {
+                    const d = safeStr(r['Work Date'] || r.workDate || r['Timestamp'] || r.timestamp);
+                    if (!d) return false;
+                    const t = new Date(d).getTime();
+                    return !isNaN(t) && t >= new Date(from + 'T00:00:00').getTime() && t <= new Date(to + 'T23:59:59').getTime();
+                });
+
+                if (filtered.length === 0) {
+                    status.textContent = '📭 No co-signed PM cards in that period.';
+                    status.style.color = '#b33a3a';
+                    return;
+                }
+
+                const btn = this;
+                const orig = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Generating...';
+                status.textContent = '⏳ Preparing PDF for ' + filtered.length + ' card(s)...';
+                status.style.color = '#5b7b96';
+                try {
+                    await generatePDF(filtered);
+                    status.textContent = '✅ PDF downloaded (' + filtered.length + ' PM card' + (filtered.length > 1 ? 's' : '') + ').';
+                    status.style.color = '#1b6b3f';
+                } catch (e) {
+                    console.error('❌ eqPmHistoryDownload failed:', e);
+                    status.textContent = '⚠️ ' + (e.message || 'Could not generate PDF.');
+                    status.style.color = '#b33a3a';
+                }
+                btn.disabled = false;
+                btn.innerHTML = orig;
             });
 
             /* ============================================================
@@ -3467,9 +3660,7 @@
                     });
                     if (rejected.length === 0) return;
                     showRejectionWarning(rejected);
-                } catch (e) {
-                    console.warn('⚠️ checkTechnicianRejections failed:', e);
-                }
+                } catch (e) { console.warn('⚠️ checkTechnicianRejections failed:', e); }
             }
 
             function showRejectionWarning(rejectedList) {
@@ -3500,17 +3691,12 @@
                     try {
                         for (const r of rejectedList) {
                             if (r._docId) {
-                                await window.FB.updateDoc(
-                                    window.FB.doc(window.FB.db, 'pmLogs', r._docId),
-                                    { technicianAcknowledgedRejection: true }
-                                );
+                                await window.FB.updateDoc(window.FB.doc(window.FB.db, 'pmLogs', r._docId), { technicianAcknowledgedRejection: true });
                             }
                         }
                         document.getElementById('rejectionWarningModal').classList.remove('show');
                         showStatus('✅ Rejection notice acknowledged.', true);
-                    } catch (e) {
-                        showStatus('⚠️ Could not save: ' + e.message, false);
-                    }
+                    } catch (e) { showStatus('⚠️ Could not save: ' + e.message, false); }
                     ackBtn.disabled = false; ackBtn.textContent = '✅ Acknowledge All';
                 };
             }
@@ -3526,13 +3712,11 @@
                     const records = await fetchAllLogs();
                     const myDept = currentInchargeDept || '';
                     const myName = normalizeText(currentLoggedInName);
-
                     const pending = records.filter(r => {
                         const at = safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim();
                         if (at) return false;
                         const reviewStatus = safeStr(r.inchargeReviewStatus || r['In-Charge Review Status']);
                         if (reviewStatus === 'rejected') return false;
-
                         if (inchargeFilterScope === 'mine') {
                             const recDept = normalizeText(r['Department'] || r.refDept);
                             const recIncharge = normalizeText(r['In-Charge Name'] || r.inchargeName);
@@ -3599,7 +3783,6 @@
             async function cosignRecord(reportHash, inchargeName) {
                 if (!inchargeName) { alert('You must be signed in.'); return false; }
                 if (!reportHash) { alert('Record has no Report Hash.'); return false; }
-
                 if (!currentInchargeSignature) {
                     await fetchInchargeSignatureFromCloud(inchargeName);
                     currentInchargeSignature = getInchargeSignatureCached(inchargeName);
@@ -3608,32 +3791,20 @@
                     alert('⚠️ Please upload your in-charge signature first (top-right → 🖊️ Signature & Cert).');
                     return false;
                 }
-
-                if (!window.FB || !window.FB.ready) {
-                    showStatus('⚠️ Firebase not ready.', false);
-                    return false;
-                }
-
+                if (!window.FB || !window.FB.ready) { showStatus('⚠️ Firebase not ready.', false); return false; }
                 try {
                     const q = window.FB.query(
                         window.FB.collection(window.FB.db, 'pmLogs'),
                         window.FB.where('reportHash', '==', reportHash)
                     );
                     const snap = await window.FB.getDocs(q);
-
-                    if (snap.empty) {
-                        showStatus('⚠️ No matching PM log found for this report.', false);
-                        return false;
-                    }
-
+                    if (snap.empty) { showStatus('⚠️ No matching PM log found for this report.', false); return false; }
                     const signedAt = new Date().toISOString();
-
                     let certSig = null;
                     if (isCertLoaded()) {
                         const canonical = 'COSIGN|' + reportHash + '|' + inchargeName + '|' + signedAt;
                         certSig = signCanonical(canonical);
                     }
-
                     let updatedCount = 0;
                     for (const docSnap of snap.docs) {
                         const update = {
@@ -3643,7 +3814,6 @@
                             inchargeReviewedAt:   signedAt,
                             inchargeReviewedBy:   inchargeName
                         };
-
                         if (certSig) {
                             update.inchargePkcs7Signature         = certSig.base64;
                             update.inchargeSignatureSubject       = certSig.subject;
@@ -3652,18 +3822,10 @@
                             update.inchargeSignatureFingerprint   = certSig.fingerprint;
                             update.inchargeSignatureValidTo       = certSig.validTo;
                         }
-
-                        await window.FB.updateDoc(
-                            window.FB.doc(window.FB.db, 'pmLogs', docSnap.id),
-                            update
-                        );
+                        await window.FB.updateDoc(window.FB.doc(window.FB.db, 'pmLogs', docSnap.id), update);
                         updatedCount++;
                     }
-
-                    console.log(
-                        '✅ Co-signed ' + updatedCount + ' PM log(s) in Firestore.',
-                        certSig ? '(PKCS#7 sealed)' : '(name + timestamp only)'
-                    );
+                    console.log('✅ Co-signed ' + updatedCount + ' PM log(s).');
                     showStatus('✅ Record co-signed successfully' + (certSig ? ' (sealed).' : '.'), true);
                     return true;
                 } catch (e) {
@@ -3707,7 +3869,6 @@
                     const rid = buildAcIdentity({ refTag: r['Ref Tag'] || r['AC Tag'] || r.refTag, refLocation: r['Location'] || r.refLocation, refSerial: r['Serial Number'] || r.refSerial, refModel: r['Model'] || r.refModel });
                     return rid === myId;
                 }).sort((a, b) => recordTime(b) - recordTime(a));
-
                 if (myRecords.length > 0) {
                     const lastPm = myRecords[0];
                     const lastDate = safeStr(lastPm['Work Date'] || lastPm.workDate);
@@ -3720,7 +3881,6 @@
                     else status = 'maintained';
                     return { status, lastPm: lastDate, nextPm: nextDateStr, source: 'log' };
                 }
-
                 if (ac.lastPmDate || ac.nextPmDate) {
                     const lastDate = ac.lastPmDate || '';
                     const nextDate = ac.nextPmDate || '';
@@ -3736,18 +3896,17 @@
                     }
                     return { status, lastPm: lastDate, nextPm: nextDate, source: 'inventory' };
                 }
-
                 return { status: 'never', lastPm: null, nextPm: null, source: 'none' };
             }
 
             async function loadDepartmentInventory() {
                 const tbody = document.getElementById('inventoryTableBody');
                 const deptBadge = document.getElementById('invDeptBadge');
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#5b7b96; font-style:italic; padding: 14px;">Loading…</td></tr>';
 
                 const dept = currentInchargeDept;
                 if (!dept) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#b33a3a; padding: 14px;">No department set. Please log out and pick a department at login.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#b33a3a; padding: 14px;">No department set. Please log out and pick a department at login.</td></tr>';
                     return;
                 }
                 deptBadge.textContent = dept;
@@ -3755,15 +3914,13 @@
                 let allInv = await fetchAllInventory();
                 if (allInv.length === 0) {
                     allInv = [];
-                    try {
-                        allInv = await fetchInventoryFromCloud(DEFAULT_LIST_OWNER);
-                    } catch (e) {}
+                    try { allInv = await fetchInventoryFromCloud(DEFAULT_LIST_OWNER); } catch (e) {}
                 }
                 const records = await fetchAllLogs();
 
                 const myAcs = allInv.filter(ac => normalizeText(ac.dept) === normalizeText(dept));
                 if (myAcs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators registered under ' + dept + '.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators registered under ' + dept + '.</td></tr>';
                     return;
                 }
 
@@ -3776,16 +3933,17 @@
                 const filtered = inventoryFilterStatus === 'all' ? rows : rows.filter(r => r.status === inventoryFilterStatus);
 
                 if (filtered.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match this filter.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match this filter.</td></tr>';
                     return;
                 }
 
                 const statusLabels = { maintained: '✅ Maintained', pending: '⏳ Pending', overdue: '🚨 Overdue', never: '⚪ Never serviced' };
-                tbody.innerHTML = filtered.map(r => {
+                tbody.innerHTML = filtered.map((r, idx) => {
                     const ac = r.ac;
                     const ws = ac.workingStatus || 'Working';
                     const wsBadge = ws === 'Not Working' ? '<span class="status-badge not-working">⛔ Not Working</span>' : '<span class="status-badge working">✅ Working</span>';
                     const owner = getInventoryOwner(ac) || '—';
+                    const rowKey = 'inv_' + idx;
                     return `<tr>
                         <td><strong>${escapeHtml(ac.tag)}</strong></td>
                         <td>${escapeHtml(ac.loc)}</td>
@@ -3795,10 +3953,19 @@
                         <td>${r.lastPm ? formatDateOnly(r.lastPm) : '—'}</td>
                         <td>${r.nextPm ? formatDateOnly(r.nextPm) : '—'}</td>
                         <td><span class="status-badge ${r.status}">${statusLabels[r.status]}</span></td>
+                        <td><button class="btn-dl-row" data-dl-ac="${rowKey}" data-tag="${escapeHtml(ac.tag)}">📥 Download</button></td>
                     </tr>`;
                 }).join('');
 
                 ALL_INVENTORY = rows;
+
+                tbody.querySelectorAll('[data-dl-ac]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const tag = this.getAttribute('data-tag');
+                        const ac = myAcs.find(x => x.tag === tag);
+                        if (ac) openEqPmHistory(ac);
+                    });
+                });
             }
 
             document.querySelectorAll('#inventoryFilterBar .filter-chip').forEach(chip => {
@@ -3823,9 +3990,7 @@
                     this.innerHTML = '<span>⏳</span> Generating ' + filtered.length + '...';
                     await generatePDF(filtered);
                     showStatus('📄 Department PDF generated (' + filtered.length + ' records).', true);
-                } catch (err) {
-                    showStatus('⚠️ Could not generate PDF: ' + err.message, false);
-                }
+                } catch (err) { showStatus('⚠️ Could not generate PDF: ' + err.message, false); }
                 this.disabled = false; this.innerHTML = orig;
             });
 
@@ -3842,9 +4007,7 @@
                     this.innerHTML = '<span>⏳</span> Generating analysis...';
                     await generateAnalysisPDF(filtered, dept);
                     showStatus('📊 Department analysis generated.', true);
-                } catch (err) {
-                    showStatus('⚠️ Could not generate analysis: ' + err.message, false);
-                }
+                } catch (err) { showStatus('⚠️ Could not generate analysis: ' + err.message, false); }
                 this.disabled = false; this.innerHTML = orig;
             });
 
@@ -3879,14 +4042,11 @@
                 const current = sel.value || 'all';
                 sel.innerHTML = '<option value="all">👤 All Owners</option>';
                 const users = await loadUsersFromFirestore();
-                Object.keys(users)
-                    .filter(n => users[n].role === 'technician' || users[n].role === 'supervisor')
-                    .sort()
-                    .forEach(name => {
-                        const opt = document.createElement('option');
-                        opt.value = name; opt.textContent = name;
-                        sel.appendChild(opt);
-                    });
+                Object.keys(users).filter(n => users[n].role === 'technician' || users[n].role === 'supervisor').sort().forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name; opt.textContent = name;
+                    sel.appendChild(opt);
+                });
                 sel.value = current;
             }
 
@@ -3909,24 +4069,17 @@
                 const wrap = document.getElementById('inchargeEditorList');
                 if (!wrap) return;
                 wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">Loading…</div>';
-
                 const users = await loadUsersFromFirestore();
-
                 const incharges = {};
                 Object.keys(users).forEach(n => {
-                    if (users[n].role === 'incharge') {
-                        incharges[n] = { pin: users[n].pin || '', dept: users[n].dept || '' };
-                    }
+                    if (users[n].role === 'incharge') incharges[n] = { pin: users[n].pin || '', dept: users[n].dept || '' };
                 });
-
                 wrap.innerHTML = '';
                 const names = Object.keys(incharges).sort();
-
                 if (names.length === 0) {
                     wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">No In-Charges yet. Click "Add New In-Charge".</div>';
                     return;
                 }
-
                 names.forEach(name => {
                     const rec = incharges[name] || { pin: '', dept: '' };
                     const row = document.createElement('div');
@@ -3949,29 +4102,22 @@
                         </div>
                     `;
                     wrap.appendChild(row);
-
                     const sel = row.querySelector('.incharge-dept-input');
                     Object.keys(DEPARTMENTS).forEach(d => {
                         const opt = document.createElement('option');
-                        opt.value = d;
-                        opt.textContent = d;
+                        opt.value = d; opt.textContent = d;
                         if (d === rec.dept) opt.selected = true;
                         sel.appendChild(opt);
                     });
                 });
-
                 wrap.querySelectorAll('[data-del-incharge]').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const dn = this.getAttribute('data-del-incharge');
                         if (!confirm('Delete In-Charge "' + dn + '"? They will no longer be able to log in.')) return;
                         try {
-                            await window.FB.deleteDoc(
-                                window.FB.doc(window.FB.db, 'users', userDocId(dn))
-                            );
+                            await window.FB.deleteDoc(window.FB.doc(window.FB.db, 'users', userDocId(dn)));
                             renderInchargeEditor();
-                        } catch (e) {
-                            alert('Delete failed: ' + e.message);
-                        }
+                        } catch (e) { alert('Delete failed: ' + e.message); }
                     });
                 });
             }
@@ -4013,44 +4159,30 @@
                 try {
                     await saveInchargeRegistryToCloud(next);
                     showStatus('✅ In-Charge registry saved to cloud.', true);
-                } catch (e) {
-                    showStatus('⚠️ Cloud save failed.', false);
-                }
+                } catch (e) { showStatus('⚠️ Cloud save failed.', false); }
                 await renderInchargeEditor();
                 populateInchargeSuggestions();
                 this.disabled = false;
                 this.innerHTML = orig;
             });
 
-            /* ============================================================
-               TECHNICIAN MANAGER
-               ============================================================ */
             async function renderTechnicianEditor() {
                 const wrap = document.getElementById('technicianEditorList');
                 if (!wrap) return;
                 wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">Loading…</div>';
-
                 const users = await loadUsersFromFirestore();
                 const techs = {};
                 Object.keys(users).forEach(n => {
                     if (users[n].role === 'technician' || users[n].role === 'supervisor') {
-                        techs[n] = {
-                            role:  users[n].role,
-                            pin:   users[n].pin || '',
-                            phone: users[n].phone || '',
-                            email: users[n].email || ''
-                        };
+                        techs[n] = { role: users[n].role, pin: users[n].pin || '', phone: users[n].phone || '', email: users[n].email || '' };
                     }
                 });
-
                 wrap.innerHTML = '';
                 const names = Object.keys(techs).sort();
-
                 if (names.length === 0) {
                     wrap.innerHTML = '<div style="text-align:center; color:#5b7b96; font-style:italic; padding:12px;">No technicians yet. Click "Add New Technician".</div>';
                     return;
                 }
-
                 names.forEach(name => {
                     const rec = techs[name];
                     const row = document.createElement('div');
@@ -4074,24 +4206,16 @@
                     `;
                     wrap.appendChild(row);
                 });
-
                 wrap.querySelectorAll('[data-del-tech]').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const dn = this.getAttribute('data-del-tech');
-                        if (dn === SUPERVISOR_NAME) {
-                            alert('⚠️ The Manager account cannot be deleted.');
-                            return;
-                        }
+                        if (dn === SUPERVISOR_NAME) { alert('⚠️ The Manager account cannot be deleted.'); return; }
                         if (!confirm('Delete Technician "' + dn + '"? They will no longer be able to log in.')) return;
                         try {
-                            await window.FB.deleteDoc(
-                                window.FB.doc(window.FB.db, 'users', userDocId(dn))
-                            );
+                            await window.FB.deleteDoc(window.FB.doc(window.FB.db, 'users', userDocId(dn)));
                             renderTechnicianEditor();
                             populateSupervisorOwnerFilter();
-                        } catch (e) {
-                            alert('Delete failed: ' + e.message);
-                        }
+                        } catch (e) { alert('Delete failed: ' + e.message); }
                     });
                 });
             }
@@ -4107,16 +4231,7 @@
                 const email = prompt('Email (optional):') || '';
                 await window.FB.setDoc(
                     window.FB.doc(window.FB.db, 'users', userDocId(trimmed)),
-                    {
-                        name: trimmed,
-                        role: 'technician',
-                        pin: '',
-                        dept: '',
-                        depts: [],
-                        phone: String(phone).trim(),
-                        email: String(email).trim(),
-                        updatedAt: window.FB.serverTimestamp()
-                    },
+                    { name: trimmed, role: 'technician', pin: '', dept: '', depts: [], phone: String(phone).trim(), email: String(email).trim(), updatedAt: window.FB.serverTimestamp() },
                     { merge: true }
                 );
                 renderTechnicianEditor();
@@ -4138,7 +4253,6 @@
                     updates.push({ name, pin, phone, email });
                 });
                 if (err) { alert(err); return; }
-
                 this.disabled = true;
                 const orig = this.innerHTML;
                 this.innerHTML = '⏳ Saving...';
@@ -4146,20 +4260,12 @@
                     for (const u of updates) {
                         await window.FB.setDoc(
                             window.FB.doc(window.FB.db, 'users', userDocId(u.name)),
-                            {
-                                name:  u.name,
-                                pin:   u.pin,
-                                phone: u.phone,
-                                email: u.email,
-                                updatedAt: window.FB.serverTimestamp()
-                            },
+                            { name: u.name, pin: u.pin, phone: u.phone, email: u.email, updatedAt: window.FB.serverTimestamp() },
                             { merge: true }
                         );
                     }
                     showStatus('✅ Technician contacts saved to cloud.', true);
-                } catch (e) {
-                    showStatus('⚠️ Cloud save failed: ' + e.message, false);
-                }
+                } catch (e) { showStatus('⚠️ Cloud save failed: ' + e.message, false); }
                 await renderTechnicianEditor();
                 populateSupervisorOwnerFilter();
                 this.disabled = false;
@@ -4195,7 +4301,6 @@
 
                 const records = await fetchAllLogs();
                 const now = new Date();
-
                 const allRows = allInv.map(ac => ({ ac, ...computeAcStatus(ac, records, now) }));
 
                 const kpi = {
@@ -4209,34 +4314,13 @@
                 };
                 if (kpiGrid) {
                     kpiGrid.innerHTML = `
-                        <div class="kpi-card" style="background:#eef6fc;">
-                            <div class="kpi-label" style="color:#5b7b96;">TOTAL UNITS</div>
-                            <div class="kpi-value" style="color:#0b3d91;">${kpi.total}</div>
-                        </div>
-                        <div class="kpi-card" style="background:#e2f0e6;">
-                            <div class="kpi-label" style="color:#1b6b3f;">✅ MAINTAINED</div>
-                            <div class="kpi-value" style="color:#1b6b3f;">${kpi.maintained}</div>
-                        </div>
-                        <div class="kpi-card" style="background:#fff3cd;">
-                            <div class="kpi-label" style="color:#7a5300;">⏳ PENDING</div>
-                            <div class="kpi-value" style="color:#7a5300;">${kpi.pending}</div>
-                        </div>
-                        <div class="kpi-card" style="background:#ffe6e6;">
-                            <div class="kpi-label" style="color:#b33a3a;">🚨 OVERDUE</div>
-                            <div class="kpi-value" style="color:#b33a3a;">${kpi.overdue}</div>
-                        </div>
-                        <div class="kpi-card" style="background:#e7f0f8;">
-                            <div class="kpi-label" style="color:#5b7b96;">⚪ NEVER SERVICED</div>
-                            <div class="kpi-value" style="color:#5b7b96;">${kpi.never}</div>
-                        </div>
-                        <div class="kpi-card" style="background:#f3e8ff;">
-                            <div class="kpi-label" style="color:#5d3578;">DEPARTMENTS</div>
-                            <div class="kpi-value" style="color:#5d3578;">${kpi.depts}</div>
-                        </div>
-                        <div class="kpi-card" style="background:#e8f1fb;">
-                            <div class="kpi-label" style="color:#0b3d91;">PM RECORDS</div>
-                            <div class="kpi-value" style="color:#0b3d91;">${kpi.pms}</div>
-                        </div>
+                        <div class="kpi-card" style="background:#eef6fc;"><div class="kpi-label" style="color:#5b7b96;">TOTAL UNITS</div><div class="kpi-value" style="color:#0b3d91;">${kpi.total}</div></div>
+                        <div class="kpi-card" style="background:#e2f0e6;"><div class="kpi-label" style="color:#1b6b3f;">✅ MAINTAINED</div><div class="kpi-value" style="color:#1b6b3f;">${kpi.maintained}</div></div>
+                        <div class="kpi-card" style="background:#fff3cd;"><div class="kpi-label" style="color:#7a5300;">⏳ PENDING</div><div class="kpi-value" style="color:#7a5300;">${kpi.pending}</div></div>
+                        <div class="kpi-card" style="background:#ffe6e6;"><div class="kpi-label" style="color:#b33a3a;">🚨 OVERDUE</div><div class="kpi-value" style="color:#b33a3a;">${kpi.overdue}</div></div>
+                        <div class="kpi-card" style="background:#e7f0f8;"><div class="kpi-label" style="color:#5b7b96;">⚪ NEVER SERVICED</div><div class="kpi-value" style="color:#5b7b96;">${kpi.never}</div></div>
+                        <div class="kpi-card" style="background:#f3e8ff;"><div class="kpi-label" style="color:#5d3578;">DEPARTMENTS</div><div class="kpi-value" style="color:#5d3578;">${kpi.depts}</div></div>
+                        <div class="kpi-card" style="background:#e8f1fb;"><div class="kpi-label" style="color:#0b3d91;">PM RECORDS</div><div class="kpi-value" style="color:#0b3d91;">${kpi.pms}</div></div>
                     `;
                 }
 
@@ -4247,12 +4331,10 @@
                     .filter(r => supervisorOwnerFilter === 'all' || normalizeText(getInventoryOwner(r.ac)) === normalizeText(supervisorOwnerFilter));
 
                 countBadge.textContent = rows.length + ' shown / ' + allRows.length + ' total';
-
                 if (rows.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#5b7b96; padding: 14px;">No refrigerators match filters.</td></tr>';
                     return;
                 }
-
                 const statusLabels = { maintained: '✅ Maintained', pending: '⏳ Pending', overdue: '🚨 Overdue', never: '⚪ Never serviced' };
                 tbody.innerHTML = rows.map(r => {
                     const ac = r.ac;
@@ -4302,7 +4384,7 @@
                 this.disabled = false; this.innerHTML = orig;
             });
 
-            // ================== PDF GENERATORS ==================
+            /* ================== PDF GENERATORS ================== */
             async function generatePDF(records) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -4363,7 +4445,6 @@
                     doc.text('Site: CHUB  |  Cold Chain Units  |  Planned PM', margin + 30, margin + 6.5);
                     doc.setFontSize(5.8); doc.setTextColor(150, 170, 190);
                     doc.text('Records since ' + RECORDING_START, margin + 30, margin + 10);
-
                     const rightX = pageWidth - margin;
                     const labelX = rightX - 45;
                     doc.setFontSize(7.5);
@@ -4379,7 +4460,6 @@
                     doc.text('Technician:', labelX, margin + 9);
                     doc.setFont('helvetica', 'normal'); doc.setTextColor(18, 64, 94);
                     doc.text(sanitizeForPDF(data.technician || data['Technician']), rightX, margin + 9, { align: 'right' });
-
                     doc.setDrawColor(200, 210, 220); doc.setLineWidth(0.3);
                     doc.line(rightX - 55, margin - 3, rightX - 55, margin + 11);
                     doc.setDrawColor(30, 74, 109); doc.setLineWidth(0.5);
@@ -4402,7 +4482,6 @@
                     const data = records[i];
                     if (i > 0) { addFooter(); doc.addPage(); }
                     let y = addHeader(data);
-
                     const deptLabel = sanitizeForPDF(data.refDept || data['Department'] || '—');
                     doc.setFillColor(30, 74, 109);
                     doc.rect(margin, y, contentWidth, 15, 'F');
@@ -4593,6 +4672,11 @@
                         doc.setFontSize(6); doc.setFont('helvetica', 'bold'); doc.setTextColor(27, 107, 63);
                         const coSignedSealed = safeStr(data['In-Charge Signature Serial'] || data.inchargeSignatureSerial);
                         doc.text(coSignedSealed ? 'Co-signed + PKCS#7 sealed' : 'Co-signed (approved)', rightBoxX + 3, y + 28.5);
+                        if (inchargeComment) {
+                            doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); doc.setTextColor(58, 101, 131);
+                            const cmtLines = doc.splitTextToSize('💬 ' + sanitizeForPDF(inchargeComment), halfWidth - 6);
+                            doc.text(cmtLines.slice(0, 2), rightBoxX + 3, y + 33);
+                        }
                     } else if (inchargeReviewStatus === 'rejected') {
                         doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(179, 58, 58);
                         doc.text(sanitizeForPDF(inchargeNameForBox), rightBoxX + 3, y + 11);
@@ -4635,7 +4719,6 @@
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pageW = 210, pageH = 297, mL = 14, mR = 14;
                 const cW = pageW - mL - mR;
-
                 doc.setFillColor(30, 74, 109); doc.rect(0, 0, pageW, 6, 'F');
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(18, 64, 94);
                 doc.text('Refrigerator Analysis Report — ' + dept, mL, 20);
@@ -4647,13 +4730,11 @@
                 doc.text('Records: ' + records.length, pageW - mR, 25, { align: 'right' });
                 doc.setDrawColor(212, 227, 239); doc.setLineWidth(0.5);
                 doc.line(mL, 32, pageW - mR, 32);
-
                 const totalPm = records.length;
                 const signed = records.filter(r => safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt)).length;
                 const pending = totalPm - signed;
                 const rejected = records.filter(r => safeStr(r.inchargeReviewStatus) === 'rejected').length;
                 const uniqueAcs = new Set(records.map(r => safeStr(r['Ref Tag'] || r['AC Tag'] || r.refTag))).size;
-
                 let y = 42;
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(18, 64, 94);
                 doc.text('KEY PERFORMANCE INDICATORS', mL, y); y += 6;
@@ -4682,7 +4763,6 @@
                 doc.setFillColor(238, 246, 252); doc.rect(mL, y - 4, cW, 6, 'F');
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(18, 64, 94);
                 doc.text('BREAKDOWN BY REFRIGERATOR', mL + 2, y); y += 6;
-
                 const byAc = {};
                 records.forEach(r => {
                     const key = safeStr(r['Ref Tag'] || r['AC Tag'] || r.refTag) + ' — ' + safeStr(r['Location'] || r.refLocation);
@@ -4708,7 +4788,6 @@
                 doc.setFillColor(238, 246, 252); doc.rect(mL, y - 4, cW, 6, 'F');
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(18, 64, 94);
                 doc.text('BREAKDOWN BY TECHNICIAN', mL + 2, y); y += 6;
-
                 const byTech = {};
                 records.forEach(r => { const t = safeStr(r['Technician'] || r.technician); byTech[t] = (byTech[t] || 0) + 1; });
                 const techRows = Object.keys(byTech).map(k => [k, byTech[k]]);
@@ -4751,7 +4830,6 @@
                 doc.setFillColor(255, 235, 235); doc.rect(mL, y - 4, cW, 6, 'F');
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(179, 58, 58);
                 doc.text('ANOMALIES FOUND DURING PMs', mL + 2, y); y += 6;
-
                 const ALL_ITEMS = [
                     { cat: 'Clean', text: 'Clean interior shelves, walls and drawers' },
                     { cat: 'Clean', text: 'Clean door gaskets and seals' },
@@ -4801,10 +4879,8 @@
                         y += 6;
                     });
                 }
-
                 doc.setFontSize(7); doc.setTextColor(150, 170, 190);
                 doc.text('Generated automatically from CHUB Refrigerator Fleet System', pageW / 2, pageH - 6, { align: 'center' });
-
                 const fname = 'CHUB_Refrigerator_Dept_Analysis_' + dept.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
                 const pdfBytes = doc.output('arraybuffer');
                 const signedBytes = await signPdfBytes(pdfBytes, fname);
@@ -4949,9 +5025,7 @@
                     this.innerHTML = '<span>⏳</span> Generating ' + mine.length + '...';
                     await generatePDF(mine);
                     showStatus('📄 PDF generated (' + mine.length + ' records).', true);
-                } catch (err) {
-                    showStatus('⚠️ ' + err.message, false);
-                }
+                } catch (err) { showStatus('⚠️ ' + err.message, false); }
                 this.disabled = false; this.innerHTML = orig;
             });
 
@@ -4971,7 +5045,6 @@
                 });
                 analysisDept.value = current;
             }
-
             function setDefaultAnalysisDates() {
                 const today = new Date();
                 const past  = new Date();
@@ -4989,7 +5062,6 @@
                 if (nameSpan) nameSpan.textContent = (currentLoggedInName || 'your own');
                 analysisModal.classList.add('show');
             });
-
             document.getElementById('analysisCancel').addEventListener('click', () => {
                 analysisModal.classList.remove('show');
             });
@@ -4998,36 +5070,24 @@
                 const from = analysisFrom.value;
                 const to   = analysisTo.value;
                 const dept = analysisDept.value || 'all';
-
                 const techFilter = currentLoggedInName || technicianSelect.value;
-                if (!techFilter) {
-                    analysisError.textContent = 'You must be logged in.';
-                    return;
-                }
-
+                if (!techFilter) { analysisError.textContent = 'You must be logged in.'; return; }
                 analysisError.textContent = '';
                 if (!from) { analysisError.textContent = 'Please pick a From date.'; return; }
                 if (!to)   { analysisError.textContent = 'Please pick a To date.'; return; }
                 if (from > to) { analysisError.textContent = 'From date must be before To date.'; return; }
-
                 this.disabled = true;
                 const orig = this.innerHTML;
                 this.innerHTML = '<span>⏳</span> Fetching...';
-
                 try {
                     const allLogs = await fetchAllLogs();
                     const allInv  = await fetchAllInventory();
-
-                    await generatePmAnalysisPDF(allLogs, allInv, {
-                        from, to, dept,
-                        tech: techFilter
-                    });
+                    await generatePmAnalysisPDF(allLogs, allInv, { from, to, dept, tech: techFilter });
                     showStatus('📊 PM Analysis PDF generated.', true);
                     analysisModal.classList.remove('show');
                 } catch (err) {
                     analysisError.textContent = '⚠️ ' + (err.message || 'Could not generate.');
                 }
-
                 this.disabled = false;
                 this.innerHTML = orig;
             });
@@ -5037,37 +5097,20 @@
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pageW = 210, pageH = 297, mL = 14, mR = 14;
                 const cW = pageW - mL - mR;
-
                 const fromTs = new Date(opts.from + 'T00:00:00').getTime();
                 const toTs   = new Date(opts.to   + 'T23:59:59').getTime();
-
                 const inRange = r => {
                     const d = safeStr(r['Work Date'] || r.workDate || r['Timestamp'] || r.timestamp);
                     if (!d) return false;
                     const t = new Date(d).getTime();
                     return !isNaN(t) && t >= fromTs && t <= toTs;
                 };
-                const deptMatches = r => {
-                    if (opts.dept === 'all') return true;
-                    return normalizeText(r['Department'] || r.refDept || '') === normalizeText(opts.dept);
-                };
-                const techMatches = r => {
-                    if (!opts.tech) return true;
-                    return normalizeText(r['Technician'] || r.technician || '') === normalizeText(opts.tech);
-                };
-
+                const deptMatches = r => (opts.dept === 'all') ? true : normalizeText(r['Department'] || r.refDept || '') === normalizeText(opts.dept);
+                const techMatches = r => !opts.tech ? true : normalizeText(r['Technician'] || r.technician || '') === normalizeText(opts.tech);
                 const filteredLogs = logs.filter(r => inRange(r) && deptMatches(r) && techMatches(r));
-
-                const invInDept = inventory.filter(ac => {
-                    if (opts.dept === 'all') return true;
-                    return normalizeText(ac.dept) === normalizeText(opts.dept);
-                });
-
+                const invInDept = inventory.filter(ac => (opts.dept === 'all') ? true : normalizeText(ac.dept) === normalizeText(opts.dept));
                 const fridgesOnly = invInDept;
-
-                function isNotWorking(ac) {
-                    return normalizeText(safeStr(ac.workingStatus || 'Working')) === 'NOT WORKING';
-                }
+                function isNotWorking(ac) { return normalizeText(safeStr(ac.workingStatus || 'Working')) === 'NOT WORKING'; }
                 function equipIdentity_(src) {
                     return buildAcIdentity({
                         refTag: src.tag || src['Ref Tag'] || src['AC Tag'] || src.refTag,
@@ -5082,8 +5125,7 @@
                 }
                 function lastPmFor_(ac) {
                     const id = equipIdentity_(ac);
-                    const myLogs = logs.filter(r => equipIdentity_(r) === id)
-                                       .sort((a, b) => recordTime(b) - recordTime(a));
+                    const myLogs = logs.filter(r => equipIdentity_(r) === id).sort((a, b) => recordTime(b) - recordTime(a));
                     return myLogs[0] ? formatDateOnly(myLogs[0]['Work Date'] || myLogs[0].workDate) : '—';
                 }
 
@@ -5100,7 +5142,6 @@
                 doc.line(mL, 30, pageW - mR, 30);
 
                 let y = 38;
-
                 function sectionHeader(title, color) {
                     if (y > pageH - 30) { doc.addPage(); y = 20; }
                     doc.setFillColor.apply(doc, color);
@@ -5144,16 +5185,11 @@
 
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(18, 64, 94);
                 doc.text('KEY NUMBERS', mL, y); y += 6;
-
                 const fridgeTotal      = fridgesOnly.length;
                 const fridgeServiced   = fridgesOnly.filter(hasBeenServicedInPeriod).length;
                 const fridgeNotWorking = fridgesOnly.filter(isNotWorking).length;
                 const fridgeWorking    = fridgeTotal - fridgeNotWorking;
-
-                const fridgePmRate = fridgeTotal > 0
-                    ? Math.round((fridgeServiced / fridgeTotal) * 100) + '%'
-                    : '—';
-
+                const fridgePmRate = fridgeTotal > 0 ? Math.round((fridgeServiced / fridgeTotal) * 100) + '%' : '—';
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(91, 123, 150);
                 doc.text('REFRIGERATORS & FREEZERS', mL, y); y += 4;
                 renderMiniKpis([
@@ -5163,9 +5199,7 @@
                     ['Not working',    String(fridgeNotWorking)],
                     ['PM Rate',        fridgePmRate]
                 ]);
-
                 y += 2;
-
                 sectionHeader('REFRIGERATORS & FREEZERS — FULL INVENTORY', [235, 245, 252]);
                 if (fridgesOnly.length === 0) {
                     doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(91, 123, 150);
@@ -5176,12 +5210,9 @@
                     fridgesOnly.slice(0, 25).forEach((ac, i) => {
                         const ws = safeStr(ac.workingStatus || 'Working');
                         tableRow(
-                            [ac.tag || '—', ac.loc || '—',
-                             ((ac.brand || '') + ' ' + (ac.model || '')).substring(0, 40),
-                             ws, lastPmFor_(ac)],
+                            [ac.tag || '—', ac.loc || '—', ((ac.brand || '') + ' ' + (ac.model || '')).substring(0, 40), ws, lastPmFor_(ac)],
                             [35, 40, cW - 35 - 40 - 25 - 22, 25, 22],
-                            { shade: i % 2 === 1,
-                              color: ws === 'Not Working' ? [179, 58, 58] : [31, 60, 84] }
+                            { shade: i % 2 === 1, color: ws === 'Not Working' ? [179, 58, 58] : [31, 60, 84] }
                         );
                     });
                     if (fridgesOnly.length > 25) {
@@ -5251,8 +5282,7 @@
                 }
 
                 doc.setFontSize(7); doc.setTextColor(150, 170, 190);
-                doc.text('CHUB Refrigerator Fleet PM System · PM Analysis Report',
-                    pageW / 2, pageH - 6, { align: 'center' });
+                doc.text('CHUB Refrigerator Fleet PM System · PM Analysis Report', pageW / 2, pageH - 6, { align: 'center' });
 
                 const fname = 'CHUB_Ref_PM_Analysis_' + opts.from + '_to_' + opts.to + '_' +
                               (opts.dept === 'all' ? 'AllDepts' : opts.dept.replace(/\s+/g, '_')) +
@@ -5391,7 +5421,6 @@
                 sigError.textContent = '';
                 const name = currentLoggedInName;
                 if (!name) { sigError.textContent = 'Login first.'; return; }
-
                 if (pfxFileInput.files && pfxFileInput.files[0]) {
                     const password = pfxPasswordInput.value;
                     if (!password) { sigError.textContent = 'Enter PFX password.'; return; }
@@ -5408,7 +5437,6 @@
                         await pushPFXToCloud(name, pfxBase64);
                     } catch (e) { sigError.textContent = 'Could not upload PFX.'; return; }
                 }
-
                 if (pendingVisualSig) {
                     saveSignatureFor(name, pendingVisualSig);
                     await pushTechnicianSignatureToCloud(name, pendingVisualSig);
@@ -5493,20 +5521,13 @@
                 editAcModal._originalAc = ac;
                 editAcModal.classList.add('show');
             }
-
             document.getElementById('editAcCancel')?.addEventListener('click', () => editAcModal.classList.remove('show'));
 
             document.getElementById('editAcSave')?.addEventListener('click', async function() {
-                if (currentRole !== 'technician') {
-                    alert('⛔ Only technicians can edit refrigerators.');
-                    return;
-                }
+                if (currentRole !== 'technician') { alert('⛔ Only technicians can edit refrigerators.'); return; }
                 const original = editAcModal._originalAc;
                 if (!original) return;
-                if (!canEditItem(original)) {
-                    alert('⛔ Only the technician who added this refrigerator can edit it.');
-                    return;
-                }
+                if (!canEditItem(original)) { alert('⛔ Only the technician who added this refrigerator can edit it.'); return; }
                 const updated = {
                     tag: document.getElementById('editAcTag').value.trim(),
                     dept: document.getElementById('editAcDept').value,
@@ -5526,7 +5547,6 @@
                 this.disabled = true;
                 const orig = this.innerHTML;
                 this.innerHTML = '⏳ Saving...';
-
                 try {
                     await editInventoryItemInCloud(
                         { tag: original.tag, loc: original.loc, serial: original.serial, model: original.model },
@@ -5542,9 +5562,7 @@
                     renderAcSelector();
                     showStatus('✅ Refrigerator updated.', true);
                     editAcModal.classList.remove('show');
-                } catch (e) {
-                    showStatus('⚠️ Update failed: ' + e.message, false);
-                }
+                } catch (e) { showStatus('⚠️ Update failed: ' + e.message, false); }
                 this.disabled = false;
                 this.innerHTML = orig;
             });
@@ -5588,11 +5606,8 @@
                 window.__cachedPfxPassword = null;
                 clearCert();
 
-                if (payload.name === SUPERVISOR_NAME) {
-                    currentRole = 'supervisor';
-                } else {
-                    currentRole = payload.role || 'technician';
-                }
+                if (payload.name === SUPERVISOR_NAME) currentRole = 'supervisor';
+                else currentRole = payload.role || 'technician';
 
                 currentLoggedInName = payload.name;
                 if (currentRole === 'technician') {
@@ -5618,7 +5633,6 @@
                 loginModal.classList.remove('show');
 
                 await ensureDepartmentsLoaded();
-
                 fetchTechnicianAssetsFromCloud(payload.name);
                 populateInchargeSuggestions();
 
@@ -5639,42 +5653,22 @@
                     AC_INVENTORY = [];
                     renderAcSelector();
                     showStatus('⏳ Loading your department equipment...', true);
-
                     let myDepts = [];
-
                     try {
                         const users = await loadUsersFromFirestore();
                         let rec = users[payload.name];
-
                         if (!rec) {
-                            const uSnap = await window.FB.getDoc(
-                                window.FB.doc(window.FB.db, 'users', userDocId(payload.name))
-                            );
+                            const uSnap = await window.FB.getDoc(window.FB.doc(window.FB.db, 'users', userDocId(payload.name)));
                             if (uSnap.exists()) {
                                 const d = uSnap.data();
-                                rec = {
-                                    role:  d.role || 'technician',
-                                    pin:   String(d.pin || ''),
-                                    dept:  d.dept || '',
-                                    depts: Array.isArray(d.depts) ? d.depts : [],
-                                    phone: d.phone || '',
-                                    email: d.email || ''
-                                };
+                                rec = { role: d.role || 'technician', pin: String(d.pin || ''), dept: d.dept || '', depts: Array.isArray(d.depts) ? d.depts : [], phone: d.phone || '', email: d.email || '' };
                             }
                         }
-
                         if (rec) {
-                            if (Array.isArray(rec.depts) && rec.depts.length > 0) {
-                                myDepts = rec.depts.map(d => String(d).trim()).filter(Boolean);
-                            } else if (rec.dept) {
-                                myDepts = [String(rec.dept).trim()].filter(Boolean);
-                            }
+                            if (Array.isArray(rec.depts) && rec.depts.length > 0) myDepts = rec.depts.map(d => String(d).trim()).filter(Boolean);
+                            else if (rec.dept) myDepts = [String(rec.dept).trim()].filter(Boolean);
                         }
-                    } catch (e) {
-                        console.warn('Could not determine technician departments:', e);
-                    }
-
-                    console.log('👨‍🔧 Technician departments:', myDepts.length ? myDepts.join(' + ') : '(none — showing own equipment only)');
+                    } catch (e) { console.warn('Could not determine technician departments:', e); }
 
                     try {
                         const all = await fetchAllInventory();
@@ -5696,14 +5690,11 @@
                                 }
                                 return sameOwner(a.owner, payload.name) || sameOwner(a.technician, payload.name);
                             });
-
                         cacheInventoryLocally(payload.name, AC_INVENTORY);
                         try { sessionStorage.setItem('tech_depts_' + payload.name, JSON.stringify(myDepts)); } catch (e) {}
-
                         renderAcSelector();
                         const deptLabel = myDepts.length ? myDepts.join(' + ') : 'own equipment';
                         showStatus('✅ Welcome, ' + payload.name + '! ' + AC_INVENTORY.length + ' unit(s) in ' + deptLabel + ' loaded.', true);
-
                         setTimeout(() => checkTechnicianRejections(payload.name), 900);
                     } catch (err) {
                         console.error('❌ Department equipment load failed:', err);
@@ -5712,7 +5703,6 @@
                         renderAcSelector();
                         if (cached.length > 0) showStatus('📥 Offline — ' + cached.length + ' from cache.', false);
                         else showStatus('⚠️ Could not load equipment list: ' + (err.message || err), false);
-
                         setTimeout(() => checkTechnicianRejections(payload.name), 900);
                     }
                 }
@@ -5744,32 +5734,24 @@
                 const role = loginRoleSelect.value;
                 const pin = loginPinInput.value.trim();
                 loginError.textContent = '';
-
                 if (!pin) { loginError.textContent = 'Enter your PIN.'; return; }
-
                 loginBtn.disabled = true;
                 const origBtn = loginBtn.innerHTML;
                 loginBtn.innerHTML = '⏳ Checking…';
-
                 try {
                     LIVE_USERS = await loadUsersFromFirestore();
-
                     if (Object.keys(LIVE_USERS).length === 0) {
                         console.warn('⚠️ No users in Firestore — seeding defaults…');
                         await seedUsersIfEmpty();
                         LIVE_USERS = await loadUsersFromFirestore();
                     }
-                } catch (e) {
-                    console.error('❌ Could not load users:', e);
-                }
-
+                } catch (e) { console.error('❌ Could not load users:', e); }
                 loginBtn.disabled = false;
                 loginBtn.innerHTML = origBtn;
 
                 if (role === 'technician') {
                     const name = loginTechSelect.value;
                     if (!name) { loginError.textContent = 'Select your name.'; return; }
-
                     const rec = LIVE_USERS[name];
                     if (!rec || !rec.pin) {
                         loginError.textContent = 'User "' + name + '" not found in database. Contact the manager.';
@@ -5782,7 +5764,6 @@
                         loginPinInput.value = ''; loginPinInput.focus();
                         return;
                     }
-
                     const autoRole = (name === SUPERVISOR_NAME) ? 'supervisor' : 'technician';
                     saveSession({ name, role: autoRole });
                     unlockApp({ name, role: autoRole });
@@ -5793,21 +5774,18 @@
                 const iname = loginInchargeName.value.trim();
                 if (!inDept) { loginError.textContent = 'Please choose your department.'; return; }
                 if (!iname) { loginError.textContent = 'Please enter your full name.'; return; }
-
                 const rec = LIVE_USERS[iname];
                 if (!rec || rec.role !== 'incharge') {
                     loginError.textContent = 'This name is not registered as an In-Charge. Contact the manager.';
                     loginPinInput.value = ''; loginPinInput.focus();
                     return;
                 }
-
                 const expectedPin = String(rec.pin || '');
                 if (pin !== expectedPin) {
                     loginError.textContent = 'Wrong PIN for ' + iname;
                     loginPinInput.value = ''; loginPinInput.focus();
                     return;
                 }
-
                 saveSession({ name: iname, dept: inDept, role: 'incharge' });
                 unlockApp({ name: iname, dept: inDept, role: 'incharge' });
             });
@@ -5828,13 +5806,10 @@
                         if (window.FB && window.FB.ready) return resolve();
                         window.addEventListener('firebase-ready', resolve, { once: true });
                     });
-
                     await seedUsersIfEmpty();
-
                     await ensureDepartmentsLoaded();
                     await loadInchargeRegistry();
                     const existingSession = loadSession();
-
                     if (existingSession && existingSession.name) {
                         const users = await loadUsersFromFirestore();
                         if (users[existingSession.name]) {
@@ -5846,11 +5821,9 @@
                         lockApp();
                     }
                 })();
-
                 setTimeout(() => { if (getQueue().length > 0) flushQueue(); }, 1200);
             }
 
-            // ---- DEV BRIDGE ----
             window.__DEV = {
                 fetchAllLogs,
                 fetchAcInfoFromCloud,
