@@ -12,6 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
       import {
@@ -236,8 +237,6 @@
         .working-radio-group input[type="radio"] { accent-color: #1e4a6d; width: 18px; height: 18px; }
         .working-radio-group label.selected-working { background: #e2f0e6; border-color: #1b6b3f; color: #1b6b3f; }
         .working-radio-group label.selected-notworking { background: #ffe6e6; border-color: #b33a3a; color: #b33a3a; }
-
-        /* ===== JOB CARD ===== */
         .btn-jobcard { background: #0b3d91; color: #fff; border: none; padding: 10px 22px; border-radius: 40px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; gap: 8px; }
         .btn-jobcard:hover { background: #082b66; }
         .btn-jobcard:disabled { background: #c0c8d0; cursor: not-allowed; }
@@ -254,12 +253,43 @@
         .jc-feedback .label { font-weight: 800; margin-bottom: 6px; font-size: 0.95rem; }
         .jc-feedback .meta { font-size: 0.8rem; opacity: 0.8; margin-bottom: 6px; }
         .jc-feedback .comment { font-style: italic; padding: 8px 12px; background: rgba(255,255,255,0.65); border-radius: 8px; margin-top: 6px; }
-
-        /* ===== ROW EDITORS ===== */
         .dept-editor-row { display: grid; grid-template-columns: 1.2fr 1.4fr auto; gap: 12px; padding: 14px; background: #fbfdff; border: 1px solid #d4e3ef; border-radius: 14px; margin-bottom: 10px; align-items: start; }
         .dept-editor-row .actions { display: flex; gap: 6px; align-items: flex-start; padding-top: 24px; }
         .dept-editor-row input, .dept-editor-row select { padding: 10px 12px; border-radius: 12px; border: 1.5px solid #cfdfeb; background: #fff; font-size: 0.9rem; font-family: inherit; color: #0a2a3f; }
         .dept-editor-row input:focus, .dept-editor-row select:focus { outline: none; border-color: #1e4a6d; box-shadow: 0 0 0 3px rgba(30,74,109,0.08); }
+
+        /* ===== DASHBOARD ===== */
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+        .dash-card { background: #fff; border-radius: 20px; border: 1px solid #e2eaf1; box-shadow: 0 4px 12px rgba(0,0,0,0.04); padding: 18px 20px; }
+        .dash-card h3 { font-size: 1.05rem; color: #12405e; margin-bottom: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .dash-card .chart-wrap { position: relative; height: 260px; }
+        .dash-card .chart-wrap.tall { height: 280px; }
+        .dash-empty { text-align: center; padding: 40px 10px; color: #5b7b96; font-style: italic; font-size: 0.9rem; }
+        .kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .kpi-strip .kpi-mini { background: #f9fcff; border: 1px solid #e2eaf1; border-radius: 14px; padding: 12px; text-align: center; }
+        .kpi-strip .kpi-mini .lbl { font-size: 0.7rem; font-weight: 700; color: #5b7b96; letter-spacing: 0.5px; }
+        .kpi-strip .kpi-mini .val { font-size: 1.5rem; font-weight: 800; color: #12405e; margin-top: 4px; }
+        .kpi-strip .kpi-mini.good { background: #e2f0e6; }
+        .kpi-strip .kpi-mini.good .val { color: #1b6b3f; }
+        .kpi-strip .kpi-mini.warn { background: #fff3cd; }
+        .kpi-strip .kpi-mini.warn .val { color: #7a5300; }
+        .kpi-strip .kpi-mini.bad { background: #ffe6e6; }
+        .kpi-strip .kpi-mini.bad .val { color: #b33a3a; }
+        .heatmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; max-height: 320px; overflow-y: auto; padding-right: 4px; }
+        .heatmap-cell { padding: 10px 8px; border-radius: 8px; font-size: 0.75rem; text-align: center; font-weight: 700; cursor: pointer; transition: 0.15s; border: 1px solid transparent; }
+        .heatmap-cell:hover { transform: scale(1.06); border-color: #0b3d91; box-shadow: 0 4px 10px rgba(11,61,145,0.15); }
+        .heatmap-cell .hm-tag { display: block; font-weight: 800; font-size: 0.78rem; margin-bottom: 3px; word-break: break-all; }
+        .heatmap-cell .hm-score { font-size: 0.68rem; opacity: 0.85; }
+        .heatmap-cell.level-0 { background: #e2f0e6; color: #1b6b3f; }
+        .heatmap-cell.level-1 { background: #fff3cd; color: #7a5300; }
+        .heatmap-cell.level-2 { background: #ffe0b2; color: #8a4b00; }
+        .heatmap-cell.level-3 { background: #ffcdd2; color: #8f2929; }
+        .heatmap-cell.level-4 { background: #b33a3a; color: white; }
+        .heatmap-legend { display: flex; gap: 14px; margin-top: 12px; font-size: 0.75rem; color: #5b7b96; flex-wrap: wrap; }
+        .heatmap-legend .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; margin-right: 5px; }
+        .dash-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; padding: 12px 16px; background: #f9fcff; border-radius: 14px; border: 1px solid #e2eaf1; }
+        .dash-toolbar label { font-weight: 600; font-size: 0.85rem; color: #12405e; }
+        .dash-toolbar select { padding: 8px 14px; border-radius: 30px; border: 1.5px solid #cfdfeb; font-size: 0.85rem; font-weight: 600; min-width: 140px; }
 
         @media (max-width: 900px) {
             .generator-selector { flex-direction: column; align-items: stretch; }
@@ -292,6 +322,8 @@
             .qr-sticker-grid { grid-template-columns: repeat(2, 1fr); }
             .dept-editor-row { grid-template-columns: 1fr; }
             .dept-editor-row .actions { padding-top: 0; }
+            .dash-grid { grid-template-columns: 1fr; }
+            .dash-card .chart-wrap, .dash-card .chart-wrap.tall { height: 220px; }
         }
         @media print {
             body::before { display: none !important; }
@@ -593,6 +625,69 @@
         </div>
 
         <div id="supervisorSection" style="display:none;">
+
+            <!-- ================== ANALYTICS DASHBOARD ================== -->
+            <div class="card" style="margin-bottom: 24px; border: 2px solid #0b3d91;">
+                <div class="card-header" style="background:#e8f1fb; color:#0b3d91;">
+                    <span>📊</span> Fleet Analytics Dashboard
+                    <span style="margin-left:auto; font-size:0.78rem; background:#0b3d91; color:white; padding: 3px 12px; border-radius: 20px; font-weight:700;">Live Analytics</span>
+                </div>
+                <div class="card-body">
+                    <div class="dash-toolbar">
+                        <label for="dashPeriodSelect">📅 Period:</label>
+                        <select id="dashPeriodSelect">
+                            <option value="3">Last 3 months</option>
+                            <option value="6">Last 6 months</option>
+                            <option value="12" selected>Last 12 months</option>
+                            <option value="0">All time</option>
+                        </select>
+                        <label for="dashDeptSelect" style="margin-left: 8px;">🏢 Department:</label>
+                        <select id="dashDeptSelect">
+                            <option value="all">All Departments</option>
+                        </select>
+                        <button class="btn-secondary" id="dashRefreshBtn" style="padding: 8px 18px; font-size: 0.85rem;">🔄 Refresh</button>
+                    </div>
+
+                    <div class="kpi-strip" id="dashKpiStrip">
+                        <div class="kpi-mini"><div class="lbl">TOTAL PMs</div><div class="val" id="dashKpiTotal">—</div></div>
+                        <div class="kpi-mini good"><div class="lbl">CO-SIGNED</div><div class="val" id="dashKpiSigned">—</div></div>
+                        <div class="kpi-mini warn"><div class="lbl">PENDING</div><div class="val" id="dashKpiPending">—</div></div>
+                        <div class="kpi-mini bad"><div class="lbl">REJECTED</div><div class="val" id="dashKpiRejected">—</div></div>
+                        <div class="kpi-mini bad"><div class="lbl">OVERDUE NOW</div><div class="val" id="dashKpiOverdue">—</div></div>
+                        <div class="kpi-mini good"><div class="lbl">PM RATE</div><div class="val" id="dashKpiRate">—</div></div>
+                    </div>
+
+                    <div class="dash-grid">
+                        <div class="dash-card">
+                            <h3>📊 PMs per Department per Month</h3>
+                            <div class="chart-wrap"><canvas id="chartDeptBar"></canvas></div>
+                        </div>
+                        <div class="dash-card">
+                            <h3>🥧 Working vs Not Working</h3>
+                            <div class="chart-wrap"><canvas id="chartWorkingPie"></canvas></div>
+                        </div>
+                        <div class="dash-card" style="grid-column: 1 / -1;">
+                            <h3>📈 Overdue Trend Over Time</h3>
+                            <div class="chart-wrap tall"><canvas id="chartOverdueLine"></canvas></div>
+                        </div>
+                        <div class="dash-card" style="grid-column: 1 / -1;">
+                            <h3>🔥 Fridge Failure Heatmap <span style="margin-left:auto; font-size:0.72rem; color:#5b7b96; font-weight:600;">Top 20 most-problematic units</span></h3>
+                            <div id="heatmapContainer" class="heatmap">
+                                <div class="dash-empty">⏳ Loading…</div>
+                            </div>
+                            <div class="heatmap-legend">
+                                <span><span class="swatch" style="background:#e2f0e6;"></span>No issues</span>
+                                <span><span class="swatch" style="background:#fff3cd;"></span>Low (1–3)</span>
+                                <span><span class="swatch" style="background:#ffe0b2;"></span>Medium (4–7)</span>
+                                <span><span class="swatch" style="background:#ffcdd2;"></span>High (8–12)</span>
+                                <span><span class="swatch" style="background:#b33a3a;"></span>Critical (13+)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================== FLEET OVERVIEW ================== -->
             <div class="card" style="margin-bottom: 24px; border: 2px solid #0b3d91;">
                 <div class="card-header" style="background:#e8f1fb; color:#0b3d91;">
                     <span>📊</span> Fleet Overview — All Departments
@@ -669,6 +764,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="card" style="margin-bottom: 24px; border: 2px solid #7a4c9c;">
                 <div class="card-header" style="background:#f3e8ff; color:#5d3578;">
                     <span>👥</span> Manage In-Charges
@@ -730,7 +826,6 @@
             <div style="font-size: 3rem; margin-bottom: 12px;">🔐</div>
             <h2 style="justify-content: center;">Login</h2>
             <p style="margin-bottom: 22px;">Select your role and enter your PIN.</p>
-
             <div class="field-group" style="text-align: left;">
                 <label for="loginRoleSelect">Login as</label>
                 <select id="loginRoleSelect" style="width: 100%;">
@@ -738,7 +833,6 @@
                     <option value="incharge">👔 In-Charge</option>
                 </select>
             </div>
-
             <div class="field-group" style="text-align: left;" id="loginTechGroup">
                 <label for="loginTechSelect">Your name</label>
                 <select id="loginTechSelect" style="width: 100%;">
@@ -750,7 +844,6 @@
                     <option value="GATANGANWA Raissa">GATANGANWA Raissa</option>
                 </select>
             </div>
-
             <div class="field-group" style="text-align: left; display:none;" id="loginInchargeGroup">
                 <label for="loginInchargeDept">Your Department</label>
                 <select id="loginInchargeDept" style="width:100%;">
@@ -760,14 +853,11 @@
                 <input type="text" id="loginInchargeName" list="loginInchargeSuggestions" placeholder="e.g. NZABANTERURA innocent" autocomplete="off">
                 <datalist id="loginInchargeSuggestions"></datalist>
             </div>
-
             <div class="field-group" style="text-align: left;">
                 <label for="loginPinInput">Your PIN</label>
                 <input type="password" id="loginPinInput" inputmode="numeric" maxlength="8" placeholder="••••" style="text-align: center; font-size: 1.5rem; letter-spacing: 8px;">
             </div>
-
             <div id="loginError" style="color: #b33a3a; font-size: 0.9rem; margin-top: 6px; min-height: 20px;"></div>
-
             <button class="btn-primary" id="loginBtn" style="width: 100%; justify-content: center; margin-top: 14px;">
                 🔓 Unlock &amp; Continue
             </button>
@@ -794,21 +884,15 @@
         <div class="modal-box">
             <h2>🖊️ Signature &amp; Digital Certificate</h2>
             <p>Load both for full authenticity — the visual signature for readers, the .pfx certificate for cryptographic proof. The private key stays only in this browser tab.</p>
-
             <h3 class="sig-h3">✍️ Your Visual Signature (handwritten PNG)</h3>
-            <div class="sig-preview" id="sigPreview">
-                <span class="placeholder">No visual signature uploaded</span>
-            </div>
+            <div class="sig-preview" id="sigPreview"><span class="placeholder">No visual signature uploaded</span></div>
             <div class="field-group">
                 <label for="sigFileInput">Choose signature image (PNG with transparent background recommended)</label>
                 <input type="file" id="sigFileInput" accept="image/png, image/jpeg">
             </div>
-
             <div id="inchargeSignatureSection" style="display:none;">
                 <h3 class="sig-h3">👔 In-Charge Signature (only In-Charge accounts)</h3>
-                <div class="sig-preview" id="inchargeSigPreview">
-                    <span class="placeholder">No in-charge signature uploaded</span>
-                </div>
+                <div class="sig-preview" id="inchargeSigPreview"><span class="placeholder">No in-charge signature uploaded</span></div>
                 <div class="field-group">
                     <label for="inchargeSigInput">In-charge signature image (appears in the "Reviewed by" box on every report)</label>
                     <input type="file" id="inchargeSigInput" accept="image/png, image/jpeg">
@@ -817,11 +901,8 @@
                     ℹ️ Your uploaded signature is stored on the cloud so every technician's device can display it in reports.
                 </div>
             </div>
-
             <h3 class="sig-h3">🔐 Digital Certificate (.pfx / .p12)</h3>
-            <div class="sig-preview" id="certPreview">
-                <span class="placeholder">No certificate loaded</span>
-            </div>
+            <div class="sig-preview" id="certPreview"><span class="placeholder">No certificate loaded</span></div>
             <div class="field-group">
                 <label for="pfxFileInput">Your .pfx / .p12 file</label>
                 <input type="file" id="pfxFileInput" accept=".pfx,.p12,application/x-pkcs12">
@@ -830,9 +911,7 @@
                 <label for="pfxPasswordInput">PFX password</label>
                 <input type="password" id="pfxPasswordInput" placeholder="Enter PFX password">
             </div>
-
             <div id="sigError" style="color:#b33a3a; font-size:0.85rem; min-height:18px; margin-bottom:8px;"></div>
-
             <div class="modal-actions">
                 <button class="btn-cancel" id="sigCancel">Close</button>
                 <button class="btn-cancel" id="sigRemove" style="background:#ffe6e6; color:#b33a3a;">🗑️ Forget All</button>
@@ -845,7 +924,6 @@
         <div class="modal-box">
             <h2>➕ Add New Refrigerator</h2>
             <p>This refrigerator will be saved to the cloud under your name: <strong id="addAcOwnerName">—</strong></p>
-
             <div id="dupWarning" class="dup-warning">
                 <div class="dup-title">⚠️ This tag already exists in the fleet!</div>
                 <div id="dupWarningBody"></div>
@@ -853,7 +931,6 @@
                     <button type="button" class="btn-secondary" id="dupDismissBtn">OK, I understand</button>
                 </div>
             </div>
-
             <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="field-group">
                     <label for="newAcTag">Tag Number / ID *</label>
@@ -864,12 +941,10 @@
                     <select id="newAcDept"></select>
                 </div>
             </div>
-
             <div class="field-group">
                 <label for="newAcLocation">Location / Room *</label>
                 <select id="newAcLocation"></select>
             </div>
-
             <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="field-group">
                     <label for="newAcBrand">Brand *</label>
@@ -880,7 +955,6 @@
                     <input type="text" id="newAcModel" placeholder="e.g. GN-B422">
                 </div>
             </div>
-
             <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="field-group">
                     <label for="newAcType">Refrigerator Type</label>
@@ -898,7 +972,6 @@
                     <input type="text" id="newAcSerial" placeholder="e.g. 303HAERCE084">
                 </div>
             </div>
-
             <div class="field-group">
                 <label>⚙️ Working Status *</label>
                 <div class="working-radio-group" id="newAcWorkingGroup">
@@ -910,7 +983,6 @@
                     </label>
                 </div>
             </div>
-
             <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="field-group">
                     <label for="newAcLastPm">Last PM date <span style="font-weight:400;color:#5b7b96;">(optional)</span></label>
@@ -921,7 +993,6 @@
                     <input type="date" id="newAcNextPm">
                 </div>
             </div>
-
             <div class="modal-actions">
                 <button class="btn-cancel" id="addAcCancel">Cancel</button>
                 <button class="btn-go" id="addAcSave">💾 Save Refrigerator to Cloud</button>
@@ -974,7 +1045,6 @@
                     <input type="text" id="editAcSerial">
                 </div>
             </div>
-
             <div class="field-group">
                 <label>⚙️ Working Status *</label>
                 <div class="working-radio-group" id="editAcWorkingGroup">
@@ -986,7 +1056,6 @@
                     </label>
                 </div>
             </div>
-
             <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="field-group">
                     <label for="editAcLastPm">Last PM date</label>
@@ -1020,33 +1089,27 @@
         <div class="modal-box" style="max-width: 460px;">
             <h2>📊 PM Analysis Report</h2>
             <p>Choose a period and department. The report will list all PMs done, plus any not-working or never-serviced fridges.</p>
-
             <div class="field-group">
                 <label for="analysisFrom">From date *</label>
                 <input type="date" id="analysisFrom">
             </div>
-
             <div class="field-group">
                 <label for="analysisTo">To date *</label>
                 <input type="date" id="analysisTo">
             </div>
-
             <div class="field-group">
                 <label for="analysisDept">Department</label>
                 <select id="analysisDept">
                     <option value="all">🏢 All Departments</option>
                 </select>
             </div>
-
             <div class="field-group">
                 <label>Scope</label>
                 <div style="background:#eef6fc; border-left:3px solid #1e4a6d; padding:10px 14px; border-radius:8px; font-size:0.85rem; color:#12405e; font-weight:600;">
                     🔒 Only <strong id="analysisScopeName">your own</strong> PM records will be included.
                 </div>
             </div>
-
             <div id="analysisError" style="color:#b33a3a; font-size:0.85rem; min-height:18px;"></div>
-
             <div class="modal-actions">
                 <button class="btn-cancel" id="analysisCancel">Cancel</button>
                 <button class="btn-go" id="analysisGenerate">📊 Generate Analysis PDF</button>
@@ -1061,9 +1124,7 @@
             <div id="jobCardBody" class="jobcard-scroll">
                 <div class="info-loading">⏳ Loading…</div>
             </div>
-
             <div id="jobCardFeedback"></div>
-
             <div id="jobCardReviewSection" style="display:none; margin-top: 16px;">
                 <div class="info-card" style="border: 2px solid #f4a300; background: #fff9ec;">
                     <h2>💬 Your Review (In-Charge)</h2>
@@ -1072,8 +1133,7 @@
                     </p>
                     <div class="field-group">
                         <label for="jobCardComment">Comment / Feedback (visible to the technician)</label>
-                        <textarea id="jobCardComment" class="remark-input" rows="3"
-                            placeholder="e.g. Please redo the condenser coil cleaning — heavy dust still present."></textarea>
+                        <textarea id="jobCardComment" class="remark-input" rows="3" placeholder="e.g. Please redo the condenser coil cleaning — heavy dust still present."></textarea>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button class="btn-approve" id="jobCardApproveBtn">✅ Approve &amp; Co-sign</button>
@@ -1081,7 +1141,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="modal-actions">
                 <button class="btn-cancel" id="jobCardClose">Close</button>
                 <button class="btn-go" id="jobCardPdf">📄 Download Job Card PDF</button>
@@ -1089,17 +1148,14 @@
         </div>
     </div>
 
-    <!-- ================= EQUIPMENT PM DOWNLOAD MODAL ================= -->
     <div class="modal-overlay" id="eqPmDownloadModal">
         <div class="modal-box" style="max-width: 520px;">
             <h2>📥 Download PM Cards by Equipment</h2>
             <p>Choose an equipment and a date range. The system will fetch all PM cards for that equipment (both Technician-signed and In-Charge-co-signed) and package them into a single PDF.</p>
-
             <div class="field-group">
                 <label for="eqPmEquipSelect">Equipment *</label>
                 <select id="eqPmEquipSelect"></select>
             </div>
-
             <div class="field-group">
                 <label>Quick range</label>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -1109,7 +1165,6 @@
                     <button type="button" class="btn-secondary" id="eqPmQuickAll" style="padding: 8px 16px; font-size: 0.85rem;">📅 All time</button>
                 </div>
             </div>
-
             <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="field-group">
                     <label for="eqPmFrom">From date *</label>
@@ -1120,16 +1175,13 @@
                     <input type="date" id="eqPmTo">
                 </div>
             </div>
-
             <div class="field-group">
                 <label>What to include</label>
                 <div style="background:#eef6fc; border-left:3px solid #1e4a6d; padding:10px 14px; border-radius:8px; font-size:0.85rem; color:#12405e; font-weight:600;">
                     ✅ Only PMs <strong>co-signed by both Technician &amp; In-Charge</strong> will be included in the PDF.
                 </div>
             </div>
-
             <div id="eqPmStatus" style="font-size: 0.85rem; min-height: 18px; color:#5b7b96;"></div>
-
             <div class="modal-actions">
                 <button class="btn-cancel" id="eqPmCancel">Cancel</button>
                 <button class="btn-go" id="eqPmDownloadBtn">📄 Download PDF</button>
@@ -1137,16 +1189,13 @@
         </div>
     </div>
 
-    <!-- ================= EQUIPMENT PM HISTORY MODAL ================= -->
     <div class="modal-overlay" id="eqPmHistoryModal">
         <div class="modal-box" style="max-width: 720px;">
             <h2>📋 PM Cards for Equipment</h2>
             <p id="eqPmHistorySubtitle">Choose a period to download the individual PM cards.</p>
-
             <div class="info-card" style="background: #f9fcff;">
                 <div id="eqPmHistoryMeta"></div>
             </div>
-
             <div class="field-group">
                 <label>Quick range</label>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -1156,7 +1205,6 @@
                     <button type="button" class="btn-secondary" id="eqPmHisQuickAll" style="padding: 8px 16px; font-size: 0.85rem;">📅 All time</button>
                 </div>
             </div>
-
             <div class="grid-3-wide" style="grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="field-group">
                     <label for="eqPmHisFrom">From date</label>
@@ -1167,16 +1215,13 @@
                     <input type="date" id="eqPmHisTo">
                 </div>
             </div>
-
             <div class="field-group">
                 <label>Preview</label>
                 <div id="eqPmHistoryPreview" style="max-height: 240px; overflow-y: auto; border: 1px solid #e2eaf1; border-radius: 12px; padding: 8px; background: #fbfdff;">
                     <div class="info-loading">⏳ Loading PM records…</div>
                 </div>
             </div>
-
             <div id="eqPmHistoryStatus" style="font-size: 0.85rem; min-height: 18px;"></div>
-
             <div class="modal-actions">
                 <button class="btn-cancel" id="eqPmHistoryClose">Close</button>
                 <button class="btn-go" id="eqPmHistoryDownloadBtn" style="background:#1b6b3f;">📄 Download PM Cards PDF</button>
@@ -1666,6 +1711,7 @@
                 populateLoginDepartmentSelect();
                 populateDepartmentSelect();
                 populateSupervisorDeptFilter();
+                populateDashDeptSelect();
             }
 
             function askPfxPassword() {
@@ -2523,9 +2569,11 @@
                 if (isSupervisor) {
                     populateSupervisorDeptFilter();
                     populateSupervisorOwnerFilter();
+                    populateDashDeptSelect();
                     refreshSupervisorInventory();
                     renderInchargeEditor();
                     renderTechnicianEditor();
+                    setTimeout(() => renderSupervisorDashboard(), 500);
                 }
             }
 
@@ -3397,7 +3445,6 @@
                     o.textContent = `${ac.tag} | ${ac.loc} | ${ac.brand} ${ac.model}`;
                     eqPmEquipSelect.appendChild(o);
                 });
-                // pre-select the currently chosen fridge if any
                 const curIdx = acSelect.value;
                 if (curIdx !== '' && list[Number(curIdx)]) eqPmEquipSelect.value = curIdx;
             }
@@ -3460,7 +3507,6 @@
                     const toTs   = new Date(to   + 'T23:59:59').getTime();
                     const techName = currentLoggedInName;
 
-                    // Only PMs for this equipment + in range + signed by this technician + co-signed by In-Charge
                     const matched = logs.filter(r => {
                         const rIdentity = buildAcIdentity({ refTag: r.refTag || r['Ref Tag'], refLocation: r.refLocation || r['Location'], refSerial: r.refSerial || r['Serial Number'], refModel: r.refModel || r['Model'] });
                         if (rIdentity !== targetIdentity) return false;
@@ -3468,9 +3514,7 @@
                         if (!d) return false;
                         const t = new Date(d).getTime();
                         if (isNaN(t) || t < fromTs || t > toTs) return false;
-                        // must be signed by this technician
                         if (normalizeText(r['Technician'] || r.technician) !== normalizeText(techName)) return false;
-                        // must be co-signed by in-charge (no rejected)
                         const sigAt = safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim();
                         if (!sigAt) return false;
                         if (safeStr(r.inchargeReviewStatus) === 'rejected') return false;
@@ -4036,6 +4080,19 @@
                 }
             }
 
+            function populateDashDeptSelect() {
+                const sel = document.getElementById('dashDeptSelect');
+                if (!sel) return;
+                const cur = sel.value || 'all';
+                sel.innerHTML = '<option value="all">All Departments</option>';
+                Object.keys(DEPARTMENTS).forEach(d => {
+                    const o = document.createElement('option');
+                    o.value = d; o.textContent = d;
+                    sel.appendChild(o);
+                });
+                sel.value = cur;
+            }
+
             async function populateSupervisorOwnerFilter() {
                 const sel = document.getElementById('supervisorOwnerFilter');
                 if (!sel) return;
@@ -4383,6 +4440,375 @@
                 } catch (err) { showStatus('⚠️ ' + err.message, false); }
                 this.disabled = false; this.innerHTML = orig;
             });
+
+            /* ============================================================
+               DASHBOARD — data computation
+               ============================================================ */
+            const DASH_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            let dashCharts = { deptBar: null, workingPie: null, overdueLine: null };
+
+            function dashMonthKey(d) {
+                const dd = parseToDate(d);
+                if (!dd) return null;
+                return dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0');
+            }
+            function dashMonthLabel(key) {
+                const [y, m] = key.split('-');
+                return DASH_MONTHS[parseInt(m, 10) - 1] + ' ' + y.substring(2);
+            }
+            function dashMonthList(periodMonths) {
+                const out = [];
+                const now = new Date();
+                if (periodMonths === 0) return null;
+                for (let i = periodMonths - 1; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    out.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+                }
+                return out;
+            }
+
+            function computeDashboardData(logs, inventory, periodMonths, deptFilter) {
+                const now = new Date();
+
+                const filteredLogs = logs.filter(r => {
+                    if (deptFilter === 'all') return true;
+                    return normalizeText(r['Department'] || r.refDept) === normalizeText(deptFilter);
+                });
+
+                const filteredInv = inventory.filter(ac => {
+                    if (deptFilter === 'all') return true;
+                    return normalizeText(ac.dept) === normalizeText(deptFilter);
+                });
+
+                const monthKeys = dashMonthList(periodMonths);
+                let monthListFinal = monthKeys;
+                if (!monthListFinal) {
+                    const set = new Set();
+                    filteredLogs.forEach(r => {
+                        const k = dashMonthKey(r['Work Date'] || r.workDate || r['Timestamp']);
+                        if (k) set.add(k);
+                    });
+                    monthListFinal = Array.from(set).sort();
+                    if (monthListFinal.length === 0) monthListFinal = [dashMonthKey(now.toISOString())];
+                }
+
+                const deptsSet = new Set();
+                filteredLogs.forEach(r => {
+                    const d = r['Department'] || r.refDept;
+                    if (d) deptsSet.add(d);
+                });
+                if (deptsSet.size === 0) {
+                    filteredInv.forEach(ac => { if (ac.dept) deptsSet.add(ac.dept); });
+                }
+                const deptList = Array.from(deptsSet).sort();
+
+                const barPalette = ['#1e4a6d', '#2a6b96', '#0b6b3a', '#7a4c9c', '#f4a300', '#b33a3a', '#5b7b96', '#c98600'];
+                const barDatasets = deptList.map((dept, i) => {
+                    const counts = monthListFinal.map(mk => {
+                        return filteredLogs.filter(r => {
+                            const d = r['Department'] || r.refDept;
+                            if (normalizeText(d) !== normalizeText(dept)) return false;
+                            const k = dashMonthKey(r['Work Date'] || r.workDate || r['Timestamp']);
+                            return k === mk;
+                        }).length;
+                    });
+                    return {
+                        label: dept,
+                        data: counts,
+                        backgroundColor: barPalette[i % barPalette.length],
+                        borderRadius: 6,
+                        maxBarThickness: 34
+                    };
+                });
+
+                const workingCount    = filteredInv.filter(ac => (ac.workingStatus || 'Working') === 'Working').length;
+                const notWorkingCount = filteredInv.filter(ac => (ac.workingStatus || 'Working') === 'Not Working').length;
+
+                const overdueLineData = monthListFinal.map(mk => {
+                    const [y, m] = mk.split('-').map(Number);
+                    const monthEnd = new Date(y, m, 0, 23, 59, 59);
+                    let overdue = 0;
+                    filteredInv.forEach(ac => {
+                        const myId = buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model });
+                        const myLogs = filteredLogs.filter(r => {
+                            const rid = buildAcIdentity({ refTag: r.refTag || r['Ref Tag'], refLocation: r.refLocation || r['Location'], refSerial: r.refSerial || r['Serial Number'], refModel: r.refModel || r['Model'] });
+                            if (rid !== myId) return false;
+                            const t = new Date(r['Work Date'] || r.workDate || r['Timestamp'] || r.timestamp).getTime();
+                            return !isNaN(t) && t <= monthEnd.getTime();
+                        }).sort((a, b) => recordTime(b) - recordTime(a));
+
+                        if (myLogs.length > 0) {
+                            const lastPm = safeStr(myLogs[0]['Work Date'] || myLogs[0].workDate);
+                            const nextPm = getNextRefPmDate_(lastPm);
+                            if (nextPm && nextPm.getTime() < monthEnd.getTime()) overdue++;
+                        } else if (ac.lastPmDate) {
+                            const nextPm = getNextRefPmDate_(ac.lastPmDate);
+                            if (nextPm && nextPm.getTime() < monthEnd.getTime()) overdue++;
+                        }
+                    });
+                    return overdue;
+                });
+
+                const heatRows = filteredInv.map(ac => {
+                    const myId = buildAcIdentity({ refTag: ac.tag, refLocation: ac.loc, refSerial: ac.serial, refModel: ac.model });
+                    const myLogs = filteredLogs.filter(r => {
+                        const rid = buildAcIdentity({ refTag: r.refTag || r['Ref Tag'], refLocation: r.refLocation || r['Location'], refSerial: r.refSerial || r['Serial Number'], refModel: r.refModel || r['Model'] });
+                        return rid === myId;
+                    });
+
+                    let score = 0;
+                    if ((ac.workingStatus || 'Working') === 'Not Working') score += 3;
+
+                    myLogs.forEach(r => {
+                        const tempR = safeStr(r['Temp Rating'] || r.tempRating);
+                        const doorR = safeStr(r['Door Rating'] || r.doorRating);
+                        const cleanR = safeStr(r['Clean Rating'] || r.cleanRating);
+                        if (tempR === 'fault') score += 2;
+                        else if (tempR === 'partial') score += 1;
+                        if (doorR === 'issue') score += 2;
+                        else if (doorR === 'delayed') score += 1;
+                        if (cleanR === 'attention') score += 1;
+                        else if (cleanR === 'fair') score += 0.5;
+
+                        const cleanSet = new Set(safeSplit(r['Clean Items'] || r.cleanItems, '|'));
+                        const tempSet  = new Set(safeSplit(r['Temp Items']  || r.tempItems,  '|'));
+                        const doorSet  = new Set(safeSplit(r['Door Items']  || r.doorItems,  '|'));
+                        const unchecked = (5 - cleanSet.size) + (5 - tempSet.size) + (5 - doorSet.size);
+                        score += unchecked * 0.3;
+
+                        if (safeStr(r.inchargeReviewStatus) === 'rejected') score += 2;
+                    });
+
+                    return { ac, score: Math.round(score), pmCount: myLogs.length };
+                }).sort((a, b) => b.score - a.score).slice(0, 20);
+
+                const kpi = {
+                    total: filteredLogs.length,
+                    signed: filteredLogs.filter(r => safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim()).length,
+                    pending: filteredLogs.filter(r => !safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim() && safeStr(r.inchargeReviewStatus) !== 'rejected').length,
+                    rejected: filteredLogs.filter(r => safeStr(r.inchargeReviewStatus) === 'rejected').length,
+                    overdueNow: filteredInv.filter(ac => computeAcStatus(ac, logs, now).status === 'overdue').length,
+                    totalUnits: filteredInv.length
+                };
+                kpi.pmRate = kpi.totalUnits > 0
+                    ? Math.round((new Set(filteredLogs.map(r => safeStr(r['Ref Tag'] || r.refTag))).size / kpi.totalUnits) * 100) + '%'
+                    : '—';
+
+                return {
+                    monthLabels: monthListFinal.map(dashMonthLabel),
+                    barDatasets,
+                    deptList,
+                    pie: { working: workingCount, notWorking: notWorkingCount },
+                    overdueLine: overdueLineData,
+                    heatRows,
+                    kpi
+                };
+            }
+
+            /* ============================================================
+               DASHBOARD — rendering
+               ============================================================ */
+            function destroyDashCharts() {
+                Object.keys(dashCharts).forEach(k => {
+                    if (dashCharts[k]) { try { dashCharts[k].destroy(); } catch(e) {} dashCharts[k] = null; }
+                });
+            }
+
+            function renderDashKPIs(kpi) {
+                const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+                setTxt('dashKpiTotal',     kpi.total);
+                setTxt('dashKpiSigned',    kpi.signed);
+                setTxt('dashKpiPending',   kpi.pending);
+                setTxt('dashKpiRejected',  kpi.rejected);
+                setTxt('dashKpiOverdue',   kpi.overdueNow);
+                setTxt('dashKpiRate',      kpi.pmRate);
+            }
+
+            function renderDashBar(data) {
+                const ctx = document.getElementById('chartDeptBar');
+                if (!ctx) return;
+                if (dashCharts.deptBar) { try { dashCharts.deptBar.destroy(); } catch(e){} dashCharts.deptBar = null; }
+                if (data.deptList.length === 0 || data.monthLabels.length === 0) {
+                    ctx.parentElement.innerHTML = '<div class="dash-empty">📭 No PM records in this period.</div>';
+                    return;
+                }
+                if (typeof Chart === 'undefined') return;
+                dashCharts.deptBar = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: data.monthLabels, datasets: data.barDatasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                            tooltip: { backgroundColor: '#0b3d91', titleFont: { weight: 'bold' } }
+                        },
+                        scales: {
+                            x: { stacked: false, grid: { display: false }, ticks: { font: { size: 10 } } },
+                            y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: '#eef4fa' } }
+                        }
+                    }
+                });
+            }
+
+            function renderDashPie(pie) {
+                const ctx = document.getElementById('chartWorkingPie');
+                if (!ctx) return;
+                if (dashCharts.workingPie) { try { dashCharts.workingPie.destroy(); } catch(e){} dashCharts.workingPie = null; }
+                const total = pie.working + pie.notWorking;
+                if (total === 0) {
+                    ctx.parentElement.innerHTML = '<div class="dash-empty">📭 No equipment in this scope.</div>';
+                    return;
+                }
+                if (typeof Chart === 'undefined') return;
+                dashCharts.workingPie = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['✅ Working', '⛔ Not Working'],
+                        datasets: [{
+                            data: [pie.working, pie.notWorking],
+                            backgroundColor: ['#1b6b3f', '#b33a3a'],
+                            borderColor: '#fff',
+                            borderWidth: 3,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '62%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 }, padding: 14 } },
+                            tooltip: {
+                                backgroundColor: '#0b3d91',
+                                callbacks: {
+                                    label: function(c) {
+                                        const pct = Math.round((c.parsed / total) * 100);
+                                        return c.label + ': ' + c.parsed + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function renderDashLine(data) {
+                const ctx = document.getElementById('chartOverdueLine');
+                if (!ctx) return;
+                if (dashCharts.overdueLine) { try { dashCharts.overdueLine.destroy(); } catch(e){} dashCharts.overdueLine = null; }
+                if (data.monthLabels.length === 0) {
+                    ctx.parentElement.innerHTML = '<div class="dash-empty">📭 No data available.</div>';
+                    return;
+                }
+                if (typeof Chart === 'undefined') return;
+                const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 240);
+                gradient.addColorStop(0, 'rgba(179, 58, 58, 0.35)');
+                gradient.addColorStop(1, 'rgba(179, 58, 58, 0.02)');
+
+                dashCharts.overdueLine = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.monthLabels,
+                        datasets: [{
+                            label: 'Overdue units',
+                            data: data.overdueLine,
+                            borderColor: '#b33a3a',
+                            backgroundColor: gradient,
+                            borderWidth: 3,
+                            tension: 0.35,
+                            fill: true,
+                            pointBackgroundColor: '#b33a3a',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { backgroundColor: '#0b3d91', titleFont: { weight: 'bold' } }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                            y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: '#eef4fa' } }
+                        }
+                    }
+                });
+            }
+
+            function renderDashHeatmap(heatRows) {
+                const el = document.getElementById('heatmapContainer');
+                if (!el) return;
+                if (heatRows.length === 0) {
+                    el.innerHTML = '<div class="dash-empty">📭 No equipment in this scope.</div>';
+                    return;
+                }
+                el.innerHTML = heatRows.map(h => {
+                    let level = 0;
+                    if (h.score >= 13) level = 4;
+                    else if (h.score >= 8) level = 3;
+                    else if (h.score >= 4) level = 2;
+                    else if (h.score >= 1) level = 1;
+
+                    const wsIcon = (h.ac.workingStatus || 'Working') === 'Not Working' ? '⛔' : '✅';
+                    const tipText = [
+                        'Tag: ' + (h.ac.tag || '—'),
+                        'Location: ' + (h.ac.loc || '—'),
+                        'Working: ' + (h.ac.workingStatus || 'Working'),
+                        'PMs logged: ' + h.pmCount,
+                        'Failure score: ' + h.score
+                    ].join('\n');
+
+                    return `<div class="heatmap-cell level-${level}" data-tag="${escapeHtml(h.ac.tag)}" title="${escapeHtml(tipText)}">
+                        <span class="hm-tag">${wsIcon} ${escapeHtml((h.ac.tag || '—').replace(/^CHUB\/MCH\s?NBM\//, '').replace(/^CHUB\/MCH\/NBM\//, ''))}</span>
+                        <span class="hm-score">${h.score} pts · ${h.pmCount} PM</span>
+                    </div>`;
+                }).join('');
+
+                el.querySelectorAll('.heatmap-cell').forEach(cell => {
+                    cell.addEventListener('click', function() {
+                        const tag = this.getAttribute('data-tag');
+                        if (tag) { showStatus('🧊 ' + tag + ' — open Job Card from the inventory table for details.', true); }
+                    });
+                });
+            }
+
+            async function renderSupervisorDashboard() {
+                if (currentRole !== 'supervisor') return;
+
+                const periodSel = document.getElementById('dashPeriodSelect');
+                const deptSel   = document.getElementById('dashDeptSelect');
+
+                const periodMonths = parseInt(periodSel?.value || '12', 10);
+                const deptFilter   = deptSel?.value || 'all';
+
+                destroyDashCharts();
+
+                try {
+                    const logs      = await fetchAllLogs();
+                    const inventory = await fetchAllInventory();
+
+                    const data = computeDashboardData(logs, inventory, periodMonths, deptFilter);
+
+                    renderDashKPIs(data.kpi);
+                    renderDashBar(data);
+                    renderDashPie(data.pie);
+                    renderDashLine(data);
+                    renderDashHeatmap(data.heatRows);
+                } catch (e) {
+                    console.error('❌ renderSupervisorDashboard failed:', e);
+                    const hm = document.getElementById('heatmapContainer');
+                    if (hm) hm.innerHTML = '<div class="dash-empty">⚠️ Could not load dashboard data.</div>';
+                }
+            }
+
+            document.getElementById('dashPeriodSelect')?.addEventListener('change', renderSupervisorDashboard);
+            document.getElementById('dashDeptSelect')?.addEventListener('change', renderSupervisorDashboard);
+            document.getElementById('dashRefreshBtn')?.addEventListener('click', renderSupervisorDashboard);
 
             /* ================== PDF GENERATORS ================== */
             async function generatePDF(records) {
@@ -5645,10 +6071,12 @@
                     AC_INVENTORY = [];
                     populateSupervisorDeptFilter();
                     populateSupervisorOwnerFilter();
+                    populateDashDeptSelect();
                     setTimeout(() => refreshSupervisorInventory(), 300);
                     setTimeout(() => renderInchargeEditor(), 200);
                     setTimeout(() => renderTechnicianEditor(), 200);
-                    showStatus('👑 Welcome ' + payload.name + ' — fleet overview ready.', true);
+                    setTimeout(() => renderSupervisorDashboard(), 500);
+                    showStatus('👑 Welcome ' + payload.name + ' — analytics dashboard ready.', true);
                 } else {
                     AC_INVENTORY = [];
                     renderAcSelector();
