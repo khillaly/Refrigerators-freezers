@@ -1503,7 +1503,10 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
   <div class="modal-box" style="max-width:640px;">
     <h2>🚨 Curative Job Card</h2>
     <div id="viewCurativeBody" class="jobcard-scroll" style="max-height:70vh;"></div>
-    <div class="modal-actions"><button class="btn-cancel" id="viewCurativeClose">Close</button></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="viewCurativeClose">Close</button>
+      <button class="btn-go" id="viewCurativeDownloadPdf" style="background:#1b6b3f;">📄 Download PDF</button>
+    </div>
   </div>
 </div>
 
@@ -5429,7 +5432,9 @@ async function refreshSupervisorCurative() {
         wrap.innerHTML = '<div class="info-error">⚠️ ' + escapeHtml(e.message) + '</div>';
     }
 }
+let CURRENT_VIEW_CURATIVE = null;
 function openViewCurativeModal(c) {
+    CURRENT_VIEW_CURATIVE = c;
     const body = document.getElementById('viewCurativeBody');
     if (!body || !c) return;
     const sl = ({ pending: '⏳ Pending', in_progress: '🔧 In Progress', completed: '📸 Awaiting Verification', verified: '✅ Verified', rejected: '❌ Rejected' })[c.status] || c.status;
@@ -5747,6 +5752,239 @@ async function downloadTechnicianQuarterlyCurativeReport() {
     } catch(e) { showStatus('⚠️ ' + e.message, false); }
     btn.disabled = false;
     btn.innerHTML = o;
+}
+/* ============================================================
+   CURATIVE JOB CARD PDF (signed by technician + in-charge)
+   ============================================================ */
+async function generateCurativeJobCardPDF(curative) {
+    if (!curative) { alert('No job card selected.'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pW = 210, pH = 297, m = 16, cW = pW - m * 2;
+
+    // Auto-load PFX for signature (prompts once if not cached)
+    if (!isCertLoaded() && currentLoggedInName) {
+        await ensurePfxLoadedFor(currentLoggedInName);
+    }
+
+    // --- Load both signatures (visual) ---
+    const techName = safeStr(curative.assignedTo);
+    const ichName  = safeStr(curative.verifiedBy) || safeStr(curative.reportedBy && '');
+
+    let techSig = techName ? (getSignatureFor(techName) || '') : '';
+    if (!techSig && techName) {
+        try {
+            const cfg = await firestoreConfigGet('TechSig_' + techName);
+            if (cfg) techSig = cfg.startsWith('data:') ? cfg : 'data:image/png;base64,' + cfg;
+        } catch(e) {}
+    }
+    const techDims = techSig ? await loadImageDimensions(techSig) : null;
+
+    let ichSig = ichName ? getInchargeSignatureCached(ichName) : '';
+    if (!ichSig && ichName) ichSig = await fetchInchargeSignatureFromCloud(ichName);
+    const ichDims = ichSig ? await loadImageDimensions(ichSig) : null;
+
+    // --- Letterhead ---
+    let y = drawChubHeader(doc, {
+        title: 'CURATIVE MAINTENANCE JOB CARD',
+        subtitle: quarterLabelOf(curative.quarterKey) + '   |   ' + (curative.category || 'Refrigeration'),
+        ref: 'CHUB/CUR/' + String(curative.tag || '').replace(/[^A-Za-z0-9]/g, '_').substring(0, 18),
+        date: new Date().toLocaleDateString('en-GB')
+    });
+
+    // --- Equipment summary ---
+    const eqRows = [
+        ['Tag',            safeStr(curative.tag) || '—'],
+        ['Department',     safeStr(curative.dept) || '—'],
+        ['Location',       safeStr(curative.loc) || '—'],
+        ['Brand / Model',  ((curative.brand || '') + ' ' + (curative.model || '')).trim() || '—'],
+        ['Serial',         safeStr(curative.serial) || '—'],
+        ['Category',       safeStr(curative.category) || '—'],
+        ['Priority',       (curative.priority || 'medium').toUpperCase()],
+        ['Status',         (curative.status || '—').toUpperCase().replace(/_/g, ' ')]
+    ];
+    doc.autoTable({
+        startY: y,
+        margin: { left: m, right: m },
+        head: [['Equipment Details', '']],
+        body: eqRows,
+        theme: 'striped',
+        styles: { fontSize: 8.5, cellPadding: 1.8 },
+        headStyles: { fillColor: [30, 74, 109], textColor: 255, fontSize: 9.5 },
+        columnStyles: {
+            0: { cellWidth: 50, fontStyle: 'bold', textColor: [18, 64, 94] },
+            1: { cellWidth: cW - 50 }
+        }
+    });
+    y = doc.lastAutoTable.finalY + 5;
+
+    // --- Problem block ---
+    if (y + 30 > pH - 22) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'CURATIVE JOB CARD (cont.)', ref: 'CHUB/CUR' }); }
+    doc.setFillColor(255, 245, 245);
+    doc.setDrawColor(179, 58, 58);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(m, y, cW, 25, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(179, 58, 58);
+    doc.text('THE PROBLEM', m + 3, y + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(31, 60, 84);
+    const issueLines = doc.splitTextToSize(pdfSanitize(curative.issue || '—'), cW - 6);
+    doc.text(issueLines.slice(0, 4), m + 3, y + 11);
+    y += 28;
+    doc.setFontSize(7.5);
+    doc.setTextColor(91, 123, 150);
+    doc.text('Reported by: ' + pdfSanitize(curative.reportedBy || '—'), m + 3, y);
+    doc.text('Reported at: ' + formatDateOnly(curative.reportedAt), m + 3, y + 4);
+    y += 8;
+
+    // --- Work performed ---
+    if (y + 30 > pH - 22) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'CURATIVE JOB CARD (cont.)', ref: 'CHUB/CUR' }); }
+    doc.setFillColor(240, 253, 244);
+    doc.setDrawColor(27, 107, 63);
+    doc.roundedRect(m, y, cW, 30, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(27, 107, 63);
+    doc.text('WORK PERFORMED BY TECHNICIAN', m + 3, y + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(21, 82, 49);
+    const notesLines = doc.splitTextToSize(pdfSanitize(curative.technicianNotes || '(no notes)'), cW - 6);
+    doc.text(notesLines.slice(0, 5), m + 3, y + 11);
+    y += 33;
+    doc.setFontSize(7.5);
+    doc.setTextColor(91, 123, 150);
+    doc.text('Started: ' + formatDateOnly(curative.startedAt), m + 3, y);
+    doc.text('Completed: ' + formatDateOnly(curative.completedAt), m + 3, y + 4);
+    y += 8;
+
+    // --- Verification block ---
+    if (curative.verifiedAt || curative.feedback) {
+        if (y + 26 > pH - 22) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'CURATIVE JOB CARD (cont.)', ref: 'CHUB/CUR' }); }
+        doc.setFillColor(255, 251, 235);
+        doc.setDrawColor(244, 217, 122);
+        doc.roundedRect(m, y, cW, 24, 2, 2, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(122, 83, 0);
+        doc.text('VERIFICATION BY IN-CHARGE', m + 3, y + 5);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(122, 83, 0);
+        doc.text('Quality of work: ' + pdfSanitize((curative.feedbackQuality || '—').toUpperCase()), m + 3, y + 11);
+        doc.text('Verified by:     ' + pdfSanitize(ichName || '—'), m + 3, y + 15);
+        if (curative.feedback) {
+            const fbLines = doc.splitTextToSize('Feedback: ' + pdfSanitize(curative.feedback), cW - 6);
+            doc.text(fbLines.slice(0, 2), m + 3, y + 20);
+        }
+        y += 27;
+    }
+
+    // --- Signature blocks ---
+    if (y + 55 > pH - 22) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'CURATIVE JOB CARD (cont.)', ref: 'CHUB/CUR' }); }
+    const boxH = 50, gap = 4, halfW = (cW - gap) / 2;
+
+    // Left — technician
+    doc.setFillColor(240, 246, 252);
+    doc.setDrawColor(207, 224, 238);
+    doc.roundedRect(m, y, halfW, boxH, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(91, 123, 150);
+    doc.text('PERFORMED BY (TECHNICIAN)', m + 3, y + 4.5);
+    doc.setFontSize(9.5);
+    doc.setTextColor(10, 42, 63);
+    doc.text(pdfSanitize(techName || '—'), m + 3, y + 11);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(58, 101, 131);
+    doc.text('Completed: ' + formatDateOnly(curative.completedAt), m + 3, y + 15.5);
+    if (techSig) {
+        try {
+            const saX = m + 3, saY = y + 19, saW = halfW - 6, saH = 22;
+            let w = saW, h = w, aspect = 1;
+            if (techDims && techDims.width && techDims.height) {
+                aspect = techDims.width / techDims.height;
+                h = w / aspect;
+                if (h > saH) { h = saH; w = h * aspect; }
+            }
+            doc.addImage(techSig, 'PNG', saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
+        } catch(e) {}
+    }
+    doc.setDrawColor(150, 180, 200);
+    doc.setLineWidth(0.3);
+    doc.line(m + 3, y + 43, m + halfW - 3, y + 43);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(6);
+    doc.setTextColor(91, 123, 150);
+    doc.text('Signature', m + 3, y + 46);
+
+    // Right — in-charge
+    doc.setFillColor(255, 251, 235);
+    doc.setDrawColor(244, 217, 122);
+    doc.roundedRect(m + halfW + gap, y, halfW, boxH, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(122, 83, 0);
+    doc.text('VERIFIED BY (DEPT. IN-CHARGE)', m + halfW + gap + 3, y + 4.5);
+    doc.setFontSize(9.5);
+    doc.setTextColor(10, 42, 63);
+    doc.text(pdfSanitize(ichName || '—'), m + halfW + gap + 3, y + 11);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(58, 101, 131);
+    doc.text('Verified: ' + formatDateOnly(curative.verifiedAt), m + halfW + gap + 3, y + 15.5);
+    if (ichSig) {
+        try {
+            const saX = m + halfW + gap + 3, saY = y + 19, saW = halfW - 6, saH = 22;
+            let w = saW, h = w, aspect = 1;
+            if (ichDims && ichDims.width && ichDims.height) {
+                aspect = ichDims.width / ichDims.height;
+                h = w / aspect;
+                if (h > saH) { h = saH; w = h * aspect; }
+            }
+            doc.addImage(ichSig, 'PNG', saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
+        } catch(e) {}
+    }
+    doc.setDrawColor(180, 140, 60);
+    doc.line(m + halfW + gap + 3, y + 43, m + halfW + gap + halfW - 3, y + 43);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(6);
+    doc.setTextColor(122, 83, 0);
+    doc.text('Signature', m + halfW + gap + 3, y + 46);
+
+    y += boxH + 5;
+
+    // Digital seal
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(91, 123, 150);
+    doc.text('Job ID: ' + pdfSanitize(curative._docId || '—'), m, y);
+    y += 4;
+    if (isCertLoaded()) {
+        doc.setTextColor(27, 107, 63);
+        doc.text('PDF digitally signed with PKCS#7 (Adobe.PPKLite)', m, y);
+    } else {
+        doc.setTextColor(179, 58, 58);
+        doc.text('Unsigned PDF — upload your PFX certificate to sign.', m, y);
+    }
+
+    // Footer on every page
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        drawChubFooter(doc, p, totalPages);
+    }
+
+    // Download (signed if possible)
+    const fname = 'CHUB_Curative_JobCard_' + String(curative.tag || 'UNIT').replace(/[^\w\-]/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+    const bytes = doc.output('arraybuffer');
+    const sb = await signPdfBytes(bytes);
+    if (sb) downloadBytes(sb, fname);
+    else doc.save(fname);
 }
 
 /* ============================================================
@@ -6710,12 +6948,17 @@ function downloadBytes(bytes, filename) {
 }
 
 async function signPdfBytes(pdfArrayBuffer) {
-    if (!isCertLoaded() || typeof PDFLib === 'undefined') return null;
+    console.log('[signPdf] called · isCertLoaded =', isCertLoaded(), '· PDFLib =', typeof PDFLib);
+    if (!isCertLoaded()) { console.warn('[signPdf] ❌ No cert in memory'); return null; }
+    if (typeof PDFLib === 'undefined') { console.warn('[signPdf] ❌ PDFLib not loaded'); return null; }
     try {
         const { PDFDocument, PDFName, PDFString, PDFHexString, PDFNumber, PDFArray } = PDFLib;
         const b = window.__cachedPfxBinary, pw = window.__cachedPfxPassword;
-        if (!b || !pw) return null;
+        console.log('[signPdf] cached binary bytes =', b ? b.length : 0, '· password set =', !!pw);
+        if (!b || !pw) { console.warn('[signPdf] ❌ PFX binary or password missing'); return null; }
+
         const pdfDoc = await PDFDocument.load(pdfArrayBuffer, { ignoreEncryption: true });
+        console.log('[signPdf] PDF loaded · pages =', pdfDoc.getPageCount());
         const ctx = pdfDoc.context;
         const L = 16384, P = 'ABCDEF0123456789';
         const ph = (P + '0'.repeat(L - P.length)).substring(0, L);
@@ -6754,14 +6997,17 @@ async function signPdfBytes(pdfArrayBuffer) {
             afO.set(PDFName.of('SigFlags'), PDFNumber.of(3));
         }
         const u = await pdfDoc.save({ useObjectStreams: false });
+        console.log('[signPdf] saved · length =', u.length);
         const s = new TextDecoder('latin1').decode(u);
         const pi = s.indexOf(P);
-        if (pi === -1) return null;
+        console.log('[signPdf] placeholder offset =', pi);
+        if (pi === -1) { console.warn('[signPdf] ❌ Placeholder not found in PDF'); return null; }
         const br = [0, pi, pi + L, u.length - pi - L];
         const bStr = `/ByteRange [0 ${br[1]} ${br[2]} ${br[3]}]`;
         const rB = /\/ByteRange\s*\[\s*0\s+7777777777\s+7777777777\s+7777777777\s*\]/;
         const mB = s.match(rB);
-        if (!mB) return null;
+        console.log('[signPdf] ByteRange placeholder matched =', !!mB);
+        if (!mB) { console.warn('[signPdf] ❌ ByteRange placeholder not found'); return null; }
         const bi = s.indexOf(mB[0]);
         u.set(new TextEncoder().encode(bStr.padEnd(mB[0].length, ' ')), bi);
 
@@ -6778,12 +7024,14 @@ async function signPdfBytes(pdfArrayBuffer) {
         feed(md, u.slice(br[0], br[0] + br[1]));
         feed(md, u.slice(br[2], br[2] + br[3]));
         const dg = md.digest().bytes();
+        console.log('[signPdf] hash computed');
 
         const p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(b), pw);
+        console.log('[signPdf] PFX parsed OK');
         const cB = p12.getBags({ bagType: forge.pki.oids.certBag });
         const kB = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
         const cert = cB[forge.pki.oids.certBag][0].cert;
-        let kb = kB[forge.pki.oids.pkcs8ShroudedKeyBag][0];
+        let kb = kB[forge.pki.oids.pkcs8ShroudedKeyBag] && kB[forge.pki.oids.pkcs8ShroudedKeyBag][0];
         if (!kb) {
             const pb = p12.getBags({ bagType: forge.pki.oids.keyBag });
             kb = pb[forge.pki.oids.keyBag][0];
@@ -6804,16 +7052,17 @@ async function signPdfBytes(pdfArrayBuffer) {
         p7.sign({ detached: true });
         const sigDer = forge.asn1.toDer(p7.toAsn1()).getBytes();
         const sigHex = forge.util.bytesToHex(sigDer);
-        if (sigHex.length > L) return null;
+        console.log('[signPdf] PKCS#7 sig hex length =', sigHex.length, '(max', L, ')');
+        if (sigHex.length > L) { console.warn('[signPdf] ❌ Signature too large'); return null; }
         const padded = sigHex + '0'.repeat(L - sigHex.length);
         u.set(new TextEncoder().encode(padded), pi);
+        console.log('[signPdf] ✅ Signed PDF ready');
         return u;
     } catch(e) {
-        console.warn('signPdfBytes:', e);
+        console.error('[signPdf] ❌ Error:', e);
         return null;
     }
 }
-
 async function generateCurativeAnalyticsPDF(records, who, qKey) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -7309,6 +7558,13 @@ document.getElementById('sigSave').addEventListener('click', async () => {
     updateTechnicianDisplay();
     pfxPasswordInput.value = '';
     signatureModal.classList.remove('show');
+    if (window.__cachedPfxBinary && window.__cachedPfxPassword) {
+    try {
+        sessionStorage.setItem('chub_pfx_bin_' + currentLoggedInName, window.__cachedPfxBinary);
+        sessionStorage.setItem('chub_pfx_pw_'  + currentLoggedInName, window.__cachedPfxPassword);
+        console.log('[sigSave] PFX cached in sessionStorage for', currentLoggedInName);
+    } catch(e) { console.warn('[sigSave] sessionStorage cache failed:', e); }
+}
     showStatus('Signature saved.', true);
     await populateInchargeSuggestions();
 });
@@ -7408,6 +7664,37 @@ async function unlockApp(p) {
     window.__cachedPfxBinary = null;
     window.__cachedPfxPassword = null;
     clearCert();
+    try {
+    const _cb = sessionStorage.getItem('chub_pfx_bin_' + p.name);
+    const _cp = sessionStorage.getItem('chub_pfx_pw_'  + p.name);
+    if (_cb && _cp && typeof forge !== 'undefined') {
+        const _p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(_cb), _cp);
+        const _cB = _p12.getBags({ bagType: forge.pki.oids.certBag });
+        const _c  = _cB[forge.pki.oids.certBag] && _cB[forge.pki.oids.certBag][0];
+        const _kB = _p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+        let _kb = _kB[forge.pki.oids.pkcs8ShroudedKeyBag] && _kB[forge.pki.oids.pkcs8ShroudedKeyBag][0];
+        if (!_kb) {
+            const _pb = _p12.getBags({ bagType: forge.pki.oids.keyBag });
+            _kb = _pb[forge.pki.oids.keyBag] && _pb[forge.pki.oids.keyBag][0];
+        }
+        if (_c && _c.cert && _kb && _kb.key) {
+            CERT_STATE.certificate = _c.cert;
+            CERT_STATE.privateKey  = _kb.key;
+            const _gf = (o, n) => { try { const f = o.getField(n); return f ? f.value : ''; } catch(e) { return ''; } };
+            CERT_STATE.subject = pdfSanitize(_gf(_c.cert.subject, 'CN') || '(unknown)');
+            CERT_STATE.issuer  = pdfSanitize(_gf(_c.cert.issuer, 'CN') || '(unknown)');
+            CERT_STATE.serial  = _c.cert.serialNumber || '';
+            CERT_STATE.validFrom = _c.cert.validity.notBefore;
+            CERT_STATE.validTo   = _c.cert.validity.notAfter;
+            const _der = forge.asn1.toDer(forge.pki.certificateToAsn1(_c.cert)).getBytes();
+            const _md = forge.md.sha256.create(); _md.update(_der);
+            CERT_STATE.fingerprint = _md.digest().toHex().match(/.{1,2}/g).join(':').toUpperCase();
+            window.__cachedPfxBinary  = _cb;
+            window.__cachedPfxPassword = _cp;
+            console.log('[unlockApp] PFX restored silently from sessionStorage');
+        }
+    }
+} catch(e) { console.warn('[unlockApp] sessionStorage PFX restore failed:', e); }
     if (p.name === SUPERVISOR_NAME) currentRole = 'supervisor';
     else currentRole = p.role || 'technician';
     currentLoggedInName = p.name;
@@ -7859,11 +8146,23 @@ document.querySelectorAll('#curativeQualityGroup label').forEach(l => l.addEvent
 }));
 document.getElementById('viewCurativeClose')?.addEventListener('click',
     () => document.getElementById('viewCurativeModal').classList.remove('show'));
+document.getElementById('viewCurativeDownloadPdf')?.addEventListener('click', async function() {
+    if (!CURRENT_VIEW_CURATIVE) { showStatus('⚠️ No curative selected.', false); return; }
+    const o = this.innerHTML;
+    this.disabled = true;
+    this.innerHTML = '⏳ Generating…';
+    try {
+        await generateCurativeJobCardPDF(CURRENT_VIEW_CURATIVE);
+        showStatus('📄 Curative PDF downloaded.', true);
+    } catch(e) {
+        console.error(e);
+        showStatus('⚠️ ' + e.message, false);
+    }
+    this.disabled = false;
+    this.innerHTML = o;
+});
 document.getElementById('curativeRefreshBtn')?.addEventListener('click', refreshSupervisorCurative);
 document.getElementById('curativeDeptFilter')?.addEventListener('change', refreshSupervisorCurative);
-document.getElementById('curativeTechFilter')?.addEventListener('change', refreshSupervisorCurative);
-document.getElementById('curativeQuarterFilter')?.addEventListener('change', refreshSupervisorCurative);
-
 /* ============================================================
    DISPOSAL MODAL BINDINGS
    ============================================================ */
@@ -7886,7 +8185,6 @@ document.getElementById('curativeCategory')?.addEventListener('change', function
     if (eqW) eqW.style.display = isFridge ? 'block' : 'none';
     if (locW) locW.style.display = isFridge ? 'none' : 'block';
     if (ftW) ftW.style.display = isFridge ? 'none' : 'block';
-
     if (isFridge) {
         const li = document.getElementById('curativeLocationInput');
         const ft = document.getElementById('curativeFreeText');
@@ -7897,7 +8195,6 @@ document.getElementById('curativeCategory')?.addEventListener('change', function
         if (es) es.value = '';
     }
 });
-
 /* ============================================================
    PFX AUTO-LOAD
    ============================================================ */
@@ -8024,7 +8321,6 @@ async function ensurePfxLoadedFor(techName) {
         return false;
     }
 }
-
 /* ============================================================
    INIT
    ============================================================ */
