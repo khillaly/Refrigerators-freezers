@@ -19,6 +19,7 @@
   import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc,
     updateDoc, deleteDoc, query, where, orderBy, limit,
     serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyAK-hbd1QQbREBdI3sFHexX14TcyFalRyA",
     authDomain: "chub-equipment-maintenance.firebaseapp.com",
@@ -27,10 +28,21 @@
     messagingSenderId: "680949913078",
     appId: "1:680949913078:web:f354a5b8ce2e6db4de23d7"
   };
+
   const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  window.FB = { app, db, collection, doc, getDoc, getDocs, setDoc, addDoc,
-    updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, Timestamp, ready: true };
+  const db  = getFirestore(app);
+
+  // Optional: force long-polling if you see WebChannel errors on flaky Wi-Fi.
+  // try { db.settings({ experimentalForceLongPolling: true }); } catch(e) {}
+
+  window.FB = {
+    app, db,
+    collection, doc, getDoc, getDocs, setDoc, addDoc,
+    updateDoc, deleteDoc, query, where, orderBy, limit,
+    serverTimestamp, Timestamp,
+    ready: true
+  };
+
   console.log("✅ Firebase initialized:", firebaseConfig.projectId);
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
@@ -1568,7 +1580,7 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 /* ============================================================
    CONSTANTS
    ============================================================ */
-const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyc-xhUZaHszJA2EW-81Cc7H-pkis3EYLkXcF43HEb1xlMYPerEBIUzPhqgpo6hFwY/exec';
+
 const RECORDING_START = '03 Jul 2026';
 const REF_QUARTER_MONTHS = [2, 5, 8, 11];
 const REF_QUARTER_DAY = 15;
@@ -2193,16 +2205,26 @@ async function firestoreConfigSet(key, value, mimeType, fileName) {
         return true;
     } catch(e) { console.error('firestoreConfigSet:', e); return false; }
 }
+async function _waitForFB() {
+    if (window.FB && window.FB.ready) return true;
+    await new Promise(resolve => {
+        if (window.FB && window.FB.ready) return resolve();
+        window.addEventListener('firebase-ready', resolve, { once: true });
+        setTimeout(resolve, 8000);
+    });
+    return !!(window.FB && window.FB.ready);
+}
+
 async function firestoreConfigGet(key) {
     try {
-        if (!window.FB || !window.FB.ready) return null;
+        if (!await _waitForFB()) return null;
         const snap = await window.FB.getDoc(window.FB.doc(window.FB.db, 'config', firestoreConfigDocId(key)));
         return snap.exists() ? (snap.data().value || '') : null;
     } catch(e) { return null; }
 }
 async function firestoreConfigGetAll() {
     try {
-        if (!window.FB || !window.FB.ready) return {};
+        if (!await _waitForFB()) return {};
         const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'config'));
         const out = {};
         snap.forEach(d => { const x = d.data(); if (x && x.key) out[x.key] = x.value || ''; });
@@ -2424,7 +2446,18 @@ async function saveEquipmentPhoto(docId, dataUrl) {
    ============================================================ */
 async function loadUsersFromFirestore() {
     try {
-        if (!window.FB || !window.FB.ready) return {};
+        // ✅ Wait for Firebase to be ready (up to 8s) instead of silently returning {}
+        if (!window.FB || !window.FB.ready) {
+            await new Promise(resolve => {
+                if (window.FB && window.FB.ready) return resolve();
+                window.addEventListener('firebase-ready', resolve, { once: true });
+                setTimeout(resolve, 8000);
+            });
+        }
+        if (!window.FB || !window.FB.ready) {
+            console.warn('loadUsersFromFirestore: Firebase still not ready');
+            return {};
+        }
         const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'users'));
         const out = {};
         snap.forEach(doc => {
@@ -2441,8 +2474,12 @@ async function loadUsersFromFirestore() {
                 };
             }
         });
+        console.log('loadUsersFromFirestore: loaded', Object.keys(out).length, 'users');
         return out;
-    } catch(e) { return {}; }
+    } catch(e) {
+        console.error('loadUsersFromFirestore failed:', e);
+        return {};
+    }
 }
 async function saveUserPhoto(name, dataUrl) {
     if (!name) return false;
@@ -2495,7 +2532,8 @@ function mapFirestorePmLog(docId, data) {
         refTag: data.refTag || '',
         refLocation: data.refLocation || '',
         refDept: data.refDept || '',
-        refType: data.refType || '',
+        refType: data.refType || '',        'Equipment Name': data.refEquipName || '',
+        refEquipName: data.refEquipName || '',
         refBrand: data.refBrand || '',
         refModel: data.refModel || '',
         refSerial: data.refSerial || '',
@@ -2634,6 +2672,10 @@ let INCHARGE_CURATIVE_STATUS_FILTER = 'all';
 let TECH_CURATIVE_FILTER = 'open';
 let LIVE_USERS = {};
 let CURRENT_AM_DISPOSAL_FILTER = 'awaiting_am';
+/* ✅ In-memory user cache — avoids repeated Firestore reads during login */
+let USERS_CACHE = null;
+let USERS_CACHE_TS = 0;
+const USERS_CACHE_TTL_MS = 60 * 1000;   // 60 seconds
 
 /* ============================================================
    IDENTITY / OWNERSHIP HELPERS
@@ -2686,13 +2728,15 @@ const editRefBtn          = document.getElementById('editRefBtn');
 const removeRefBtn        = document.getElementById('removeRefBtn');
 const eqPmDownloadBtn     = document.getElementById('eqPmDownloadBtn');
 
+let __statusHideTimer = null;
 function showStatus(msg, ok) {
     ok = ok !== false;
     statusText.textContent = msg;
     statusMessage.style.background = ok ? '#e2f0e6' : '#ffe6e6';
     statusMessage.style.color = ok ? '#1b6b3f' : '#b33a3a';
     statusMessage.classList.add('show');
-    setTimeout(() => statusMessage.classList.remove('show'), 7000);
+    if (__statusHideTimer) clearTimeout(__statusHideTimer);
+    __statusHideTimer = setTimeout(() => statusMessage.classList.remove('show'), 7000);
 }
 
 /* ============================================================
@@ -2729,6 +2773,7 @@ async function sendToSheet(data) {
             refLocation: data.refLocation || '',
             refDept: data.refDept || '',
             refType: data.refType || '',
+            refEquipName: data.refEquipName || '',
             refBrand: data.refBrand || '',
             refModel: data.refModel || '',
             refSerial: data.refSerial || '',
@@ -3318,9 +3363,10 @@ function collectFormData() {
         hour: '2-digit', minute: '2-digit'
     });
     return {
-        refTag: ref.tag, refLocation: ref.loc, refDept: ref.dept, refType: ref.type,
-        refBrand: ref.brand, refModel: ref.model, refSerial: ref.serial,
-        refWorkingStatus: ref.workingStatus || 'Working',
+    refTag: ref.tag, refLocation: ref.loc, refDept: ref.dept, refType: ref.type,
+    refEquipName: ref.equipName || '',
+    refBrand: ref.brand, refModel: ref.model, refSerial: ref.serial,
+    refWorkingStatus: ref.workingStatus || 'Working',
         technician: currentLoggedInName || technicianSelect.value,
         site: 'CHUB',
         workDate: workDateInput.value, workDateISO: workDateInput.value,
@@ -3604,6 +3650,7 @@ async function loadRefInfo(tag) {
     const latest = records[0];
     const ref = {
         tag: latest['Ref Tag'] || tag,
+        equipName: latest['Equipment Name'] || latest.refEquipName || '',
         loc: latest['Location'] || '—',
         dept: latest['Department'] || '—',
         brand: latest['Brand'] || '—',
@@ -3655,10 +3702,13 @@ async function loadRefInfo(tag) {
         </div>
         <div class="info-card"><h2>🧊 Equipment</h2>
             <div class="info-row"><span class="k">Tag</span><span class="v">${escapeHtml(ref.tag)}</span></div>
+            <div class="info-row"><span class="k">Equipment Name</span><span class="v">${escapeHtml(ref.equipName || '—')}</span></div>
+            <div class="info-row"><span class="k">Type</span><span class="v">${escapeHtml(ref.type || '—')}</span></div>
+            <div class="info-row"><span class="k">Brand</span><span class="v">${escapeHtml(ref.brand || '—')}</span></div>
+            <div class="info-row"><span class="k">Model</span><span class="v">${escapeHtml(ref.model || '—')}</span></div>
+            <div class="info-row"><span class="k">Serial Number</span><span class="v">${escapeHtml((ref.serial && ref.serial.toUpperCase() !== 'N/A') ? ref.serial : '—')}</span></div>
             <div class="info-row"><span class="k">Department</span><span class="v">${escapeHtml(ref.dept)}</span></div>
             <div class="info-row"><span class="k">Location</span><span class="v">${escapeHtml(ref.loc)}</span></div>
-            <div class="info-row"><span class="k">Brand / Model</span><span class="v">${escapeHtml(ref.brand + ' ' + ref.model)}</span></div>
-            <div class="info-row"><span class="k">Serial</span><span class="v">${escapeHtml(ref.serial)}</span></div>
         </div>`;
 
     document.getElementById('infoLatestPmBtn')?.addEventListener('click', () => {
@@ -3754,6 +3804,7 @@ function renderJobCardHtml(rec) {
     const loc   = safeStr(rec['Location'] || rec.refLocation) || '—';
     const dept  = safeStr(rec['Department'] || rec.refDept) || '—';
     const type  = safeStr(rec['Type'] || rec.refType) || 'Fridge';
+        const equipName = safeStr(rec['Equipment Name'] || rec.refEquipName) || '';
     const brand = safeStr(rec['Brand'] || rec.refBrand) || '—';
     const model = safeStr(rec['Model'] || rec.refModel) || '—';
     const serial = safeStr(rec['Serial Number'] || rec.refSerial) || '—';
@@ -3771,7 +3822,17 @@ function renderJobCardHtml(rec) {
         : '<span class="status-badge working">✅ Working</span>';
     const sealed = safeStr(rec.signatureSubject || '');
     let h = '';
-    h += `<div class="info-card"><h2>🧊 Equipment</h2>${jcRow('Tag', escapeHtml(tag))}${jcRow('Department', escapeHtml(dept))}${jcRow('Location', escapeHtml(loc))}${jcRow('Type', escapeHtml(type))}${jcRow('Brand / Model', escapeHtml(brand + ' ' + model))}${jcRow('Serial', escapeHtml(serial))}${jcRow('Working', wsBadge)}</div>`;
+    const _pmEquipName = safeStr(rec['Equipment Name'] || rec.refEquipName || '');
+    h += `<div class="info-card"><h2>🧊 Equipment</h2>${
+        jcRow('Tag', escapeHtml(tag))}${
+        jcRow('Equipment Name', escapeHtml(_pmEquipName || '—'))}${
+        jcRow('Type', escapeHtml(type))}${
+        jcRow('Brand', escapeHtml(brand))}${
+        jcRow('Model', escapeHtml(model))}${
+        jcRow('Serial Number', escapeHtml((serial && serial.toUpperCase() !== 'N/A') ? serial : '—'))}${
+        jcRow('Department', escapeHtml(dept))}${
+        jcRow('Location', escapeHtml(loc))}${
+        jcRow('Working', wsBadge)}</div>`;
     h += `<div class="info-card"><h2>📅 Summary</h2>${jcRow('Work date', formatDateOnly(wd))}${jcRow('Next PM', nextPmForPDF(wd))}${jcRow('Technician', escapeHtml(tech))}${jcRow('Recorded at', escapeHtml(ts))}${jcRow('Report ID', escapeHtml(reportId))}${jcRow('Report hash', `<span style="font-size:.72rem;font-family:monospace;">${escapeHtml(hash)}</span>`)}</div>`;
     h += jcChecklistSection('🧼', 'Cleaning & Hygiene', JC_CLEAN_TEXTS, rec['Clean Items'] || rec.cleanItems, 1, rec['Clean Rating'] || rec.cleanRating, JC_CLEAN_RATINGS, rec['Clean Remarks'] || rec.cleanRemarks);
     h += jcChecklistSection('🌡️', 'Temperature & Performance', JC_TEMP_TEXTS, rec['Temp Items'] || rec.tempItems, 6, rec['Temp Rating'] || rec.tempRating, JC_TEMP_RATINGS, rec['Temp Remarks'] || rec.tempRemarks);
@@ -5066,16 +5127,18 @@ async function markNotificationRead(id) {
     try { await window.FB.updateDoc(window.FB.doc(window.FB.db, 'notifications', id), { read: true }); } catch(e) {}
 }
 async function markAllNotificationsRead() {
-    for (const n of CURRENT_NOTIFICATIONS) if (!n.read) await markNotificationRead(n._docId);
+    await Promise.all(
+        CURRENT_NOTIFICATIONS.filter(n => !n.read)
+            .map(n => markNotificationRead(n._docId))
+    );
     await renderNotificationBell();
     await renderNotificationList();
 }
 async function deleteReadNotifications() {
-    for (const n of CURRENT_NOTIFICATIONS) {
-        if (n.read) {
-            try { await window.FB.deleteDoc(window.FB.doc(window.FB.db, 'notifications', n._docId)); } catch(e) {}
-        }
-    }
+    const toDelete = CURRENT_NOTIFICATIONS.filter(n => n.read);
+    await Promise.all(toDelete.map(n =>
+        window.FB.deleteDoc(window.FB.doc(window.FB.db, 'notifications', n._docId)).catch(()=>{})
+    ));
     await renderNotificationBell();
     await renderNotificationList();
     showStatus('🗑️ Cleared.', true);
@@ -5193,6 +5256,8 @@ async function fetchCurativeRequests(opts) {
             const d = doc.data() || {};
             const r = {
                 _docId: doc.id, tag: d.tag || '', dept: d.dept || '', loc: d.loc || '',
+                equipName: d.equipName || '',
+                type: d.type || d.equipType || 'Fridge',
                 brand: d.brand || '', model: d.model || '', serial: d.serial || '',
                 issue: d.issue || '', priority: d.priority || 'medium',
                 category: d.category || 'Refrigeration',
@@ -5223,6 +5288,9 @@ async function fetchCurativeRequests(opts) {
 async function createCurativeRequest(p) {
     const ref = await window.FB.addDoc(window.FB.collection(window.FB.db, 'curativeRequests'), {
         tag: p.tag, dept: p.dept, loc: p.loc,
+        equipName: p.equipName || '',
+        type: p.type || p.equipType || 'Fridge',
+        equipType: p.type || p.equipType || 'Fridge',
         brand: p.brand || '', model: p.model || '', serial: p.serial || '',
         issue: p.issue, priority: p.priority || 'medium',
         category: p.category || 'Refrigeration',
@@ -5441,6 +5509,11 @@ function openViewCurativeModal(c) {
     body.innerHTML = `
         <div class="info-card"><h2>🧊 Equipment</h2>
             ${jcRow('Tag', escapeHtml(c.tag))}
+            ${jcRow('Equipment Name', escapeHtml(c.equipName || '—'))}
+            ${jcRow('Type', escapeHtml(c.type || c.equipType || '—'))}
+            ${jcRow('Brand', escapeHtml(c.brand || '—'))}
+            ${jcRow('Model', escapeHtml(c.model || '—'))}
+            ${jcRow('Serial Number', escapeHtml((c.serial && c.serial.toUpperCase() !== 'N/A') ? c.serial : '—'))}
             ${jcRow('Department', escapeHtml(c.dept || '—'))}
             ${jcRow('Location', escapeHtml(c.loc || '—'))}
             ${jcRow('Category', escapeHtml(c.category || '—'))}
@@ -5549,7 +5622,7 @@ async function saveCurativeRequest() {
     const prio = (document.querySelector('#curativePriorityGroup input:checked') || {}).value || 'medium';
     const assignTo = (document.getElementById('curativeAssignTo').value || '').trim();
 
-    let tag = '', dept = '', loc = '', brand = '', model = '', serial = '';
+    let tag = '', dept = '', loc = '', brand = '', model = '', serial = '', equipType = 'Other', equipName = '';
 
     if (category === 'Refrigeration') {
         // ✅ Equipment dropdown path
@@ -5558,8 +5631,14 @@ async function saveCurativeRequest() {
             return;
         }
         const ref = select._list[idx];
-        tag = ref.tag; dept = ref.dept; loc = ref.loc;
-        brand = ref.brand; model = ref.model; serial = ref.serial;
+        tag       = ref.tag;
+        dept      = ref.dept;
+        loc       = ref.loc;
+        brand     = ref.brand;
+        model     = ref.model;
+        serial    = ref.serial;
+        equipType = ref.type || ref.equipType || 'Fridge';
+        equipName = ref.equipName || '';
     } else {
         // ✅ Electrical / Other path — require BOTH location + item description
         const manualLoc = (document.getElementById('curativeLocationInput').value || '').trim();
@@ -5571,10 +5650,12 @@ async function saveCurativeRequest() {
             errorEl.textContent = '⚠️ Describe the affected item (e.g. lamp, socket, switch).';
             return;
         }
-        const prefix = (category === 'Electrical') ? 'ELEC-' : 'OTHER-';
-        tag = prefix + manualLoc.substring(0, 20) + ' / ' + freeText.substring(0, 30);
-        loc = manualLoc;                                   // ✅ real location
-        dept = currentInchargeDept || inferDepartmentFromIncharge(currentLoggedInName);
+        // ✅ FIX: actually populate the fields so Firestore saves real data
+        loc       = manualLoc;
+        tag       = freeText.substring(0, 60);
+        equipName = freeText;
+        equipType = category;            // 'Electrical' or 'Other'
+        dept      = currentInchargeDept || inferDepartmentFromIncharge(currentLoggedInName) || '';
     }
     const btn = document.getElementById('curativeRaiseSaveBtn');
     const o = btn.innerHTML;
@@ -5582,7 +5663,10 @@ async function saveCurativeRequest() {
     btn.innerHTML = '⏳ …';
     try {
         const id = await createCurativeRequest({
-            tag, dept, loc, brand, model, serial, issue, priority: prio,
+            tag, dept, loc, brand, model, serial,
+            equipName: equipName,
+            type: equipType, equipType: equipType,
+            issue, priority: prio,
             category, reportedBy: currentLoggedInName, assignedTo: assignTo
         });
         const recs = assignTo ? [assignTo] : await findTechniciansForDepartment(dept);
@@ -5793,15 +5877,26 @@ async function generateCurativeJobCardPDF(curative) {
     });
 
     // --- Equipment summary ---
+    const _cBrand  = safeStr(curative.brand  || '').trim();
+    const _cModel  = safeStr(curative.model  || '').trim();
+    const _cSerial = safeStr(curative.serial || '').trim();
+    const _cType   = safeStr(curative.type   || curative.equipType || '').trim();
+    const _cEName  = safeStr(curative.equipName || '').trim()
+                  || ((_cBrand + ' ' + _cModel).trim() + (_cType ? ' (' + _cType + ')' : '')).trim()
+                  || '(unnamed equipment)';
+
     const eqRows = [
-        ['Tag',            safeStr(curative.tag) || '—'],
-        ['Department',     safeStr(curative.dept) || '—'],
-        ['Location',       safeStr(curative.loc) || '—'],
-        ['Brand / Model',  ((curative.brand || '') + ' ' + (curative.model || '')).trim() || '—'],
-        ['Serial',         safeStr(curative.serial) || '—'],
-        ['Category',       safeStr(curative.category) || '—'],
-        ['Priority',       (curative.priority || 'medium').toUpperCase()],
-        ['Status',         (curative.status || '—').toUpperCase().replace(/_/g, ' ')]
+        ['Tag',             safeStr(curative.tag) || '—'],
+        ['Equipment Name',  _cEName],
+        ['Type',            _cType || '—'],
+        ['Brand',           _cBrand || '—'],
+        ['Model',           _cModel || '—'],
+        ['Serial Number',   (_cSerial && _cSerial.toUpperCase() !== 'N/A') ? _cSerial : '—'],
+        ['Department',      safeStr(curative.dept) || '—'],
+        ['Location',        safeStr(curative.loc) || '—'],
+        ['Category',        safeStr(curative.category) || '—'],
+        ['Priority',        (curative.priority || 'medium').toUpperCase()],
+        ['Status',          (curative.status || '—').toUpperCase().replace(/_/g, ' ')]
     ];
     doc.autoTable({
         startY: y,
@@ -5979,10 +6074,18 @@ async function generateCurativeJobCardPDF(curative) {
         drawChubFooter(doc, p, totalPages);
     }
 
-    // Download (signed if possible)
+    // Download (signed if possible) — digital signature sits right under the visual sig block
     const fname = 'CHUB_Curative_JobCard_' + String(curative.tag || 'UNIT').replace(/[^\w\-]/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
     const bytes = doc.output('arraybuffer');
-    const sb = await signPdfBytes(bytes);
+
+    // Place the digital signature annotation just below the "PDF digitally signed ..." line,
+    // on the same (last) page as the visual signature boxes, left-aligned with the page margin.
+    const sb = await signPdfBytes(bytes, {
+        page: doc.getNumberOfPages() - 1,   // last page = where the sig blocks are
+        yFromTopMm: y + 6,                  // 6 mm below the current y (after the Job ID line)
+        xMm: m                              // left margin, matches the visual sig block
+    });
+
     if (sb) downloadBytes(sb, fname);
     else doc.save(fname);
 }
@@ -6415,7 +6518,21 @@ async function generatePDF(records) {
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(203, 228, 247);
-        doc.text(pdfSanitize(`Dept: ${data.refDept || '—'}  |  ${data.refType || ''}  |  ${data.refBrand || ''}  |  ${data.refModel || ''}  |  SN: ${data.refSerial || ''}  |  Working: ${data.refWorkingStatus || 'Working'}`), margin + 4, y + 12);
+        const _pmEName = safeStr(data.refEquipName || data['Equipment Name'] || '');
+        const _pmType  = safeStr(data.refType  || '');
+        const _pmBrand = safeStr(data.refBrand || '');
+        const _pmModel = safeStr(data.refModel || '');
+        const _pmSer   = safeStr(data.refSerial || '');
+        const _pmSerial = (_pmSer && _pmSer.toUpperCase() !== 'N/A') ? ('SN: ' + _pmSer) : '';
+        const _pmInfoLine = [
+            'Dept: ' + (data.refDept || '—'),
+            _pmEName ? 'Equipment: ' + _pmEName : '',
+            _pmType  ? 'Type: ' + _pmType : '',
+            (_pmBrand || _pmModel) ? ('Brand/Model: ' + (_pmBrand + ' ' + _pmModel).trim()) : '',
+            _pmSerial,
+            'Working: ' + (data.refWorkingStatus || 'Working')
+        ].filter(Boolean).join('  |  ');
+        doc.text(pdfSanitize(_pmInfoLine), margin + 4, y + 12);
         y += 19;
 
         doc.setFillColor(248, 250, 252);
@@ -6652,9 +6769,15 @@ async function generatePDF(records) {
         drawChubFooter(doc, p, totalPages);
     }
 
-    const fname = 'CHUB_Refrigerator_PM_Report_' + new Date().toISOString().slice(0, 10) + '_' + records.length + 'records.pdf';
+     const fname = 'CHUB_Refrigerator_PM_Report_' + new Date().toISOString().slice(0, 10) + '_' + records.length + 'records.pdf';
     const bytes = doc.output('arraybuffer');
-    const signedBytes = await signPdfBytes(bytes);
+    // Stamp the digital-seal box on EVERY page of the PM report (single PKCS#7 signature
+    // cryptographically covers the whole file; the box is just a visible marker).
+    const signedBytes = await signPdfBytes(bytes, {
+        allPages:    true,
+        yFromTopMm:  250,   // ~25 cm from top → sits above the footer line
+        xMm:         18     // matches the PM report left margin
+    });
     if (signedBytes) downloadBytes(signedBytes, fname);
     else doc.save(fname);
 }
@@ -6806,7 +6929,13 @@ async function generateAnalysisPDF(records, dept) {
 
     const fname = 'CHUB_Refrigerator_Dept_Analysis_' + dept.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
     const bytes = doc.output('arraybuffer');
-    const signedBytes = await signPdfBytes(bytes);
+    // Analysis report → stamp the digital seal ONLY on the LAST page
+    // (sits above the footer, well clear of the KPI tables on earlier pages).
+    const signedBytes = await signPdfBytes(bytes, {
+        page:       doc.getNumberOfPages() - 1,   // last page
+        yFromTopMm: 250,                          // ~25 cm from top → above the footer
+        xMm:        18                            // left margin
+    });
     if (signedBytes) downloadBytes(signedBytes, fname);
     else doc.save(fname);
 }
@@ -6823,13 +6952,17 @@ async function buildJobCardPdfBytes(rec) {
         date: new Date().toLocaleDateString('en-GB')
     });
 
+    const _zEName  = safeStr(rec.refEquipName || rec['Equipment Name'] || '');
+    const _zSerial = safeStr(rec.refSerial);
     const rows = [
         ['Tag', safeStr(rec.refTag)],
+        ['Equipment Name', _zEName],
+        ['Type', safeStr(rec.refType)],
+        ['Brand', safeStr(rec.refBrand)],
+        ['Model', safeStr(rec.refModel)],
+        ['Serial Number', (_zSerial && _zSerial.toUpperCase() !== 'N/A') ? _zSerial : '—'],
         ['Department', safeStr(rec.refDept)],
         ['Location', safeStr(rec.refLocation)],
-        ['Brand / Model', (safeStr(rec.refBrand) + ' ' + safeStr(rec.refModel)).trim()],
-        ['Serial', safeStr(rec.refSerial)],
-        ['Type', safeStr(rec.refType)],
         ['Working', safeStr(rec.refWorkingStatus) || 'Working'],
         ['Technician', safeStr(rec.technician)],
         ['Work date', formatDateOnly(rec.workDate)],
@@ -6947,7 +7080,8 @@ function downloadBytes(bytes, filename) {
     }, 1000);
 }
 
-async function signPdfBytes(pdfArrayBuffer) {
+async function signPdfBytes(pdfArrayBuffer, opts) {
+    opts = opts || {};
     console.log('[signPdf] called · isCertLoaded =', isCertLoaded(), '· PDFLib =', typeof PDFLib);
     if (!isCertLoaded()) { console.warn('[signPdf] ❌ No cert in memory'); return null; }
     if (typeof PDFLib === 'undefined') { console.warn('[signPdf] ❌ PDFLib not loaded'); return null; }
@@ -6976,26 +7110,107 @@ async function signPdfBytes(pdfArrayBuffer) {
             Location: PDFString.of('CHUB')
         });
         const sRef = ctx.register(sDict);
-        const fp = pdfDoc.getPages()[0];
-        const { width } = fp.getSize();
-        const wd = ctx.obj({
-            Type: 'Annot', Subtype: 'Widget', FT: 'Sig',
-            T: PDFString.of('CHUBRefSignature'), V: sRef, F: 132,
-            Rect: [width - 220, 40, width - 20, 100],
-            P: fp.ref, Ff: 0
-        });
-        const wdRef = ctx.register(wd);
-        fp.node.set(PDFName.of('Annots'), ctx.obj([wdRef]));
+
+        // ── Which pages get the visual signature stamp? ──
+        //    allPages : true   → stamp every page (still ONE cryptographic signature)
+        //    opts.page : N     → stamp only page N (default: last page)
+        const pages = pdfDoc.getPages();
+        const targetPages = [];
+        if (opts.allPages === true) {
+            for (let i = 0; i < pages.length; i++) targetPages.push(i);
+        } else {
+            const pageIdx = (typeof opts.page === 'number' && opts.page >= 0 && opts.page < pages.length)
+                ? opts.page
+                : pages.length - 1;
+            targetPages.push(pageIdx);
+        }
+
+        // ── Geometry helpers ──
+        const AP_W_PT = 260, AP_H_PT = 60;
+        const MM2PT   = 2.8346456693;
+
+        // Build one appearance stream (reused on every page stamp) ──
+        const signedAtStr  = new Date().toLocaleString('en-GB', { hour12: false });
+        const subject      = pdfSanitize(CERT_STATE.subject || 'CHUB Signer').substring(0, 60);
+        const issuer       = pdfSanitize(CERT_STATE.issuer  || 'Unknown CA').substring(0, 60);
+        const serialShort  = (CERT_STATE.serial || '').substring(0, 24);
+        const fpShort      = (CERT_STATE.fingerprint || '').substring(0, 29) + '…';
+        const apStream =
+            `q 0.85 0.93 1 rg 0 0 260 60 re f Q\n` +
+            `q 0.11 0.29 0.57 RG 1 w 0.5 0.5 259 59 re S Q\n` +
+            `q 0 0 0 rg BT /F1 8 Tf 8 50 Td (Digitally signed by) Tj ET Q\n` +
+            `q 0 0 0 rg BT /F2 9 Tf 8 39 Td (${subject.replace(/[()\\]/g, '')}) Tj ET Q\n` +
+            `q 0.2 0.35 0.5 rg BT /F1 7 Tf 8 28 Td (Issuer: ${issuer.replace(/[()\\]/g, '')}) Tj ET Q\n` +
+            `q 0.2 0.35 0.5 rg BT /F1 7 Tf 8 18 Td (Date: ${signedAtStr}) Tj ET Q\n` +
+            `q 0.4 0.5 0.6 rg BT /F1 6 Tf 8 8 Td (Serial ${serialShort}  SHA-256 ${fpShort}) Tj ET Q\n`;
+        const apStreamRef = ctx.register(
+            ctx.flateStream(apStream, {
+                Type: 'XObject', Subtype: 'Form',
+                FormType: 1,
+                BBox: [0, 0, 260, 60],
+                Resources: ctx.obj({ Font: ctx.obj({
+                    F1: ctx.obj({ Type: 'Font', Subtype: 'Type1', BaseFont: 'Helvetica', Encoding: 'WinAnsiEncoding' }),
+                    F2: ctx.obj({ Type: 'Font', Subtype: 'Type1', BaseFont: 'Helvetica-Bold', Encoding: 'WinAnsiEncoding' })
+                }) })
+            })
+        );
+
+        // ── Stamp each target page ──
+        let firstWdRef = null;
+        for (let t = 0; t < targetPages.length; t++) {
+            const idx  = targetPages[t];
+            const page = pages[idx];
+            const { width, height } = page.getSize();
+
+            // Compute Rect for this page
+            let rect;
+            if (opts.yFromTopMm != null) {
+                // Same top-anchored Y on every page (good for "stamp every page" reports)
+                const xLeftPt = (opts.xMm != null ? opts.xMm : 16) * MM2PT;
+                const yTopPt  = height - (opts.yFromTopMm * MM2PT);
+                rect = [ xLeftPt, yTopPt - AP_H_PT, xLeftPt + AP_W_PT, yTopPt ];
+            } else {
+                // Legacy fallback: bottom-right corner
+                rect = [ width - AP_W_PT - 20, 40, width - 20, 40 + AP_H_PT ];
+            }
+
+            // ONE shared Sig dict (V: sRef) → Adobe validates it as a single signature.
+            // Separate Widget annotations just render the same seal on each page.
+            const wd = ctx.obj({
+                Type: 'Annot', Subtype: 'Widget', FT: 'Sig',
+                T: PDFString.of('CHUBSignature_' + Date.now() + '_p' + idx),
+                V: sRef, F: 132,
+                Rect: rect,
+                P: page.ref, Ff: 0,
+                MK: ctx.obj({ BC: [0.11, 0.29, 0.57] }),
+                AP: ctx.obj({ N: apStreamRef })
+            });
+            const wdRef = ctx.register(wd);
+            if (!firstWdRef) firstWdRef = wdRef;
+
+            const existingAnnots = page.node.get(PDFName.of('Annots'));
+            if (existingAnnots) {
+                const arr = ctx.lookup(existingAnnots);
+                if (arr instanceof PDFArray) arr.push(wdRef);
+                else page.node.set(PDFName.of('Annots'), ctx.obj([wdRef]));
+            } else {
+                page.node.set(PDFName.of('Annots'), ctx.obj([wdRef]));
+            }
+        }
+
+        // Register the signature field in AcroForm (once, points to the first widget)
         let af = pdfDoc.catalog.get(PDFName.of('AcroForm'));
         let afO = af ? ctx.lookup(af) : null;
         if (!afO) {
-            afO = ctx.obj({ Fields: [wdRef], SigFlags: 3 });
+            afO = ctx.obj({ Fields: [firstWdRef], SigFlags: 3 });
             pdfDoc.catalog.set(PDFName.of('AcroForm'), afO);
         } else {
             const f = afO.get(PDFName.of('Fields'));
-            if (f instanceof PDFArray) f.push(wdRef);
+            if (f instanceof PDFArray) f.push(firstWdRef);
             afO.set(PDFName.of('SigFlags'), PDFNumber.of(3));
         }
+
+        // (Appearance stream + per-page annotation registration are done above.)
         const u = await pdfDoc.save({ useObjectStreams: false });
         console.log('[signPdf] saved · length =', u.length);
         const s = new TextDecoder('latin1').decode(u);
@@ -7638,17 +7853,17 @@ async function populateInchargeSuggestions() {
     if (dl) names.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
     await populateInchargeLoginList();
 }
-loginRoleSelect.addEventListener('change', () => {
+loginRoleSelect.addEventListener('change', async () => {
     const v = loginRoleSelect.value;
     const isIC = v === 'incharge';
     loginTechGroup.style.display = isIC ? 'none' : 'block';
     loginInchargeGroup.style.display = isIC ? 'block' : 'none';
     loginError.textContent = '';
     if (isIC) {
-        populateInchargeLoginList(document.getElementById('loginInchargeDept')?.value || '');
+        await populateInchargeLoginList(document.getElementById('loginInchargeDept')?.value || '');
         loginInchargeName.focus();
     } else {
-        populateTechnicianLoginSelect();
+        await populateTechnicianLoginSelect();
     }
 });
 document.getElementById('loginInchargeDept')?.addEventListener('change', function() {
@@ -7721,22 +7936,27 @@ async function unlockApp(p) {
     const sfx = currentRole === 'incharge'
         ? ' (In-Charge)'
         : (currentRole === 'supervisor' ? ' (Manager)' : (currentRole === 'assetsmanager' ? ' (Assets Mgr)' : ''));
-    loggedInUserName.textContent = p.name + sfx;
+        loggedInUserName.textContent = p.name + sfx;
     lockedTechName.textContent = p.name;
     updateTechnicianDisplay();
     applyRoleVisibility();
+
+    // ✅ Close the modal IMMEDIATELY — UI is now interactive
     loginModal.classList.remove('show');
-    await ensureDepartmentsLoaded();
+    showStatus('👋 Welcome ' + p.name, true);
+
+    // ✅ Kick off non-critical loads in the background (do NOT await)
+    ensureDepartmentsLoaded().catch(()=>{});
     if (currentRole === 'incharge' && !currentInchargeDept) {
         currentInchargeDept = inferDepartmentFromIncharge(p.name);
     }
-    await fetchTechnicianAssetsFromCloud(p.name);
-    await populateInchargeSuggestions();
-    await populateTechnicianLoginSelect();
-    await refreshHeaderAvatar();
-    await renderNotificationBell();
+    fetchTechnicianAssetsFromCloud(p.name).catch(()=>{});
+    populateInchargeSuggestions().catch(()=>{});
+    populateTechnicianLoginSelect().catch(()=>{});
+    refreshHeaderAvatar().catch(()=>{});
+    renderNotificationBell().catch(()=>{});
 
-    // 🔔 Start the WhatsApp-style notification poller
+    // 🔔 Start the WhatsApp-style notification poller (once)
     initNotificationPoller();
 
     if (currentRole === 'incharge') {
@@ -7836,16 +8056,23 @@ loginBtn.addEventListener('click', async function() {
     // 🔓 Unlock audio on the login click (required by browser autoplay policy)
     primeAudioContext();
 
-    // 🔔 Request desktop-notification permission the first time (WhatsApp-style pop-ups)
+    // 🔔 Request desktop-notification permission — fire-and-forget so it NEVER blocks login
     if ('Notification' in window && Notification.permission === 'default') {
-        try { await Notification.requestPermission(); } catch(e) {}
+        Notification.requestPermission().catch(() => {});
     }
 
     if (!pin) { loginError.textContent = 'Enter your PIN.'; return; }
     loginBtn.disabled = true;
     const o = loginBtn.innerHTML;
     loginBtn.innerHTML = '⏳ …';
-    try { LIVE_USERS = await loadUsersFromFirestore(); } catch(e) {}
+
+    // ✅ Try cache first → only hit Firestore if cache is empty
+    if (USERS_CACHE && Object.keys(USERS_CACHE).length) {
+        LIVE_USERS = USERS_CACHE;
+    } else {
+        try { LIVE_USERS = await loadUsersFromFirestore(); } catch(e) {}
+    }
+
     loginBtn.disabled = false;
     loginBtn.innerHTML = o;
     if (role === 'technician' || role === 'assetsmanager') {
@@ -8325,15 +8552,31 @@ async function ensurePfxLoadedFor(techName) {
    INIT
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async () => { 
-       document.querySelectorAll('.collapsible-card > .card-header').forEach(h => {
+    document.querySelectorAll('.collapsible-card > .card-header').forEach(h => {
         h.addEventListener('click', function(e) {
             if (e.target.closest('button, a, select, input, textarea')) return;
             this.parentElement.classList.toggle('collapsed');
         });
     });
+
+    // ✅ Wait for the Firebase module script to finish initializing
+    if (!window.FB || !window.FB.ready) {
+        await new Promise(resolve => {
+            if (window.FB && window.FB.ready) return resolve();
+            window.addEventListener('firebase-ready', resolve, { once: true });
+            setTimeout(resolve, 8000);
+        });
+    }
+
     try {
         await ensureDepartmentsLoaded();
     } catch(e) { console.warn(e); }
+
+    // ✅🔥 THE MISSING PIECE: populate all login dropdowns / datalists on load
+    try { await populateTechnicianLoginSelect(); }  catch(e) { console.warn('Tech login list:', e); }
+    try { await populateInchargeLoginList(); }      catch(e) { console.warn('Incharge login list:', e); }
+    try { await populateInchargeSuggestions(); }    catch(e) { console.warn('Incharge suggestions:', e); }
+
     setAutoWorkDate();
     updatePendingCount();
     setSyncStatus('', 'Ready');
@@ -8390,17 +8633,25 @@ function playNotificationSound() {
     o2.start(now + 0.15); o2.stop(now + 0.35);
 }
 
+let __focusListenerBound = false;
+
 async function initNotificationPoller() {
     if (__notifPollTimer) clearInterval(__notifPollTimer);
+
     // Mark existing notifications as already-seen (don't chime on backlog)
     try {
         const existing = await fetchMyNotifications();
         __seenNotifIds = new Set(existing.map(n => n._docId));
     } catch(e) {}
-    // Poll every 15 seconds (light load, plenty fast for a whatsapp feel)
+
+    // Poll every 15 seconds (light load, plenty fast for a WhatsApp feel)
     __notifPollTimer = setInterval(pollNotifications, 15000);
-    // Optional: also poll on tab focus so it feels instant
-    window.addEventListener('focus', pollNotifications);
+
+    // Bind focus listener ONCE — never stack duplicates
+    if (!__focusListenerBound) {
+        window.addEventListener('focus', pollNotifications);
+        __focusListenerBound = true;
+    }
 }
 
 async function pollNotifications() {
