@@ -31,7 +31,7 @@
   const db = getFirestore(app);
   window.FB = { app, db, collection, doc, getDoc, getDocs, setDoc, addDoc,
     updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, Timestamp, ready: true };
-  console.log("✅ Firebase initialized. Project:", firebaseConfig.projectId);
+  console.log("✅ Firebase initialized:", firebaseConfig.projectId);
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
 <style>
@@ -59,7 +59,6 @@ body::before{content:'CHUB REFRIGERATOR MAINTENANCE';position:fixed;top:50%;left
 select,input[type="date"]{padding:14px 24px;border-radius:40px;border:1.5px solid #bdd3e6;background:white;font-size:1rem;font-weight:600;color:#0a2a3f;min-width:200px;cursor:pointer;transition:all .2s;box-shadow:0 2px 6px rgba(0,0,0,.02);font-family:inherit}
 select:hover{border-color:#1e4a6d;background:#f4faff}
 #refFilterSelect{background:#eef6fc;border-color:#b8d0e4;color:#12405e;min-width:170px}
-#refFilterSelect:hover{background:#e1eefa;border-color:#1e4a6d}
 .generator-banner{background:linear-gradient(90deg,#1e4a6d 0%,#2a6b96 100%);color:white;padding:18px 28px;border-radius:20px;margin-bottom:30px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 8px 20px -8px rgba(30,74,109,.5);position:relative;overflow:hidden}
 .generator-banner .gen-icon{font-size:1.8rem;background:rgba(255,255,255,.15);width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:2}
 .generator-banner .gen-text{position:relative;z-index:2;flex:1;min-width:200px}
@@ -90,7 +89,7 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 .field-group{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
 .field-group:last-child{margin-bottom:0}
 .field-group label{font-weight:600;color:#1f3c54;font-size:.95rem}
-.field-group input[type="number"],.field-group input[type="text"],.field-group input[type="date"],.field-group input[type="password"],.field-group select{padding:12px 16px;border-radius:16px;border:1.5px solid #cfdfeb;background:#fbfdff;font-size:.95rem;color:#0a2a3f;transition:.2s;width:100%;font-family:inherit}
+.field-group input[type="number"],.field-group input[type="text"],.field-group input[type="date"],.field-group input[type="password"],.field-group input[type="tel"],.field-group input[type="email"],.field-group select{padding:12px 16px;border-radius:16px;border:1.5px solid #cfdfeb;background:#fbfdff;font-size:.95rem;color:#0a2a3f;transition:.2s;width:100%;font-family:inherit}
 .field-group input:focus,.field-group select:focus{outline:none;border-color:#1e4a6d;background:white;box-shadow:0 0 0 3px rgba(30,74,109,.1)}
 .btn-primary{background:#1e4a6d;color:white;border:none;padding:16px 36px;border-radius:40px;font-weight:600;font-size:1.1rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:12px;box-shadow:0 10px 18px -8px rgba(20,60,100,.3)}
 .btn-primary:hover{background:#0f3852;transform:scale(1.01)}
@@ -118,6 +117,8 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 .btn-editCurrent:hover{background:#c98600}
 .btn-dl-row{background:#0b3d91;color:white;border:none;padding:6px 14px;border-radius:40px;font-weight:600;font-size:.78rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 .btn-dl-row:hover{background:#082b66}
+.btn-jobcard{background:#0b3d91;color:#fff;border:none;padding:10px 22px;border-radius:40px;font-weight:600;font-size:.9rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px}
+.btn-jobcard:hover{background:#082b66}
 .signoff-section{background:#f0f6fc;border-radius:24px;padding:26px 28px;margin-top:12px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;border:1px solid #cfe0ee;gap:20px}
 .signoff-left{display:flex;flex-direction:column;gap:6px}
 .signoff-left .label{font-weight:600;color:#12405e;font-size:1rem;letter-spacing:.3px}
@@ -170,6 +171,8 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 .status-badge.never{background:#e7f0f8;color:#5b7b96;border:1px solid #cfdfeb}
 .status-badge.working{background:#e2f0e6;color:#1b6b3f;border:1px solid #b8dfc3}
 .status-badge.not-working{background:#ffe6e6;color:#b33a3a;border:1px solid #f0b8b8}
+.status-badge.disposal-pending{background:#fff3cd;color:#7a5300;border:1px solid #f4d97a}
+.status-badge.disposed{background:#e7f0f8;color:#5b7b96;border:1px solid #cfdfeb}
 .kpi-card{border-radius:14px;padding:14px;text-align:center}
 .kpi-card .kpi-label{font-size:.72rem;font-weight:700;letter-spacing:.5px}
 .kpi-card .kpi-value{font-size:1.7rem;font-weight:800;margin-top:4px}
@@ -204,8 +207,6 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 .info-status-pill.pending{background:#fff3cd;color:#7a5300;border:1px solid #f4d97a}
 .info-status-pill.overdue{background:#ffe6e6;color:#b33a3a;border:1px solid #f0b8b8}
 .info-status-pill.never{background:#e7f0f8;color:#5b7b96;border:1px solid #cfdfeb}
-.anomaly-item{background:#fff5f5;border-left:4px solid #b33a3a;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-size:.85rem;color:#8f2929}
-.anomaly-item.ok{background:#f0fdf4;border-left-color:#1b6b3f;color:#155231}
 .info-loading{text-align:center;padding:30px 10px;color:#5b7b96;font-style:italic}
 .info-error{background:#ffe6e6;color:#b33a3a;padding:14px 18px;border-radius:12px;text-align:center;font-weight:600}
 .info-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
@@ -217,8 +218,6 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 .working-radio-group input[type="radio"]{accent-color:#1e4a6d;width:18px;height:18px}
 .working-radio-group label.selected-working{background:#e2f0e6;border-color:#1b6b3f;color:#1b6b3f}
 .working-radio-group label.selected-notworking{background:#ffe6e6;border-color:#b33a3a;color:#b33a3a}
-.btn-jobcard{background:#0b3d91;color:#fff;border:none;padding:10px 22px;border-radius:40px;font-weight:600;font-size:.9rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px}
-.btn-jobcard:hover{background:#082b66}
 .jobcard-scroll{max-height:60vh;overflow-y:auto;padding-right:6px}
 .jc-item{display:flex;gap:10px;align-items:flex-start;padding:7px 12px;border-radius:10px;margin-bottom:5px;font-size:.87rem;line-height:1.35}
 .jc-item.ok{background:#f0fdf4;color:#155231;border-left:4px solid #1b6b3f}
@@ -318,6 +317,12 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 .curative-card .cc-issue{font-size:.85rem;color:#1f3c54;background:#fbfdff;border-left:3px solid #cfdfeb;padding:8px 12px;border-radius:8px;margin:8px 0;line-height:1.4}
 .curative-card .cc-meta{font-size:.75rem;color:#5b7b96;margin-top:6px}
 .curative-card .cc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed #e2eaf1}
+.curative-card > .cc-head{cursor:pointer;user-select:none;transition:background .15s;padding:4px 6px;margin:-4px -6px 0;border-radius:10px}
+.curative-card > .cc-head:hover{background:rgba(0,0,0,.035)}
+.curative-card .cc-caret{display:inline-block;margin-left:8px;font-size:.78rem;color:#5b7b96;transition:transform .25s}
+.curative-card.collapsed .cc-caret{transform:rotate(-90deg)}
+.curative-card.collapsed .cc-body{display:none}
+.curative-card.collapsed{padding-top:10px;padding-bottom:10px}
 .priority-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
 .priority-badge.critical{background:#8f2929;color:white}
 .priority-badge.high{background:#ffe6e6;color:#b33a3a;border:1px solid #f0b8b8}
@@ -341,13 +346,39 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 .curative-stats .cs-card.good{background:#e2f0e6}.curative-stats .cs-card.good .cs-val{color:#1b6b3f}
 .curative-stats .cs-card.warn{background:#fff3cd}.curative-stats .cs-card.warn .cs-val{color:#7a5300}
 .curative-stats .cs-card.bad{background:#ffe6e6}.curative-stats .cs-card.bad .cs-val{color:#b33a3a}
+.dispatch-card{background:#fff5f5;border:2px solid #b33a3a;border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.disposal-card{background:#fff9ec;border:2px solid #f4a300;border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.disposal-card .dc-title{font-weight:800;color:#7a5300;font-size:1rem;margin-bottom:6px}
+.disposal-card .dc-meta{font-size:.82rem;color:#7a5300;margin-top:4px}
 @media (max-width:900px){.generator-selector{flex-direction:column;align-items:stretch}select{min-width:100% !important;width:100%}.btn-add,.btn-remove,.btn-editCurrent{flex:1;justify-content:center}.chub-logo{margin:10px auto;max-width:220px}.qr-sticker-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:700px){body{padding:12px 8px}.app-container{padding:20px 16px;border-radius:20px}.grid-3-wide{grid-template-columns:1fr}.title-hero h1{font-size:1.3rem}select,input[type="date"]{min-width:100%}.action-buttons button{width:100%;justify-content:center}input,select,textarea{font-size:16px !important}.inv-table th,.inv-table td{padding:6px 8px}.dept-editor-row{grid-template-columns:1fr}.dept-editor-row .actions{padding-top:0}.dash-grid{grid-template-columns:1fr}.notif-panel{top:70px;right:8px;left:8px;width:auto;max-height:82vh}.equip-photo-banner{width:64px;height:64px}}
+/* Collapsible cards */
+.collapsible-card > .card-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+}
+.collapsible-card > .card-header:hover {
+    filter: brightness(0.97);
+}
+.collapsible-card > .card-header .collapse-caret {
+    margin-left: 10px;
+    font-size: .85rem;
+    color: #5b7b96;
+    transition: transform .25s;
+    display: inline-block;
+}
+.collapsible-card.collapsed > .card-header .collapse-caret {
+    transform: rotate(-90deg);
+}
+.collapsible-card.collapsed > .card-body {
+    display: none;
+}
 @media print{body::before{display:none !important}body *{visibility:hidden !important}#qrPrintArea,#qrPrintArea *{visibility:visible !important}#qrPrintArea{position:absolute;left:0;top:0;width:100%;background:white}.qr-sticker{border:1px solid #1e4a6d}}
 </style>
 </head>
 <body>
-    <!-- ============ PUBLIC INFO PAGE (QR target) ============ -->
+<!-- ============ PUBLIC INFO PAGE (QR target) ============ -->
 <div id="refInfoPage">
   <div class="info-wrap">
     <div class="info-hero">
@@ -601,16 +632,16 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 
   <!-- ============ IN-CHARGE SECTION ============ -->
   <div id="inchargeSection" style="display:none;">
-    <div class="card" id="pendingApprovalsCard" style="margin-bottom:28px;border:2px solid #1b6b3f;">
+        <div class="card collapsible-card collapsed" id="pendingApprovalsCard" style="margin-bottom:28px;border:2px solid #1b6b3f;">
       <div class="card-header" style="background:#e2f0e6;color:#1b6b3f;">
         <span>✅</span> Pending Co-Signatures
         <span id="pendingApprovalsCount" style="margin-left:auto;background:#1b6b3f;color:white;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:700;">0</span>
+        <span class="collapse-caret">▼</span>
       </div>
       <div class="card-body">
         <p style="font-size:.88rem;color:#3a6583;margin-bottom:14px;">Review each PM below and attach your approval signature. Use <strong>📋 Job Card</strong> to open the full maintenance detail before you co-sign.</p>
         <div class="filter-selector" id="inchargeFilterBar" style="margin-bottom:12px;">
           <div class="filter-chip active" data-scope="mine">👤 My Department Only</div>
-          <div class="filter-chip" data-scope="all">🌐 All Departments</div>
         </div>
         <div class="pending-list" id="pendingApprovalsList">
           <div style="text-align:center;color:#5b7b96;font-style:italic;padding:12px;">Loading pending records…</div>
@@ -622,10 +653,11 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:28px;border:2px solid #f4a300;">
+    <div class="card collapsible-card collapsed" style="margin-bottom:28px;border:2px solid #f4a300;">
       <div class="card-header" style="background:#fff9ec;color:#7a5300;">
         <span>🚨</span> Curative Requests
         <span id="curativeRaisedCount" style="margin-left:auto;background:#f4a300;color:white;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:700;">0</span>
+        <span class="collapse-caret">▼</span>
       </div>
       <div class="card-body">
         <p style="font-size:.88rem;color:#7a5300;margin-bottom:14px;">Report a broken fridge or freezer. Assigned technicians get a notification instantly, fix the issue, and you verify the work.</p>
@@ -647,13 +679,18 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:28px;">
+    <div class="card collapsible-card collapsed" style="margin-bottom:28px;">
       <div class="card-header">
-        <span>🧊</span> Department Refrigerator Inventory
+        <span id="invDeptIcon">🧊</span> <span id="invDeptTitle">Equipment Inventory</span>
         <span id="invDeptBadge" style="margin-left:auto;background:#eef6fc;color:#12405e;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:700;">—</span>
+        <span class="collapse-caret">▼</span>
       </div>
       <div class="card-body">
-        <p style="font-size:.88rem;color:#3a6583;margin-bottom:14px;">Read-only view. All refrigerators in your department, with their last PM date, next PM date, and current status.</p>
+        <p style="font-size:.88rem;color:#3a6583;margin-bottom:14px;">All equipment in your department (fridges, freezers, lamps, switches, sockets, panels, …) with last PM, next PM, and status.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+          <button class="btn-add" id="inchargeAddEquipBtn">➕ Add New Equipment</button>
+          <button class="btn-secondary" id="inchargeRefreshInvBtn">🔄 Refresh</button>
+        </div>
         <div class="filter-selector" id="inventoryFilterBar" style="margin-bottom:12px;">
           <div class="filter-chip active" data-status="all">📋 All</div>
           <div class="filter-chip" data-status="maintained">✅ Maintained</div>
@@ -677,6 +714,17 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       </div>
     </div>
 
+    <div class="card" id="inchargeDisposalCard" style="margin-bottom:28px;border:2px solid #f4a300;display:none;">
+      <div class="card-header" style="background:#fff9ec;color:#7a5300;">
+        <span>🗑️</span> Disposal Requests — Your Approval
+        <span id="inchargeDisposalCount" style="margin-left:auto;background:#f4a300;color:white;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:700;">0</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:.88rem;color:#7a5300;margin-bottom:14px;">Approve disposal (first-level). Once you approve, it goes to the Assets Manager for final approval.</p>
+        <div id="inchargeDisposalList"></div>
+      </div>
+    </div>
+
     <div class="action-buttons" style="margin-bottom:20px;">
       <button class="btn-pdf-all" id="inchargeDownloadAllBtn"><span>📚</span> Download All My Department PMs</button>
       <button class="btn-pdf" id="inchargeDownloadAnalysisBtn"><span>📊</span> Download My Department Analysis</button>
@@ -684,12 +732,62 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
     </div>
   </div>
 
+  <!-- ============ ASSETS MANAGER SECTION ============ -->
+  <div id="assetsManagerSection" style="display:none;">
+    <div class="card" style="margin-bottom:24px;border:2px solid #7a4c9c;">
+      <div class="card-header" style="background:#f3e8ff;color:#5d3578;">
+        <span>🗑️</span> Disposal Requests — Final Approval
+        <span id="amDisposalCount" style="margin-left:auto;background:#7a4c9c;color:white;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:700;">0</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:.88rem;color:#5d3578;margin-bottom:14px;">Final approval of disposal. Approve only after the in-charge has already approved and the technician has submitted a reason.</p>
+        <div class="filter-selector" id="amDisposalFilterBar" style="margin-bottom:12px;">
+          <div class="filter-chip active" data-status="awaiting_am">⏳ Awaiting My Approval</div>
+          <div class="filter-chip" data-status="awaiting_incharge">👔 Awaiting In-Charge</div>
+          <div class="filter-chip" data-status="disposed">✅ Disposed</div>
+          <div class="filter-chip" data-status="all">📋 All</div>
+        </div>
+        <div id="amDisposalList">
+          <div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;border:2px solid #2a6b96;">
+      <div class="card-header" style="background:#e6f0fa;color:#1e4a6d;">
+        <span>🧊</span> All Equipment — Fleet-Wide
+        <span id="amInvCount" style="margin-left:auto;background:#1e4a6d;color:white;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:700;">—</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:.88rem;color:#3a6583;margin-bottom:14px;">Assets Manager: Add equipment to any department and assign an owner technician. You can also edit or remove any item.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-add" id="amAddEquipmentBtn">➕ Add New Equipment</button>
+          <button class="btn-secondary" id="amRefreshInvBtn">🔄 Refresh</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>Tag</th><th>Department</th><th>Location</th><th>Brand / Model</th>
+                <th>Working?</th><th>Owner</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="amInventoryTableBody">
+              <tr><td colspan="8" style="text-align:center;color:#5b7b96;font-style:italic;padding:14px;">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ SUPERVISOR SECTION ============ -->
   <div id="supervisorSection" style="display:none;">
-    <div class="card" style="margin-bottom:24px;border:2px solid #0b3d91;">
+    <div class="card collapsible-card collapsed" style="margin-bottom:24px;border:2px solid #0b3d91;">
       <div class="card-header" style="background:#e8f1fb;color:#0b3d91;">
         <span>📊</span> Fleet Analytics Dashboard
         <span style="margin-left:auto;font-size:.78rem;background:#0b3d91;color:white;padding:3px 12px;border-radius:20px;font-weight:700;">Live Analytics</span>
+        <span class="collapse-caret">▼</span>
       </div>
       <div class="card-body">
         <div class="dash-toolbar">
@@ -740,10 +838,11 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:24px;border:2px solid #f4a300;">
+    <div class="card collapsible-card collapsed" style="margin-bottom:24px;border:2px solid #f4a300;">
       <div class="card-header" style="background:#fff9ec;color:#7a5300;">
         <span>🚨</span> Curative Requests — Fleet-Wide
         <span style="margin-left:auto;font-size:.78rem;background:#f4a300;color:white;padding:3px 12px;border-radius:20px;font-weight:700;">Manager View</span>
+        <span class="collapse-caret">▼</span>
       </div>
       <div class="card-body">
         <div class="dash-toolbar" style="margin-bottom:14px;">
@@ -782,10 +881,11 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:24px;">
+    <div class="card collapsible-card collapsed" style="margin-bottom:24px;">
       <div class="card-header">
         <span>🌐</span> All Refrigerators &amp; Freezers
         <span id="supervisorInvCount" style="margin-left:auto;background:#eef6fc;color:#12405e;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:700;">—</span>
+        <span class="collapse-caret">▼</span>
       </div>
       <div class="card-body">
         <p style="font-size:.88rem;color:#3a6583;margin-bottom:14px;">Read-only status of every refrigerator in the fleet. Filter by department, status, or owner.</p>
@@ -829,10 +929,11 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:24px;border:2px solid #7a4c9c;">
+    <div class="card collapsible-card collapsed" style="margin-bottom:24px;border:2px solid #7a4c9c;">
       <div class="card-header" style="background:#f3e8ff;color:#5d3578;">
         <span>👥</span> Manage In-Charges
         <span style="margin-left:auto;font-size:.78rem;background:#7a4c9c;color:white;padding:3px 12px;border-radius:20px;font-weight:700;">Manager Only</span>
+        <span class="collapse-caret">▼</span>
       </div>
       <div class="card-body">
         <p style="font-size:.88rem;color:#5b7b96;margin-bottom:14px;">Add or edit In-Charge accounts here. Each one has a unique PIN and is tied to a department. They will appear instantly on the In-Charge login screen.</p>
@@ -844,10 +945,11 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:24px;border:2px solid #2a6b96;">
+    <div class="card collapsible-card collapsed" style="margin-bottom:24px;border:2px solid #2a6b96;">
       <div class="card-header" style="background:#e6f0fa;color:#1e4a6d;">
         <span>👨‍🔧</span> Manage Technicians &amp; Contact Info
         <span style="margin-left:auto;font-size:.78rem;background:#1e4a6d;color:white;padding:3px 12px;border-radius:20px;font-weight:700;">Manager Only</span>
+        <span class="collapse-caret">▼</span>
       </div>
       <div class="card-body">
         <p style="font-size:.88rem;color:#5b7b96;margin-bottom:14px;">Add or edit Technician accounts. Phone and email here appear on the QR info page. New technicians appear instantly on the Technician login screen.</p>
@@ -879,7 +981,6 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
     <a href="https://buymeacoffee.com/khillaly" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#1e4a6d;color:white;padding:12px 24px;border-radius:40px;text-decoration:none;font-weight:600;font-size:.95rem;">☕ Buy me a coffee</a>
   </div>
 </div>
-
 <!-- ============ LOGIN MODAL ============ -->
 <div class="modal-overlay show" id="loginModal">
   <div class="modal-box" style="max-width:420px;text-align:center;">
@@ -891,6 +992,7 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       <select id="loginRoleSelect" style="width:100%;">
         <option value="technician">👨‍🔧 Technician</option>
         <option value="incharge">👔 In-Charge</option>
+        <option value="assetsmanager">🗑️ Assets Manager</option>
       </select>
     </div>
     <div class="field-group" style="text-align:left;" id="loginTechGroup">
@@ -991,13 +1093,23 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       <div class="field-group"><label for="newRefTag">Tag Number / ID *</label><input type="text" id="newRefTag" placeholder="e.g. CHUB/FRG/001"></div>
       <div class="field-group"><label for="newRefDept">Department *</label><select id="newRefDept"></select></div>
     </div>
-    <div class="field-group"><label for="newRefLocation">Location / Room *</label><select id="newRefLocation"></select></div>
+    <div class="field-group">
+      <label for="newRefEquipName">Equipment Name *</label>
+      <input type="text" id="newRefEquipName" placeholder="e.g. Emergency Exit Lamp, Cold Room Freezer #2" autocomplete="off">
+      <div style="font-size:.78rem;color:#5b7b96;margin-top:4px;">💡 A friendly name to help technicians identify the item at a glance.</div>
+    </div>
+    <div class="field-group">
+      <label for="newRefLocation">Location / Room *</label>
+      <input type="text" id="newRefLocation" list="newRefLocationSuggestions" placeholder="Pick from list or type a new room / area" autocomplete="off">
+      <datalist id="newRefLocationSuggestions"></datalist>
+      <div style="font-size:.78rem;color:#5b7b96;margin-top:4px;">💡 Choose a suggestion or type a brand-new location — it will be remembered.</div>
+    </div>
     <div class="grid-3-wide" style="grid-template-columns:1fr 1fr;gap:16px;">
       <div class="field-group"><label for="newRefBrand">Brand *</label><input type="text" id="newRefBrand" placeholder="e.g. LG, Samsung"></div>
       <div class="field-group"><label for="newRefModel">Model *</label><input type="text" id="newRefModel" placeholder="e.g. GN-B422"></div>
     </div>
     <div class="grid-3-wide" style="grid-template-columns:1fr 1fr;gap:16px;">
-      <div class="field-group"><label for="newRefType">Refrigerator Type</label>
+      <div class="field-group"><label for="newRefType">Equipment Type</label>
         <select id="newRefType">
           <option value="Fridge">Fridge (Refrigerator)</option>
           <option value="Fridge-Freezer">Fridge-Freezer Combo</option>
@@ -1005,6 +1117,12 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
           <option value="Chest Freezer">Chest Freezer</option>
           <option value="Lab Fridge">Laboratory Refrigerator</option>
           <option value="Vaccine Fridge">Vaccine / Pharma Fridge</option>
+          <option value="Lamp">Lamp / Light Fixture</option>
+          <option value="Switch">Switch</option>
+          <option value="Socket">Socket</option>
+          <option value="Electrical Panel">Electrical Panel</option>
+          <option value="Other Electrical">Other Electrical</option>
+          <option value="Other">Other</option>
         </select>
       </div>
       <div class="field-group"><label for="newRefSerial">Serial Number</label><input type="text" id="newRefSerial"></div>
@@ -1019,6 +1137,10 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
     <div class="grid-3-wide" style="grid-template-columns:1fr 1fr;gap:16px;">
       <div class="field-group"><label for="newRefLastPm">Last PM date (optional)</label><input type="date" id="newRefLastPm"></div>
       <div class="field-group"><label for="newRefNextPm">Next PM date (auto)</label><input type="date" id="newRefNextPm"></div>
+    </div>
+    <div class="field-group" id="newRefOwnerRow" style="display:none;">
+      <label for="newRefOwner">Assign Owner / Technician *</label>
+      <select id="newRefOwner"></select>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="addRefCancel">Cancel</button>
@@ -1045,7 +1167,15 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       <div class="field-group"><label for="editRefTag">Tag *</label><input type="text" id="editRefTag"></div>
       <div class="field-group"><label for="editRefDept">Department *</label><select id="editRefDept"></select></div>
     </div>
-    <div class="field-group"><label for="editRefLocation">Location *</label><select id="editRefLocation"></select></div>
+    <div class="field-group">
+      <label for="editRefEquipName">Equipment Name *</label>
+      <input type="text" id="editRefEquipName" autocomplete="off">
+    </div>
+    <div class="field-group">
+      <label for="editRefLocation">Location *</label>
+      <input type="text" id="editRefLocation" list="editRefLocationSuggestions" autocomplete="off">
+      <datalist id="editRefLocationSuggestions"></datalist>
+    </div>
     <div class="grid-3-wide" style="grid-template-columns:1fr 1fr;gap:16px;">
       <div class="field-group"><label for="editRefBrand">Brand *</label><input type="text" id="editRefBrand"></div>
       <div class="field-group"><label for="editRefModel">Model *</label><input type="text" id="editRefModel"></div>
@@ -1059,6 +1189,12 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
           <option value="Chest Freezer">Chest Freezer</option>
           <option value="Lab Fridge">Laboratory Refrigerator</option>
           <option value="Vaccine Fridge">Vaccine / Pharma Fridge</option>
+          <option value="Lamp">Lamp / Light Fixture</option>
+          <option value="Switch">Switch</option>
+          <option value="Socket">Socket</option>
+          <option value="Electrical Panel">Electrical Panel</option>
+          <option value="Other Electrical">Other Electrical</option>
+          <option value="Other">Other</option>
         </select>
       </div>
       <div class="field-group"><label for="editRefSerial">Serial Number</label><input type="text" id="editRefSerial"></div>
@@ -1074,6 +1210,10 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
       <div class="field-group"><label for="editRefLastPm">Last PM date</label><input type="date" id="editRefLastPm"></div>
       <div class="field-group"><label for="editRefNextPm">Next PM date (auto)</label><input type="date" id="editRefNextPm"></div>
     </div>
+    <div class="field-group" id="editRefOwnerRow" style="display:none;">
+      <label for="editRefOwner">Assign Owner / Technician *</label>
+      <select id="editRefOwner"></select>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="editRefCancel">Cancel</button>
       <button class="btn-go" id="editRefSave">💾 Save Changes</button>
@@ -1085,7 +1225,7 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 <div class="modal-overlay" id="qrModal">
   <div class="modal-box" style="max-width:720px;">
     <h2>🔳 QR Code Sticker</h2>
-    <p>Print this sticker and attach it to the refrigerator. Scanning it always shows the latest PM info.</p>
+    <p>Print this sticker and attach it to the equipment. Scanning it always shows the latest PM info plus technician contact details.</p>
     <div id="qrModalContent" style="padding:8px;background:#f9fcff;border-radius:16px;"></div>
     <div class="modal-actions">
       <button class="btn-cancel" id="qrModalClose">Close</button>
@@ -1259,8 +1399,26 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
 <div class="modal-overlay" id="raiseCurativeModal">
   <div class="modal-box" style="max-width:560px;">
     <h2>🚨 Raise Curative Request</h2>
-    <p>Report a broken or faulty refrigerator. Technicians assigned to the department get notified instantly.</p>
-    <div class="field-group"><label for="curativeEquipSelect">Equipment *</label><select id="curativeEquipSelect"></select></div>
+    <p>Report any fault: fridge not cooling, water leak, lamp/socket/switch broken, electrical issue.</p>
+    <div class="field-group">
+      <label for="curativeCategory">Category *</label>
+      <select id="curativeCategory">
+        <option value="Refrigeration">🧊 Refrigeration (fridge / freezer)</option>
+        <option value="Electrical">⚡ Electrical (lamp, switch, socket, panel)</option>
+        <option value="Other">📝 Other</option>
+      </select>
+    </div>
+    <div class="field-group" id="curativeEquipWrap"><label for="curativeEquipSelect">Equipment *</label><select id="curativeEquipSelect"></select></div>
+    <div class="field-group" id="curativeLocationWrap" style="display:none;">
+      <label for="curativeLocationInput">Location / Room *</label>
+      <input type="text" id="curativeLocationInput" list="curativeLocationSuggestions" placeholder="e.g. Hematology Room, Theatre 2 corridor" autocomplete="off">
+      <datalist id="curativeLocationSuggestions"></datalist>
+      <div style="font-size:.78rem;color:#5b7b96;margin-top:4px;">💡 Start typing — suggestions come from your department's rooms.</div>
+    </div>
+    <div class="field-group" id="curativeFreeTextWrap" style="display:none;">
+      <label for="curativeFreeText">Describe the affected item *</label>
+      <input type="text" id="curativeFreeText" placeholder="e.g. Lamp near door, socket on wall B, ceiling fan #3">
+    </div>
     <div class="field-group">
       <label>⚡ Priority *</label>
       <div class="quality-rating" id="curativePriorityGroup">
@@ -1272,7 +1430,7 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
     </div>
     <div class="field-group">
       <label for="curativeIssue">Describe the problem *</label>
-      <textarea id="curativeIssue" class="remark-input" rows="4" placeholder="e.g. Freezer not cooling, water leaking from bottom…"></textarea>
+      <textarea id="curativeIssue" class="remark-input" rows="4" placeholder="e.g. Freezer not cooling..."></textarea>
     </div>
     <div class="field-group">
       <label for="curativeAssignTo">Assign to technician (optional)</label>
@@ -1293,13 +1451,13 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
     <p id="completeCurativeSubtitle">Describe what you did and add a picture of the repaired unit.</p>
     <div class="field-group">
       <label for="completeCurativeNotes">Work performed *</label>
-      <textarea id="completeCurativeNotes" class="remark-input" rows="4" placeholder="e.g. Replaced thermostat, refilled refrigerant, tested for 2 hours…"></textarea>
+      <textarea id="completeCurativeNotes" class="remark-input" rows="4" placeholder="e.g. Replaced thermostat..."></textarea>
     </div>
     <div class="photo-upload-row">
       <div class="equip-photo-frame" id="completeCurativePhotoPreview"><span>📷</span></div>
       <div class="pur-info">
         <div class="lbl">Photo of repaired unit (optional)</div>
-        <div class="hint">Proves the work was done. Max 500 KB.</div>
+        <div class="hint">Max 500 KB.</div>
         <input type="file" id="completeCurativePhotoInput" accept="image/png, image/jpeg" style="display:none;">
         <button type="button" class="btn-secondary" id="completeCurativePhotoPickBtn" style="margin-top:8px;padding:8px 16px;font-size:.85rem;">📁 Choose photo</button>
       </div>
@@ -1329,7 +1487,7 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
     </div>
     <div class="field-group">
       <label for="verifyCurativeComment">Feedback (visible to the technician)</label>
-      <textarea id="verifyCurativeComment" class="remark-input" rows="3" placeholder="e.g. Excellent work — fridge running perfectly."></textarea>
+      <textarea id="verifyCurativeComment" class="remark-input" rows="3" placeholder="e.g. Excellent work"></textarea>
     </div>
     <div id="verifyCurativeError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
     <div class="modal-actions">
@@ -1349,20 +1507,72 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
   </div>
 </div>
 
-<div id="qrPrintArea" style="display:none;"></div>
-<script>
+<!-- ============ DISPOSAL REQUEST MODAL ============ -->
+<div class="modal-overlay" id="disposalRequestModal">
+  <div class="modal-box" style="max-width:560px;">
+    <h2>🗑️ Request Equipment Disposal</h2>
+    <p id="disposalRequestSubtitle">Request disposal. It requires In-Charge (first) and Assets Manager (final) approval.</p>
+    <div class="field-group">
+      <label for="disposalReason">Reason for disposal *</label>
+      <textarea id="disposalReason" class="remark-input" rows="4" placeholder="e.g. Compressor dead"></textarea>
+    </div>
+    <div class="field-group">
+      <label for="disposalCondition">Current condition *</label>
+      <select id="disposalCondition">
+        <option value="Not Working">Not Working</option>
+        <option value="Damaged">Damaged</option>
+        <option value="Obsolete">Obsolete</option>
+        <option value="Beyond Repair">Beyond Repair</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div id="disposalRequestError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="disposalRequestCancel">Cancel</button>
+      <button class="btn-go" id="disposalRequestSaveBtn" style="background:#b33a3a;">🗑️ Submit Disposal Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DISPOSAL APPROVAL MODAL ============ -->
+<div class="modal-overlay" id="disposalApprovalModal">
+  <div class="modal-box" style="max-width:620px;">
+    <h2 id="disposalApprovalTitle">🗑️ Disposal Approval</h2>
+    <div id="disposalApprovalDetails" style="background:#f9fcff;border-radius:14px;padding:14px 16px;margin-bottom:14px;border:1px solid #e2eaf1;"></div>
+    <div class="field-group">
+      <label for="disposalDecision">Decision *</label>
+      <div class="quality-rating" id="disposalDecisionGroup">
+        <label class="selected"><input type="radio" name="disposalDecision" value="approved" checked><span>✅ Approve Disposal</span></label>
+        <label><input type="radio" name="disposalDecision" value="rejected"><span>❌ Reject Disposal</span></label>
+      </div>
+    </div>
+    <div class="field-group">
+      <label for="disposalApprovalComment">Comment (optional)</label>
+      <textarea id="disposalApprovalComment" class="remark-input" rows="3"></textarea>
+    </div>
+    <div id="disposalApprovalError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="disposalApprovalCancel">Cancel</button>
+      <button class="btn-go" id="disposalApprovalSaveBtn" style="background:#1b6b3f;">💾 Submit Decision</button>
+    </div>
+  </div>
+</div>
+
+<div id="qrPrintArea" style="display:none;"></div><script>
 (function() {
 'use strict';
 
 /* ============================================================
-   PART 3 — CONSTANTS
+   CONSTANTS
    ============================================================ */
 const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyc-xhUZaHszJA2EW-81Cc7H-pkis3EYLkXcF43HEb1xlMYPerEBIUzPhqgpo6hFwY/exec';
 const RECORDING_START = '03 Jul 2026';
-const REF_QUARTER_MONTHS = [2, 5, 8, 11];   // Mar, Jun, Sep, Dec (0-indexed)
+const REF_QUARTER_MONTHS = [2, 5, 8, 11];
 const REF_QUARTER_DAY = 15;
 const DEFAULT_LIST_OWNER = 'Hillaly KUBWIMANA';
 const SUPERVISOR_NAME = 'GATANGANWA Raissa';
+const ASSETS_MANAGER_NAME = 'Assets Manager';
+const ASSETS_MANAGER_PIN_DEFAULT = '2026';
 
 const JC_CLEAN_TEXTS = [
     'Clean interior shelves, walls and drawers',
@@ -1399,7 +1609,8 @@ const DEFAULT_DEPARTMENTS = {
     'Simulation Center': { defaultIncharge: 'Simulation Center In-Charge', services: ['Simulation Lab 1','Simulation Lab 2','Debriefing Room','Control Room','Storage'] },
     'I.M OPD': { defaultIncharge: 'I.M OPD In-Charge', services: ['Consultation 1','Consultation 2','Consultation 3','Triage','Waiting Area','Vaccination','Vaccine Fridge'] },
     'Gynecology': { defaultIncharge: 'Gynecology In-Charge', services: ['Gynecology Ward','Antenatal','Postnatal','Delivery Room','Nursery','Consultation Room'] },
-    'Surgery': { defaultIncharge: 'Surgery In-Charge', services: ['Surgical Ward','Minor Theatre','Major Theatre','Pre-Op Room','Post-Op Room','Consultation Room'] }
+    'Surgery': { defaultIncharge: 'Surgery In-Charge', services: ['Surgical Ward','Minor Theatre','Major Theatre','Pre-Op Room','Post-Op Room','Consultation Room'] },
+    'Infrastructure': { defaultIncharge: 'GATANGANWA Raissa', services: ['Main Building','Corridors','Wards','Theatres','Laboratories','Offices','Generator Room','Water Pump Room','Staff Quarters','External Lighting','Security Post','Store Room'] }
 };
 
 let DEPARTMENTS = JSON.parse(JSON.stringify(DEFAULT_DEPARTMENTS));
@@ -1412,7 +1623,7 @@ window.__cachedPfxBinary = null;
 window.__cachedPfxPassword = null;
 
 /* ============================================================
-   PART 3 — GENERIC UTILITIES
+   GENERIC UTILITIES
    ============================================================ */
 function pdfSanitize(str) {
     if (str === null || str === undefined) return '';
@@ -1520,12 +1731,64 @@ function initialsOf(name) {
     return name.split(/\s+/).filter(Boolean).slice(0, 2)
         .map(p => p[0].toUpperCase()).join('') || '?';
 }
+function userDocId(name) {
+    return String(name || '').replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-\.]/g, '');
+}
+function firestoreConfigDocId(key) {
+    return String(key || '').replace(/\//g, '_').replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-\.]/g, '');
+}
+function readImageFileAsDataUrl(file, maxBytes) {
+    return new Promise((resolve, reject) => {
+        maxBytes = maxBytes || 500 * 1024;
+        if (file.size > maxBytes) {
+            reject(new Error('Image too large (max ' + Math.round(maxBytes / 1024) + ' KB).'));
+            return;
+        }
+        const r = new FileReader();
+        r.onload = e => resolve(e.target.result);
+        r.onerror = () => reject(new Error('Could not read image.'));
+        r.readAsDataURL(file);
+    });
+}
+function quarterKeyOf(d) {
+    const dd = parseToDate(d) || new Date();
+    const m = dd.getMonth();
+    const y = dd.getFullYear();
+    let q, fy;
+    if (m >= 6 && m <= 8)       { q = 1; fy = y; }
+    else if (m >= 9)            { q = 2; fy = y; }
+    else if (m >= 0 && m <= 2)  { q = 3; fy = y - 1; }
+    else                        { q = 4; fy = y - 1; }
+    return 'FY' + fy + '-Q' + q;
+}
+function quarterLabelOf(key) {
+    if (!key || key === 'all') return 'All time';
+    const m = key.match(/FY(\d+)-Q(\d)/);
+    if (!m) return key;
+    const fy = parseInt(m[1], 10);
+    const q  = parseInt(m[2], 10);
+    const nextYY = String(fy + 1).slice(-2);
+    return 'Q' + q + ' · FY' + fy + '/' + nextYY;
+}
+function listQuarters(n) {
+    n = n || 8;
+    const out = [];
+    const cur = quarterKeyOf(new Date());
+    const m = cur.match(/FY(\d+)-Q(\d)/);
+    if (!m) return out;
+    let fy = parseInt(m[1], 10);
+    let q  = parseInt(m[2], 10);
+    for (let i = 0; i < n; i++) {
+        out.push('FY' + fy + '-Q' + q);
+        q--;
+        if (q < 1) { q = 4; fy--; }
+    }
+    return out;
+}
 
 /* ============================================================
-   PART 3 — PDF HELPERS
+   PDF HELPERS
    ============================================================ */
-
-/** Strip emojis & non-ASCII so text is safe for Helvetica */
 function stripEmojiForPdf(str) {
     if (str == null) return '';
     return String(str)
@@ -1537,21 +1800,14 @@ function stripEmojiForPdf(str) {
         .replace(/\s+/g, ' ')
         .trim();
 }
-
-/** Safe text for PDFs (emoji stripped + ASCII enforced) */
 function pdfText(str) { return stripEmojiForPdf(pdfSanitize(str)); }
 
-/**
- * Full CHUB letterhead — first page only.
- * Returns the Y coordinate where content may begin.
- */
 function drawChubHeader(doc, opts) {
     opts = opts || {};
     const pW = doc.internal.pageSize.getWidth();
     const mL = 14, mR = 14;
     const cW = pW - mL - mR;
 
-    /* Top tricolor stripe (Rwanda-style) */
     doc.setFillColor(0, 108, 60);
     doc.rect(0, 0, pW / 3, 2, 'F');
     doc.setFillColor(252, 209, 22);
@@ -1559,11 +1815,9 @@ function drawChubHeader(doc, opts) {
     doc.setFillColor(0, 108, 60);
     doc.rect(2 * pW / 3, 0, pW / 3, 2, 'F');
 
-    /* Dark blue identity band */
     doc.setFillColor(11, 59, 92);
     doc.rect(0, 2, pW, 26, 'F');
 
-    /* CHUB logo with fallback */
     let logoDrawn = false;
     try {
         doc.addImage('chub-logo.png', 'PNG', mL, 5, 24, 20);
@@ -1578,7 +1832,6 @@ function drawChubHeader(doc, opts) {
         doc.text('CHUB', mL + 12, 16.5, { align: 'center' });
     }
 
-    /* Institution block */
     const textX = mL + 30;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
@@ -1592,7 +1845,6 @@ function drawChubHeader(doc, opts) {
     doc.text('P.O. Box 254 Butare  |  Email: info@chub.rw  |  Hotline: 2030', textX, 19);
     doc.text('Refrigerator & Cold-Chain Fleet — Preventive & Curative Maintenance', textX, 22.5);
 
-    /* Reference + date (right) */
     const rX = pW - mR;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
@@ -1604,7 +1856,6 @@ function drawChubHeader(doc, opts) {
     if (opts.date) doc.text('Issued: ' + opts.date, rX, 12.5, { align: 'right' });
     doc.text('Page 1', rX, 17, { align: 'right' });
 
-    /* Document title banner */
     let y = 32;
     doc.setFillColor(240, 246, 252);
     doc.setDrawColor(11, 59, 92);
@@ -1624,20 +1875,11 @@ function drawChubHeader(doc, opts) {
     return y + 22;
 }
 
-/**
- * Slim header for page 2+ of a document.
- * NEVER draws the full letterhead — keeps pages clean.
- * Returns the Y coordinate where content may begin (16).
- *
- * ⚠️ FIXED: previous version had a stray recursive call which crashed
- *           multi-page PDFs with "refNo is not defined".
- */
 function drawChubSlimHeader(doc, opts) {
     opts = opts || {};
     const pW = doc.internal.pageSize.getWidth();
     const mL = 14, mR = 14;
 
-    /* Thin tricolor at top */
     doc.setFillColor(0, 108, 60);
     doc.rect(0, 0, pW / 3, 1.5, 'F');
     doc.setFillColor(252, 209, 22);
@@ -1645,23 +1887,19 @@ function drawChubSlimHeader(doc, opts) {
     doc.setFillColor(0, 108, 60);
     doc.rect(2 * pW / 3, 0, pW / 3, 1.5, 'F');
 
-    /* Slim navy strip */
     doc.setFillColor(11, 59, 92);
     doc.rect(0, 1.5, pW, 11, 'F');
 
-    /* Left: institution */
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(255, 255, 255);
     doc.text('CHUB - BUTARE', mL, 9);
 
-    /* Center: report title — NO recursive call */
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(203, 228, 247);
     doc.text(opts.title || 'Report (continued)', pW / 2, 9, { align: 'center' });
 
-    /* Right: reference */
     if (opts.ref) {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
@@ -1671,15 +1909,11 @@ function drawChubSlimHeader(doc, opts) {
     return 16;
 }
 
-/**
- * Draw the CHUB footer with page numbers on the current page.
- */
 function drawChubFooter(doc, pageNum, totalPages) {
     const pW = doc.internal.pageSize.getWidth();
     const pH = doc.internal.pageSize.getHeight();
     const mL = 14, mR = 14;
 
-    /* Bottom tricolor stripe */
     doc.setFillColor(0, 108, 60);
     doc.rect(0, pH - 3, pW / 3, 2, 'F');
     doc.setFillColor(252, 209, 22);
@@ -1687,16 +1921,14 @@ function drawChubFooter(doc, pageNum, totalPages) {
     doc.setFillColor(0, 108, 60);
     doc.rect(2 * pW / 3, pH - 3, pW / 3, 2, 'F');
 
-    /* Thin rule above the footer */
     doc.setDrawColor(200, 210, 220);
     doc.setLineWidth(0.3);
     doc.line(mL, pH - 16, pW - mR, pH - 16);
 
-    /* Left: institution + system name */
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(11, 59, 92);
-    doc.text('CHUB — Refrigerator Fleet Maintenance System', mL, pH - 11);
+    doc.text('CHUB — Equipment Fleet Maintenance System', mL, pH - 11);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
@@ -1704,7 +1936,6 @@ function drawChubFooter(doc, pageNum, totalPages) {
     doc.text('P.O. Box 254 Butare  |  info@chub.rw  |  Hotline: 2030', mL, pH - 7);
     doc.text('Generated automatically — for internal use only', mL, pH - 4);
 
-    /* Right: reference / website / page numbers */
     const rX = pW - mR;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
@@ -1719,10 +1950,9 @@ function drawChubFooter(doc, pageNum, totalPages) {
     } else {
         doc.text('Page ' + pageNum, rX, pH - 7, { align: 'right' });
     }
-    doc.text('Refrigerator Fleet PM Report', rX, pH - 4, { align: 'right' });
+    doc.text('Equipment Fleet PM Report', rX, pH - 4, { align: 'right' });
 }
 
-/** Draw a KPI tile used across reports. */
 function drawKpiTile(doc, x, y, w, h, label, value, sublabel, bg, fg) {
     doc.setFillColor(...bg);
     doc.setDrawColor(212, 227, 239);
@@ -1747,7 +1977,7 @@ function drawKpiTile(doc, x, y, w, h, label, value, sublabel, bg, fg) {
 }
 
 /* ============================================================
-   PART 3 — CURATIVE ANALYTICS
+   CURATIVE ANALYTICS
    ============================================================ */
 function formatDurationMs(ms) {
     if (ms == null || isNaN(ms) || ms < 0) return '—';
@@ -1767,12 +1997,12 @@ const CURATIVE_ROOT_CAUSES = [
     { key: 'not_cooling', label: '🧊 Not cooling / warm temperature', kw: ['not cool','no cool','not cold','not getting cold','warm','not freez','not freezing','temperature rising','high temp','hot inside','food spoil'] },
     { key: 'leak',         label: '💧 Water / refrigerant leak',       kw: ['leak','drip','water','wet','puddle','pool','condensate'] },
     { key: 'noise',        label: '🔊 Abnormal noise / vibration',    kw: ['noise','noisy','vibrat','rattl','buzz','loud','humming'] },
-    { key: 'door',         label: '🚪 Door / seal / gasket',           kw: ['door','seal','gasket','hinge','not closing','not closing well','magnet','handle'] },
-    { key: 'electrical',   label: '⚡ Electrical / power fault',       kw: ['power','electric','plug','socket','shock','short','fuse','breaker','not working','no power','trip'] },
+    { key: 'door',         label: '🚪 Door / seal / gasket',           kw: ['door','seal','gasket','hinge','not closing','magnet','handle'] },
+    { key: 'electrical',   label: '⚡ Electrical / power fault',       kw: ['power','electric','plug','socket','shock','short','fuse','breaker','not working','no power','trip','lamp','bulb','switch','light','fixture'] },
     { key: 'ice_defrost',  label: '❄️ Ice build-up / defrost cycle',  kw: ['ice','frost','defrost','build-up','build up','buildup','frozen solid','thick ice'] },
     { key: 'fan_motor',    label: '🌀 Fan / compressor / motor',      kw: ['fan','compressor','motor','evaporator','condenser','blade'] },
     { key: 'thermostat',   label: '🌡️ Thermostat / controls / sensor',kw: ['thermostat','control','setting','display','panel','sensor','reading'] },
-    { key: 'alarm_light',  label: '💡 Alarm / light / indicator',      kw: ['alarm','beep','light','indicator','buzzer'] },
+    { key: 'alarm_light',  label: '💡 Alarm / light / indicator',      kw: ['alarm','beep','indicator','buzzer'] },
     { key: 'physical',     label: '🔨 Physical damage',                kw: ['damage','broken','crack','dent','shelf','drawer','shattered'] },
     { key: 'other',        label: '📝 Other / unspecified',            kw: [] }
 ];
@@ -1838,87 +2068,14 @@ function computeCurativeAnalytics(records) {
     const topEquip = Object.values(equipStats).sort((a, b) => b.count - a.count);
 
     return {
-        jobs,
-        verified: verifiedJ,
-        rejected: rejectedJ,
-        pending: pendingJ,
-        avgRespMs: avg(respTimes),
-        avgResMs: avg(resTimes),
-        avgTotMs: avg(totTimes),
+        jobs, verified: verifiedJ, rejected: rejectedJ, pending: pendingJ,
+        avgRespMs: avg(respTimes), avgResMs: avg(resTimes), avgTotMs: avg(totTimes),
         fastestRespMs: respTimes.length ? Math.min(...respTimes) : null,
         slowestRespMs: respTimes.length ? Math.max(...respTimes) : null,
-        slaMet,
-        slaTotal: respTimes.length,
-        slaRate,
-        quality,
-        rootCounts,
-        topEquip
+        slaMet, slaTotal: respTimes.length, slaRate, quality, rootCounts, topEquip
     };
-}
-
-/* ============================================================
-   PART 3 — MISC HELPERS
-   ============================================================ */
-function readImageFileAsDataUrl(file, maxBytes) {
-    return new Promise((resolve, reject) => {
-        maxBytes = maxBytes || 500 * 1024;
-        if (file.size > maxBytes) {
-            reject(new Error('Image too large (max ' + Math.round(maxBytes / 1024) + ' KB).'));
-            return;
-        }
-        const r = new FileReader();
-        r.onload = e => resolve(e.target.result);
-        r.onerror = () => reject(new Error('Could not read image.'));
-        r.readAsDataURL(file);
-    });
-}
-
-/* Fiscal year Jul–Jun (matches CHUB quarterly PM schedule) */
-function quarterKeyOf(d) {
-    const dd = parseToDate(d) || new Date();
-    const m = dd.getMonth();
-    const y = dd.getFullYear();
-    let q, fy;
-    if (m >= 6 && m <= 8)       { q = 1; fy = y; }
-    else if (m >= 9)            { q = 2; fy = y; }
-    else if (m >= 0 && m <= 2)  { q = 3; fy = y - 1; }
-    else                        { q = 4; fy = y - 1; }
-    return 'FY' + fy + '-Q' + q;
-}
-function quarterLabelOf(key) {
-    if (!key || key === 'all') return 'All time';
-    const m = key.match(/FY(\d+)-Q(\d)/);
-    if (!m) return key;
-    const fy = parseInt(m[1], 10);
-    const q  = parseInt(m[2], 10);
-    const nextYY = String(fy + 1).slice(-2);
-    return 'Q' + q + ' · FY' + fy + '/' + nextYY;
-}
-function listQuarters(n) {
-    n = n || 8;
-    const out = [];
-    const cur = quarterKeyOf(new Date());
-    const m = cur.match(/FY(\d+)-Q(\d)/);
-    if (!m) return out;
-    let fy = parseInt(m[1], 10);
-    let q  = parseInt(m[2], 10);
-    for (let i = 0; i < n; i++) {
-        out.push('FY' + fy + '-Q' + q);
-        q--;
-        if (q < 1) { q = 4; fy--; }
-    }
-    return out;
-}
-
-function userDocId(name) {
-    return String(name || '').replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-\.]/g, '');
-}
-function firestoreConfigDocId(key) {
-    return String(key || '').replace(/\//g, '_').replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-\.]/g, '');
-}
-
-/* ============================================================
-   PART 4 — SIGNATURES / DIGITAL CERTIFICATE
+}/* ============================================================
+   SIGNATURES / DIGITAL CERTIFICATE
    ============================================================ */
 function loadSignatures() {
     let s = {};
@@ -2020,20 +2177,14 @@ async function ensureReportHash(data) {
 }
 
 /* ============================================================
-   PART 4 — FIRESTORE CONFIG BLOBS
+   FIRESTORE CONFIG
    ============================================================ */
 async function firestoreConfigSet(key, value, mimeType, fileName) {
     try {
         if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
         await window.FB.setDoc(
             window.FB.doc(window.FB.db, 'config', firestoreConfigDocId(key)),
-            {
-                key,
-                value: value || '',
-                mimeType: mimeType || '',
-                fileName: fileName || '',
-                updatedAt: window.FB.serverTimestamp()
-            },
+            { key, value: value || '', mimeType: mimeType || '', fileName: fileName || '', updatedAt: window.FB.serverTimestamp() },
             { merge: true }
         );
         return true;
@@ -2119,15 +2270,15 @@ async function ensureDepartmentsLoaded() {
         if (c && Object.keys(c).length > 0) DEPARTMENTS = c;
         else DEPARTMENTS = JSON.parse(JSON.stringify(DEFAULT_DEPARTMENTS));
     }
-    /* DOM-populating helpers are function declarations — hoisted, safe here. */
     populateLoginDepartmentSelect();
     populateDepartmentSelect();
     populateSupervisorDeptFilter();
     populateDashDeptSelect();
+    populateCurativeDeptSelect();
 }
 
 /* ============================================================
-   PART 4 — INVENTORY CACHE + EQUIPMENT CRUD
+   INVENTORY CACHE + EQUIPMENT CRUD
    ============================================================ */
 const CACHE_KEY_PREFIX = 'chub_ref_cache_v4_';
 function getCacheKey(t) { return CACHE_KEY_PREFIX + (t || 'default').replace(/\s+/g, '_'); }
@@ -2141,12 +2292,13 @@ function loadCachedInventory(t) {
 function mapFirestoreEquipment(docId, data) {
     if (!data) return null;
     const cat = String(data.type || 'fridge').toLowerCase().trim();
-    if (cat !== 'fridge') return null;
+    if (cat !== 'fridge' && cat !== 'equipment' && cat !== 'electrical') return null;
     return {
         _docId: docId,
         tag: data.tag || '',
         dept: data.dept || '',
         loc: data.loc || '',
+        equipName: data.equipName || '',
         type: data.equipType || 'Fridge',
         brand: data.brand || '(unspecified)',
         model: data.model || '',
@@ -2156,7 +2308,8 @@ function mapFirestoreEquipment(docId, data) {
         lastPmDate: data.lastPmDate || '',
         nextPmDate: data.nextPmDate || '',
         photo: data.photo || '',
-        equipCategory: 'fridge'
+        equipCategory: cat,
+        status: data.status || 'active'
     };
 }
 async function fetchAllInventory() {
@@ -2171,17 +2324,24 @@ async function fetchAllInventory() {
         return out;
     } catch(e) { console.error('fetchAllInventory:', e); return []; }
 }
-async function fetchInventoryFromCloud(tech) {
-    const all = await fetchAllInventory();
-    if (!tech) return all;
-    return all.filter(a => sameOwner(a.owner, tech));
+async function rememberLocation(dept, loc) {
+    if (!dept || !loc) return;
+    try {
+        const services = (DEPARTMENTS[dept] && DEPARTMENTS[dept].services) || [];
+        if (services.some(s => normalizeText(s) === normalizeText(loc))) return;
+        services.push(loc);
+        DEPARTMENTS[dept].services = services;
+        cacheDepartmentsLocally(DEPARTMENTS);
+        await firestoreConfigSet(DEPT_CLOUD_KEY, JSON.stringify(DEPARTMENTS));
+    } catch(e) { /* offline — will retry on next add */ }
 }
 async function addInventoryItemToCloud(item, tech) {
     if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
     const now = window.FB.serverTimestamp();
     const ref = await window.FB.addDoc(window.FB.collection(window.FB.db, 'equipment'), {
-        type: 'fridge',
+        type: item.equipCategory || 'fridge',
         equipType: item.type || 'Fridge',
+        equipName: item.equipName || '',
         tag: item.tag, dept: item.dept, loc: item.loc,
         brand: item.brand || '(unspecified)',
         model: item.model || '',
@@ -2191,6 +2351,7 @@ async function addInventoryItemToCloud(item, tech) {
         lastPmDate: item.lastPmDate || '',
         nextPmDate: item.nextPmDate || '',
         photo: item.photo || '',
+        status: 'active',
         createdAt: now, updatedAt: now
     });
     return { id: ref.id, ok: true };
@@ -2202,14 +2363,20 @@ async function editInventoryItemInCloud(original, updated, tech) {
         const m = snap.docs.find(d => {
             const x = d.data();
             return normalizeText(x.tag) === normalizeText(original.tag) &&
-                   normalizeText(x.loc) === normalizeText(original.loc) &&
-                   normalizeText(x.serial) === normalizeText(original.serial) &&
-                   normalizeText(x.model) === normalizeText(original.model);
+                   normalizeText(x.loc) === normalizeText(original.loc);
         });
         if (!m) throw new Error('Equipment not found.');
         docId = m.id;
     }
+    const _fridgeTypes = ['Fridge','Fridge-Freezer','Upright Freezer','Chest Freezer','Lab Fridge','Vaccine Fridge'];
+    const _elecTypes   = ['Lamp','Switch','Socket','Electrical Panel','Other Electrical'];
+    let _cat = 'fridge';
+    if (_elecTypes.includes(updated.type)) _cat = 'electrical';
+    else if (!_fridgeTypes.includes(updated.type)) _cat = 'equipment';
+
     await window.FB.updateDoc(window.FB.doc(window.FB.db, 'equipment', docId), {
+        type: _cat,
+        equipName: updated.equipName || '',
         tag: updated.tag, dept: updated.dept, loc: updated.loc,
         equipType: updated.type || 'Fridge',
         brand: updated.brand || '(unspecified)',
@@ -2218,6 +2385,7 @@ async function editInventoryItemInCloud(original, updated, tech) {
         workingStatus: updated.workingStatus || 'Working',
         lastPmDate: updated.lastPmDate || '',
         nextPmDate: updated.nextPmDate || '',
+        owner: updated.owner || original.owner || tech || '',
         updatedAt: window.FB.serverTimestamp()
     });
     return { id: docId, ok: true };
@@ -2229,9 +2397,7 @@ async function removeInventoryItemInCloud(original, tech) {
         const m = snap.docs.find(d => {
             const x = d.data();
             return normalizeText(x.tag) === normalizeText(original.tag) &&
-                   normalizeText(x.loc) === normalizeText(original.loc) &&
-                   normalizeText(x.serial) === normalizeText(original.serial) &&
-                   normalizeText(x.model) === normalizeText(original.model);
+                   normalizeText(x.loc) === normalizeText(original.loc);
         });
         if (!m) throw new Error('Equipment not found.');
         docId = m.id;
@@ -2251,7 +2417,7 @@ async function saveEquipmentPhoto(docId, dataUrl) {
 }
 
 /* ============================================================
-   PART 4 — USERS
+   USERS
    ============================================================ */
 async function loadUsersFromFirestore() {
     try {
@@ -2293,9 +2459,18 @@ async function fetchUserPhoto(name) {
         return s.exists() ? (s.data().photo || '') : '';
     } catch(e) { return ''; }
 }
+async function fetchUserContact(name) {
+    if (!name) return { phone: '', email: '' };
+    try {
+        const s = await window.FB.getDoc(window.FB.doc(window.FB.db, 'users', userDocId(name)));
+        if (!s.exists()) return { phone: '', email: '' };
+        const d = s.data();
+        return { phone: d.phone || '', email: d.email || '' };
+    } catch(e) { return { phone: '', email: '' }; }
+}
 
 /* ============================================================
-   PART 4 — PM LOGS
+   PM LOGS
    ============================================================ */
 function mapFirestorePmLog(docId, data) {
     if (!data) return null;
@@ -2349,7 +2524,6 @@ function mapFirestorePmLog(docId, data) {
         inchargePkcs7Signature: data.inchargePkcs7Signature || '',
         inchargeSignatureSerial: data.inchargeSignatureSerial || '',
         technicianAcknowledgedRejection: data.technicianAcknowledgedRejection === true,
-        /* Aliases used by table/PDF renderers */
         'Ref Tag': data.refTag || '',
         'Location': data.refLocation || '',
         'Department': data.refDept || '',
@@ -2425,7 +2599,7 @@ async function fetchRefInfoFromCloud(refTag) {
 }
 
 /* ============================================================
-   PART 4 — APP STATE
+   APP STATE
    ============================================================ */
 let REF_INVENTORY = [];
 let REF_FILTERED = [];
@@ -2456,9 +2630,10 @@ let PENDING_CURATIVE_PHOTO = '';
 let INCHARGE_CURATIVE_STATUS_FILTER = 'all';
 let TECH_CURATIVE_FILTER = 'open';
 let LIVE_USERS = {};
+let CURRENT_AM_DISPOSAL_FILTER = 'awaiting_am';
 
 /* ============================================================
-   PART 4 — IDENTITY / OWNERSHIP HELPERS
+   IDENTITY / OWNERSHIP HELPERS
    ============================================================ */
 function buildRefIdentity(obj) {
     const t = normalizeText(obj.refTag || obj.tag || '');
@@ -2471,12 +2646,11 @@ function getInventoryOwner(item) {
     return String(item.owner || item.technician || '').trim();
 }
 function canEditItem(item) {
+    if (currentRole === 'supervisor' || currentRole === 'assetsmanager') return true;
     if (currentRole !== 'technician') return false;
     return sameOwner(getInventoryOwner(item), currentLoggedInName);
-}
-
-/* ============================================================
-   PART 4 — DOM REFS
+}/* ============================================================
+   DOM REFS
    ============================================================ */
 const refSelect           = document.getElementById('refSelect');
 const refFilterSelect     = document.getElementById('refFilterSelect');
@@ -2519,7 +2693,7 @@ function showStatus(msg, ok) {
 }
 
 /* ============================================================
-   PART 4 — OFFLINE QUEUE
+   OFFLINE QUEUE
    ============================================================ */
 const QUEUE_KEY = 'chub_ref_queue_v4';
 function getQueue() {
@@ -2536,7 +2710,6 @@ function setSyncStatus(s, t) {
     syncStatus.className = 'sync-status' + (s ? ' ' + s : '');
     syncStatusText.textContent = t;
 }
-
 async function sendToSheet(data) {
     try {
         if (!window.FB || !window.FB.ready) throw new Error('Firebase not ready');
@@ -2621,7 +2794,7 @@ async function queueAndSend(data) {
 }
 
 /* ============================================================
-   PART 4 — DATE / WORK DATE
+   DATE / WORK DATE
    ============================================================ */
 function setAutoWorkDate() {
     const t = new Date();
@@ -2640,12 +2813,12 @@ function updateWorkDateDisplay() {
 function updateNextPmDisplay() {
     const w = workDateInput.value;
     const l = nextPmForPDF(w);
-    if (refNextPm) refNextPm.textContent = '📅 Next PM due: ' + l + ' (quarterly — 15 Mar / 15 Jun / 15 Sep / 15 Dec)';
+    if (refNextPm) refNextPm.textContent = '📅 Next PM due: ' + l + ' (quarterly)';
     if (signoffNextPm) signoffNextPm.textContent = l;
 }
 
 /* ============================================================
-   PART 5 — REF SELECTOR / FILTER / BANNER
+   REF SELECTOR / FILTER / BANNER
    ============================================================ */
 function applyRefFilter() {
     if (refFilterMode === 'working') {
@@ -2684,7 +2857,7 @@ function renderRefSelector() {
             ? (ref.workingStatus === 'Not Working' ? ' ⛔' : ' ✅')
             : '';
         const own = canEditItem(ref) ? '' : ' 🔒';
-        o.textContent = `${ref.tag} | ${ref.loc} | ${ref.brand}${ws}${own}`;
+        o.textContent = `${ref.tag}${ref.equipName ? ' — ' + ref.equipName : ''} | ${ref.loc} | ${ref.brand}${ws}${own}`;
         refSelect.appendChild(o);
     });
     updateRefBanner();
@@ -2699,7 +2872,7 @@ function updateEditButtonsState() {
     }
     if (removeRefBtn) {
         removeRefBtn.disabled = !ed;
-        removeRefBtn.title = ed ? 'Remove this refrigerator' : 'Only the owner can remove';
+        removeRefBtn.title = ed ? 'Request disposal' : 'Only the owner can request disposal';
     }
 }
 function updateRefBanner() {
@@ -2716,7 +2889,7 @@ function updateRefBanner() {
     }
     const ref = REF_FILTERED[idx];
     refTitle.textContent = `${ref.tag} — ${ref.loc}`;
-    refSub.textContent = `${ref.dept} · ${ref.type} · ${ref.brand} · ${ref.model} · SN: ${ref.serial || 'N/A'}`;
+    refSub.textContent = `${ref.equipName ? ref.equipName + ' · ' : ''}${ref.dept} · ${ref.type} · ${ref.brand} · ${ref.model} · SN: ${ref.serial || 'N/A'}`;
     updateNextPmDisplay();
     const di = DEPARTMENTS[ref.dept];
     if (di && di.defaultIncharge && !inchargeNameInput.value.trim()) {
@@ -2762,7 +2935,7 @@ refFilterSelect.addEventListener('change', function() {
 inchargeNameInput.addEventListener('input', updateInchargeDisplay);
 
 /* ============================================================
-   PART 5 — DEPARTMENT SELECTS & WORKING-RADIO UI
+   DEPARTMENT SELECTS
    ============================================================ */
 const addRefModal = document.getElementById('addRefModal');
 const newRefDeptSelect = document.getElementById('newRefDept');
@@ -2793,11 +2966,13 @@ function populateLoginDepartmentSelect() {
 function populateServiceSelect() {
     const d = newRefDeptSelect.value;
     const s = (DEPARTMENTS[d] && DEPARTMENTS[d].services) || [];
-    newRefLocationSelect.innerHTML = '';
+    const dl = document.getElementById('newRefLocationSuggestions');
+    if (!dl) return;
+    dl.innerHTML = '';
     s.forEach(x => {
         const o = document.createElement('option');
-        o.value = x; o.textContent = x;
-        newRefLocationSelect.appendChild(o);
+        o.value = x;
+        dl.appendChild(o);
     });
 }
 newRefDeptSelect.addEventListener('change', populateServiceSelect);
@@ -2825,7 +3000,7 @@ document.getElementById('editRefLastPm')?.addEventListener('change', function() 
 });
 
 /* ============================================================
-   PART 5 — DUP-TAG CHECKER
+   DUP-TAG CHECKER
    ============================================================ */
 async function findEquipmentByTag(tag) {
     const t = normalizeText(tag);
@@ -2842,7 +3017,6 @@ document.getElementById('newRefTag')?.addEventListener('blur', async function() 
     document.getElementById('dupWarningBody').innerHTML =
         `<div class="dup-row"><strong>Tag:</strong> ${escapeHtml(ex.tag || '—')}</div>
          <div class="dup-row"><strong>Location:</strong> ${escapeHtml(ex.loc || '—')}</div>
-         <div class="dup-row"><strong>Brand / Model:</strong> ${escapeHtml((ex.brand || '') + ' ' + (ex.model || ''))}</div>
          <div class="dup-row"><strong>Added by:</strong> ${escapeHtml(getInventoryOwner(ex) || '(unknown)')}</div>`;
     box.classList.add('show');
 });
@@ -2850,10 +3024,42 @@ document.getElementById('dupDismissBtn')?.addEventListener('click',
     () => document.getElementById('dupWarning').classList.remove('show'));
 
 /* ============================================================
-   PART 5 — ADD REFRIGERATOR
+   ADD / EDIT / REMOVE EQUIPMENT
    ============================================================ */
-addRefBtn.addEventListener('click', () => {
-    if (currentRole !== 'technician') { showStatus('⛔ Only technicians can add refrigerators.', false); return; }
+async function populateOwnerSelect(targetSelect) {
+    const users = await loadUsersFromFirestore();
+    const techs = Object.keys(users)
+        .filter(n => users[n].role === 'technician' || users[n].role === 'supervisor')
+        .sort();
+    targetSelect.innerHTML = '';
+    techs.forEach(n => {
+        const o = document.createElement('option');
+        o.value = n; o.textContent = n;
+        targetSelect.appendChild(o);
+    });
+}
+
+addRefBtn.addEventListener('click', async () => {
+    const allowed = ['technician', 'assetsmanager', 'supervisor', 'incharge'];
+    if (!allowed.includes(currentRole)) {
+        showStatus('⛔ You cannot add equipment.', false); return;
+    }
+    const ownerRow = document.getElementById('newRefOwnerRow');
+    if (currentRole === 'assetsmanager' || currentRole === 'supervisor' || currentRole === 'incharge') {
+        ownerRow.style.display = 'block';
+        await populateOwnerSelect(document.getElementById('newRefOwner'));
+    } else {
+        ownerRow.style.display = 'none';
+    }
+    // ✅ Pre-lock department for in-charge to their own department
+    const deptSel = document.getElementById('newRefDept');
+    if (currentRole === 'incharge' && currentInchargeDept && deptSel) {
+        populateDepartmentSelect();
+        deptSel.value = currentInchargeDept;
+        deptSel.disabled = true;
+    } else if (deptSel) {
+        deptSel.disabled = false;
+    }
     document.getElementById('addRefOwnerName').textContent = currentLoggedInName || '—';
     populateDepartmentSelect();
     document.getElementById('dupWarning').classList.remove('show');
@@ -2871,10 +3077,14 @@ document.getElementById('addRefCancel').addEventListener('click',
     () => addRefModal.classList.remove('show'));
 
 document.getElementById('addRefSave').addEventListener('click', async () => {
-    if (currentRole !== 'technician') { alert('⛔ Only technicians can add refrigerators.'); return; }
+    const allowed = ['technician', 'assetsmanager', 'supervisor', 'incharge'];
+    if (!allowed.includes(currentRole)) {
+        alert('⛔ You cannot add equipment.'); return;
+    }
     const tag = document.getElementById('newRefTag').value.trim();
     const dept = newRefDeptSelect.value;
-    const loc = newRefLocationSelect.value;
+    const equipName = (document.getElementById('newRefEquipName').value || '').trim();
+    const loc = (document.getElementById('newRefLocation').value || '').trim();
     const brand = document.getElementById('newRefBrand').value.trim();
     const model = document.getElementById('newRefModel').value.trim();
     const type = document.getElementById('newRefType').value;
@@ -2882,13 +3092,17 @@ document.getElementById('addRefSave').addEventListener('click', async () => {
     const ws = (document.querySelector('#newRefWorkingGroup input:checked') || {}).value || 'Working';
     const lastPmDate = document.getElementById('newRefLastPm').value || '';
     const nextPmDate = document.getElementById('newRefNextPm').value || '';
-    if (!tag || !dept || !loc || !brand || !model) { alert('Please fill in all required fields.'); return; }
-    const owner = currentLoggedInName;
-    if (!owner) { alert('You must be logged in.'); return; }
+    if (!tag || !dept || !loc || !brand || !model || !equipName) { alert('Please fill in all required fields (including Equipment Name).'); return; }
+    let owner;
+    if (currentRole === 'assetsmanager' || currentRole === 'supervisor' || currentRole === 'incharge') {
+        owner = document.getElementById('newRefOwner').value || currentLoggedInName;
+    } else {
+        owner = currentLoggedInName;
+    }
+    if (!owner) { alert('Owner not set.'); return; }
     const ex = await findEquipmentByTag(tag);
     if (ex) {
-        if (!confirm('⚠️ DUPLICATE TAG\n\nTag: ' + tag + '\nAlready added by: ' + (getInventoryOwner(ex) || '(unknown)'))) return;
-        showStatus('⚠️ This tag already exists — not added.', false);
+        if (!confirm('⚠️ DUPLICATE TAG\n\nAlready added by: ' + (getInventoryOwner(ex) || '(unknown)'))) return;
         return;
     }
     const btn = document.getElementById('addRefSave');
@@ -2896,20 +3110,28 @@ document.getElementById('addRefSave').addEventListener('click', async () => {
     btn.disabled = true;
     btn.innerHTML = '⏳ Saving...';
     try {
+        const _fridgeTypes = ['Fridge','Fridge-Freezer','Upright Freezer','Chest Freezer','Lab Fridge','Vaccine Fridge'];
+        const _elecTypes   = ['Lamp','Switch','Socket','Electrical Panel','Other Electrical'];
+        let _cat = 'fridge';
+        if (_elecTypes.includes(type)) _cat = 'electrical';
+        else if (!_fridgeTypes.includes(type)) _cat = 'equipment';
+
         const newRef = {
-            owner, technician: owner, tag, dept, loc, type, brand, model, serial,
-            workingStatus: ws, lastPmDate, nextPmDate, photo: PENDING_NEW_REF_PHOTO || ''
+            owner, technician: owner, tag, dept, loc, equipName, type, brand, model, serial,
+            workingStatus: ws, lastPmDate, nextPmDate, photo: PENDING_NEW_REF_PHOTO || '',
+            equipCategory: _cat
         };
         await addInventoryItemToCloud(newRef, owner);
-        REF_INVENTORY.push(newRef);
-        cacheInventoryLocally(owner, REF_INVENTORY);
-        refFilterMode = 'all';
-        if (refFilterSelect) refFilterSelect.value = 'all';
-        renderRefSelector();
-        refSelect.value = REF_FILTERED.length - 1;
-        updateRefBanner();
-        showStatus('✅ Refrigerator saved to cloud.', true);
-        ['newRefTag','newRefBrand','newRefModel','newRefSerial','newRefLastPm','newRefNextPm']
+                await rememberLocation(dept, loc);
+        if (currentRole === 'technician') {
+            REF_INVENTORY.push(newRef);
+            cacheInventoryLocally(owner, REF_INVENTORY);
+            refFilterMode = 'all';
+            if (refFilterSelect) refFilterSelect.value = 'all';
+            renderRefSelector();
+        }
+        showStatus('✅ Equipment saved to cloud.', true);
+        ['newRefTag','newRefBrand','newRefModel','newRefSerial','newRefLastPm','newRefNextPm','newRefEquipName','newRefLocation']
             .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         PENDING_NEW_REF_PHOTO = '';
         document.getElementById('newRefPhotoPreview').innerHTML = '<span>📷</span>';
@@ -2922,32 +3144,32 @@ document.getElementById('addRefSave').addEventListener('click', async () => {
     btn.innerHTML = orig;
 });
 
-/* ============================================================
-   PART 5 — EDIT / REMOVE REFRIGERATOR
-   ============================================================ */
 removeRefBtn.addEventListener('click', async () => {
-    if (currentRole !== 'technician') { showStatus('⛔ Only technicians can remove.', false); return; }
     const idx = refSelect.value;
-    if (idx === '' || !REF_FILTERED[idx]) { showStatus('⚠️ No refrigerator selected.', false); return; }
+    if (idx === '' || !REF_FILTERED[idx]) { showStatus('⚠️ Select equipment first.', false); return; }
     const ref = REF_FILTERED[idx];
-    if (!canEditItem(ref)) { showStatus('⛔ Only the owner can remove.', false); return; }
-    if (!confirm(`Remove this refrigerator?\n\n${ref.tag} — ${ref.loc}`)) return;
-    try {
-        await removeInventoryItemInCloud(ref, currentLoggedInName);
-        const i = REF_INVENTORY.findIndex(x => x === ref);
-        if (i !== -1) REF_INVENTORY.splice(i, 1);
-        cacheInventoryLocally(currentLoggedInName, REF_INVENTORY);
-        showStatus('🗑️ Refrigerator removed.', true);
-        renderRefSelector();
-    } catch(e) {
-        showStatus('⚠️ Removal failed: ' + e.message, false);
+    if (currentRole === 'assetsmanager' || currentRole === 'supervisor') {
+        if (!confirm(`Delete immediately?\n\n${ref.tag} — ${ref.loc}`)) return;
+        try {
+            await removeInventoryItemInCloud(ref, currentLoggedInName);
+            const i = REF_INVENTORY.findIndex(x => x === ref);
+            if (i !== -1) REF_INVENTORY.splice(i, 1);
+            showStatus('🗑️ Equipment deleted.', true);
+            renderRefSelector();
+            if (currentRole === 'assetsmanager') refreshAssetsInventory();
+            if (currentRole === 'supervisor') refreshSupervisorInventory();
+        } catch(e) { showStatus('⚠️ Removal failed: ' + e.message, false); }
+        return;
     }
+    if (currentRole !== 'technician') { showStatus('⛔ Only technicians or managers.', false); return; }
+    if (!canEditItem(ref)) { showStatus('⛔ Only the owner can request disposal.', false); return; }
+    openDisposalRequestModal(ref);
 });
-editRefBtn.addEventListener('click', () => {
+editRefBtn.addEventListener('click', async () => {
     const idx = refSelect.value;
-    if (idx === '' || !REF_FILTERED[idx]) { showStatus('⚠️ No refrigerator selected.', false); return; }
+    if (idx === '' || !REF_FILTERED[idx]) { showStatus('⚠️ Select equipment first.', false); return; }
     const ref = REF_FILTERED[idx];
-    if (!canEditItem(ref)) { showStatus('⛔ Only the owner can edit.', false); return; }
+    if (!canEditItem(ref)) { showStatus('⛔ Only the owner / manager can edit.', false); return; }
     openEditRefModal(ref);
 });
 
@@ -2967,35 +3189,24 @@ function populateEditRefDeptSelect() {
 function populateEditRefServiceSelect() {
     const d = editRefDeptSelect.value;
     const s = (DEPARTMENTS[d] && DEPARTMENTS[d].services) || [];
-    editRefLocationSelect.innerHTML = '';
+    const dl = document.getElementById('editRefLocationSuggestions');
+    if (!dl) return;
+    dl.innerHTML = '';
     s.forEach(x => {
         const o = document.createElement('option');
-        o.value = x; o.textContent = x;
-        editRefLocationSelect.appendChild(o);
+        o.value = x;
+        dl.appendChild(o);
     });
 }
 editRefDeptSelect?.addEventListener('change', populateEditRefServiceSelect);
 
-function openEditRefModal(ref) {
+async function openEditRefModal(ref) {
     populateEditRefDeptSelect();
     document.getElementById('editRefTag').value = ref.tag || '';
     document.getElementById('editRefDept').value = ref.dept || Object.keys(DEPARTMENTS)[0] || '';
     populateEditRefServiceSelect();
-    const locSel = document.getElementById('editRefLocation');
-    const w = ref.loc || '';
-    if (w) {
-        let found = false;
-        for (let i = 0; i < locSel.options.length; i++) {
-            if (locSel.options[i].value === w) { found = true; break; }
-        }
-        if (!found) {
-            const o = document.createElement('option');
-            o.value = w;
-            o.textContent = w + ' (existing)';
-            locSel.appendChild(o);
-        }
-        locSel.value = w;
-    }
+    document.getElementById('editRefLocation').value = ref.loc || '';
+    document.getElementById('editRefEquipName').value = ref.equipName || '';
     document.getElementById('editRefBrand').value = ref.brand || '';
     document.getElementById('editRefModel').value = ref.model || '';
     document.getElementById('editRefType').value = ref.type || 'Fridge';
@@ -3010,25 +3221,31 @@ function openEditRefModal(ref) {
     PENDING_EDIT_REF_PHOTO_CHANGED = false;
     const prev = document.getElementById('editRefPhotoPreview');
     if (prev) {
-        prev.innerHTML = ref.photo
-            ? `<img src="${ref.photo}" alt="equip">`
-            : '<span>📷</span>';
+        prev.innerHTML = ref.photo ? `<img src="${ref.photo}">` : '<span>📷</span>';
     }
     const inp = document.getElementById('editRefPhotoInput');
     if (inp) inp.value = '';
+    const ownerRow = document.getElementById('editRefOwnerRow');
+    if (currentRole === 'assetsmanager' || currentRole === 'supervisor') {
+        ownerRow.style.display = 'block';
+        await populateOwnerSelect(document.getElementById('editRefOwner'));
+        document.getElementById('editRefOwner').value = getInventoryOwner(ref) || '';
+    } else {
+        ownerRow.style.display = 'none';
+    }
     editRefModal._originalRef = ref;
     editRefModal.classList.add('show');
 }
 document.getElementById('editRefCancel')?.addEventListener('click',
     () => editRefModal.classList.remove('show'));
 document.getElementById('editRefSave')?.addEventListener('click', async function() {
-    if (currentRole !== 'technician') { alert('⛔ Only technicians can edit.'); return; }
     const original = editRefModal._originalRef;
     if (!original || !canEditItem(original)) { alert('⛔ Not allowed.'); return; }
     const updated = {
         tag: document.getElementById('editRefTag').value.trim(),
         dept: document.getElementById('editRefDept').value,
-        loc: document.getElementById('editRefLocation').value,
+        loc: (document.getElementById('editRefLocation').value || '').trim(),
+        equipName: (document.getElementById('editRefEquipName').value || '').trim(),
         brand: document.getElementById('editRefBrand').value.trim(),
         model: document.getElementById('editRefModel').value.trim(),
         type: document.getElementById('editRefType').value,
@@ -3037,6 +3254,11 @@ document.getElementById('editRefSave')?.addEventListener('click', async function
         lastPmDate: document.getElementById('editRefLastPm').value || '',
         nextPmDate: document.getElementById('editRefNextPm').value || ''
     };
+    if (currentRole === 'assetsmanager' || currentRole === 'supervisor') {
+        updated.owner = document.getElementById('editRefOwner').value || getInventoryOwner(original);
+    } else {
+        updated.owner = getInventoryOwner(original);
+    }
     if (!updated.tag || !updated.dept || !updated.loc || !updated.brand || !updated.model) {
         alert('Please fill all required fields.'); return;
     }
@@ -3058,8 +3280,10 @@ document.getElementById('editRefSave')?.addEventListener('click', async function
         );
         if (i !== -1) REF_INVENTORY[i] = { ...REF_INVENTORY[i], ...updated };
         cacheInventoryLocally(currentLoggedInName, REF_INVENTORY);
-        renderRefSelector();
-        showStatus('✅ Refrigerator updated.', true);
+        if (currentRole === 'technician') renderRefSelector();
+        if (currentRole === 'assetsmanager') refreshAssetsInventory();
+        if (currentRole === 'supervisor') refreshSupervisorInventory();
+        showStatus('✅ Equipment updated.', true);
         editRefModal.classList.remove('show');
     } catch(e) {
         showStatus('⚠️ Update failed: ' + e.message, false);
@@ -3069,7 +3293,7 @@ document.getElementById('editRefSave')?.addEventListener('click', async function
 });
 
 /* ============================================================
-   PART 5 — SIGNOFF / FORM COLLECTION / RESET
+   SIGNOFF / FORM / RESET
    ============================================================ */
 function getTickedItems(start, end) {
     const out = [];
@@ -3124,20 +3348,13 @@ signOffBtn.addEventListener('click', async function() {
     );
     if (qd) {
         showStatus('⚠️ Already pending sync for this date.', false);
-        alert('⚠️ Already in offline queue.');
         this.disabled = false; this.innerHTML = orig;
         return;
     }
     const r = await checkRemoteDuplicate(id, data.workDate);
     if (r.checked && r.duplicate) {
         showStatus('⚠️ Already saved for this date!', false);
-        alert('⛔ DUPLICATE\n\nTag: ' + data.refTag +
-              '\nDate: ' + data.workDate +
-              '\nSaved by: ' + (r.record.technician || 'unknown'));
-        this.disabled = false; this.innerHTML = orig;
-        return;
-    }
-    if (!r.checked && !confirm('⚠️ Could not verify duplicates. Save anyway?')) {
+        alert('⛔ DUPLICATE');
         this.disabled = false; this.innerHTML = orig;
         return;
     }
@@ -3163,10 +3380,9 @@ function resetForm(msg) {
 resetBtn.addEventListener('click', () => resetForm(true));
 
 /* ============================================================
-   PART 5 — TECHNICIAN DISPLAY & ROLE VISIBILITY
+   TECHNICIAN DISPLAY & ROLE VISIBILITY
    ============================================================ */
 function updateTechnicianDisplay() {
-    if (!technicianSelect) return;
     const name = currentLoggedInName || technicianSelect.value;
     signoffTechName.textContent = name || '—';
     const pad = document.getElementById('signaturePad');
@@ -3183,22 +3399,26 @@ function updateTechnicianDisplay() {
 function applyRoleVisibility() {
     const isIC  = currentRole === 'incharge';
     const isSup = currentRole === 'supervisor';
-    document.getElementById('technicianSection').style.display = (isIC || isSup) ? 'none' : 'block';
+    const isAM  = currentRole === 'assetsmanager';
+    document.getElementById('technicianSection').style.display = (isIC || isSup || isAM) ? 'none' : 'block';
     document.getElementById('inchargeSection').style.display  = isIC  ? 'block' : 'none';
     document.getElementById('supervisorSection').style.display = isSup ? 'block' : 'none';
-    document.getElementById('technicianActionButtons').style.display = (isIC || isSup) ? 'none' : 'flex';
-    document.getElementById('workdateTag').style.display = (isIC || isSup) ? 'none' : 'flex';
+    document.getElementById('assetsManagerSection').style.display = isAM ? 'block' : 'none';
+    document.getElementById('technicianActionButtons').style.display = (isIC || isSup || isAM) ? 'none' : 'flex';
+    document.getElementById('workdateTag').style.display = (isIC || isSup || isAM) ? 'none' : 'flex';
     document.getElementById('inchargeSignatureSection').style.display = (isIC || isSup) ? 'block' : 'none';
     const ic = document.getElementById('roleIcon');
     const rl = document.getElementById('roleLabel');
     if (isSup)      { ic.textContent = '👑'; rl.textContent = 'Manager:'; }
     else if (isIC)  { ic.textContent = '👔'; rl.textContent = 'In-Charge:'; }
+    else if (isAM)  { ic.textContent = '🗑️'; rl.textContent = 'Assets Manager:'; }
     else            { ic.textContent = '👨‍🔧'; rl.textContent = 'Technician:'; }
     closeNotifPanel();
     if (isIC) {
         refreshPendingApprovals();
         loadDepartmentInventory();
         setTimeout(() => refreshInchargeCurative(), 600);
+        setTimeout(() => refreshInchargeDisposals(), 700);
     }
     if (isSup) {
         populateSupervisorDeptFilter();
@@ -3213,11 +3433,15 @@ function applyRoleVisibility() {
         setTimeout(() => renderSupervisorDashboard(), 500);
         setTimeout(() => refreshSupervisorCurative(), 600);
     }
+    if (isAM) {
+        setTimeout(() => refreshAssetsDisposals(), 500);
+        setTimeout(() => refreshAssetsInventory(), 600);
+    }
     if (currentRole === 'technician') setTimeout(() => refreshTechnicianCurative(), 800);
 }
 
 /* ============================================================
-   PART 5 — QR STICKERS
+   QR STICKERS
    ============================================================ */
 function buildRefInfoUrl(ref) {
     return window.location.origin + window.location.pathname + '?refinfo=' + encodeURIComponent(ref.tag || '');
@@ -3253,13 +3477,13 @@ function buildStickerHtml(ref, size) {
     s.appendChild(br);
     const h = document.createElement('div');
     h.className = 'sticker-hint';
-    h.textContent = '📱 Scan for live PM status';
+    h.textContent = '📱 Scan for live PM status + tech contact';
     s.appendChild(h);
     return s;
 }
 document.getElementById('qrRefBtn')?.addEventListener('click', () => {
     const idx = refSelect.value;
-    if (idx === '' || !REF_FILTERED[idx]) { showStatus('⚠️ Select a refrigerator first.', false); return; }
+    if (idx === '' || !REF_FILTERED[idx]) { showStatus('⚠️ Select equipment first.', false); return; }
     const ref = REF_FILTERED[idx];
     const c = document.getElementById('qrModalContent');
     c.innerHTML = '';
@@ -3316,7 +3540,7 @@ document.getElementById('qrModalPrint')?.addEventListener('click', () => {
     const area = document.getElementById('qrPrintArea');
     const mode = m._stickerMode || 'single';
     const refs = m._stickerRefs || [];
-    if (!refs.length) { showStatus('⚠️ No refrigerators to print.', false); return; }
+    if (!refs.length) return;
     area.innerHTML = '';
     const t = document.createElement('div');
     t.style.cssText = 'text-align:center;font-weight:800;color:#0b3d91;padding:14px;font-size:1.1rem;';
@@ -3326,10 +3550,6 @@ document.getElementById('qrModalPrint')?.addEventListener('click', () => {
     g.className = 'qr-sticker-grid';
     refs.forEach(ref => g.appendChild(buildStickerHtml(ref, mode === 'single' ? 180 : 130)));
     area.appendChild(g);
-    const f = document.createElement('div');
-    f.style.cssText = 'text-align:center;font-size:.7rem;color:#5b7b96;padding:10px;';
-    f.textContent = 'CHUB Refrigerator Fleet PM';
-    area.appendChild(f);
     area.style.display = 'block';
     setTimeout(() => {
         window.print();
@@ -3338,7 +3558,7 @@ document.getElementById('qrModalPrint')?.addEventListener('click', () => {
 });
 
 /* ============================================================
-   PART 5 — PUBLIC INFO PAGE (QR TARGET)
+   PUBLIC INFO PAGE (QR TARGET)
    ============================================================ */
 function initRefInfoPage() {
     const p = new URLSearchParams(window.location.search);
@@ -3346,7 +3566,7 @@ function initRefInfoPage() {
     if (!tag) return false;
     document.getElementById('refInfoPage').classList.add('show');
     document.getElementById('loginModal')?.classList.remove('show');
-    document.getElementById('infoTitle').textContent = 'Refrigerator: ' + tag;
+    document.getElementById('infoTitle').textContent = 'Equipment: ' + tag;
     document.getElementById('infoSubtitle').textContent = 'Loading live data from CHUB cloud…';
     loadRefInfo(tag);
     window.__reloadRefInfo = () => loadRefInfo(tag);
@@ -3388,6 +3608,8 @@ async function loadRefInfo(tag) {
         serial: latest['Serial Number'] || '—',
         type: latest['Type'] || 'Fridge'
     };
+    const techName = latest['Technician'] || '';
+    const techContact = techName ? await fetchUserContact(techName) : { phone: '', email: '' };
     const lw = latest['Work Date'] || latest['Timestamp'] || '';
     const nd = getNextRefPmDate_(lw);
     const now = new Date();
@@ -3400,40 +3622,28 @@ async function loadRefInfo(tag) {
     subtitle.textContent = ref.loc + ' · ' + ref.dept;
     badge.textContent = 'CHUB · Live PM Status';
 
-    const inchargeSigner    = safeStr(latest['In-Charge Signer'] || latest.inchargeSigner)
-                           || safeStr(latest['In-Charge Name'] || latest.inchargeName) || '—';
-    const inchargeComment   = safeStr(latest.inchargeComment || latest['In-Charge Comment']);
-    const inchargeReviewStatus = safeStr(latest.inchargeReviewStatus || latest['In-Charge Review Status']);
-
-    let feedbackHtml = '';
-    if (inchargeReviewStatus === 'rejected') {
-        feedbackHtml = `<div class="info-card" style="border:2px solid #b33a3a;background:#fff5f5;">
-            <h2 style="color:#b33a3a;">In-Charge Feedback — WORK REJECTED</h2>
-            <div class="info-row"><span class="k">Rejected by</span><span class="v">${escapeHtml(inchargeSigner)}</span></div>
-            <div style="font-style:italic;padding:10px 12px;background:white;border-radius:8px;margin-top:8px;color:#8f2929;">
-                ${escapeHtml(inchargeComment || '(no comment provided)')}
-            </div></div>`;
-    } else if (inchargeComment) {
-        feedbackHtml = `<div class="info-card" style="border-left:4px solid #1b6b3f;">
-            <h2>In-Charge Comment</h2>
-            <div style="font-style:italic;padding:10px 12px;background:#f0fdf4;border-radius:8px;color:#155231;">
-                ${escapeHtml(inchargeComment)}
-            </div></div>`;
-    }
+    const phoneHtml = techContact.phone
+        ? `<a href="tel:${escapeHtml(techContact.phone)}">${escapeHtml(techContact.phone)}</a>`
+        : '—';
+    const emailHtml = techContact.email
+        ? `<a href="mailto:${escapeHtml(techContact.email)}">${escapeHtml(techContact.email)}</a>`
+        : '—';
 
     body.innerHTML = `
-        ${feedbackHtml}
         <div class="info-card" style="border:2px solid #1b6b3f;background:linear-gradient(135deg,#f0fdf4 0%,#ffffff 100%);">
             <h2>📋 Latest PM Job Card</h2>
-            <p style="font-size:.85rem;color:#3a6583;margin-bottom:12px;">
-                View the complete job card of the most recent maintenance — with both <strong>technician</strong> and <strong>in-charge</strong> signatures.
-            </p>
-            <button id="infoLatestPmBtn"
-                    style="background:#1b6b3f;color:white;padding:12px 22px;border-radius:40px;font-weight:700;font-size:.9rem;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 8px 16px -6px rgba(27,107,63,.35);">
+            <button id="infoLatestPmBtn" style="background:#1b6b3f;color:white;padding:12px 22px;border-radius:40px;font-weight:700;font-size:.9rem;border:none;cursor:pointer;">
                 📋 Open Latest PM Card
             </button>
         </div>
-
+        <div class="info-card" style="border:2px solid #0b3d91;">
+            <h2>👨‍🔧 Technician Contact</h2>
+            <div class="info-row"><span class="k">Name</span><span class="v">${escapeHtml(techName || '—')}</span></div>
+            <div class="info-row"><span class="k">📞 Phone</span><span class="v">${phoneHtml}</span></div>
+            <div class="info-row"><span class="k">✉️ Email</span><span class="v">${emailHtml}</span></div>
+            ${techContact.phone ? `<a href="tel:${escapeHtml(techContact.phone)}" style="display:inline-block;margin-top:10px;background:#0b3d91;color:white;padding:10px 18px;border-radius:30px;font-weight:700;font-size:.85rem;text-decoration:none;">📞 Call Technician</a>` : ''}
+            ${techContact.email ? `<a href="mailto:${escapeHtml(techContact.email)}" style="display:inline-block;margin-top:10px;margin-left:8px;background:#1b6b3f;color:white;padding:10px 18px;border-radius:30px;font-weight:700;font-size:.85rem;text-decoration:none;">✉️ Email Technician</a>` : ''}
+        </div>
         <div class="info-card"><h2>📊 Status</h2>
             <div class="info-row"><span class="k">Status</span><span class="v"><span class="info-status-pill ${st}">${labels[st]}</span></span></div>
             <div class="info-row"><span class="k">Last PM</span><span class="v">${formatDateOnly(lw)}</span></div>
@@ -3446,10 +3656,6 @@ async function loadRefInfo(tag) {
             <div class="info-row"><span class="k">Location</span><span class="v">${escapeHtml(ref.loc)}</span></div>
             <div class="info-row"><span class="k">Brand / Model</span><span class="v">${escapeHtml(ref.brand + ' ' + ref.model)}</span></div>
             <div class="info-row"><span class="k">Serial</span><span class="v">${escapeHtml(ref.serial)}</span></div>
-        </div>
-        <div class="info-card"><h2>👨🔧 Last PM by</h2>
-            <div class="info-row"><span class="k">Technician</span><span class="v">${escapeHtml(latest['Technician'] || '—')}</span></div>
-            <div class="info-row"><span class="k">Work date</span><span class="v">${formatDateOnly(lw)}</span></div>
         </div>`;
 
     document.getElementById('infoLatestPmBtn')?.addEventListener('click', () => {
@@ -3460,11 +3666,9 @@ async function loadRefInfo(tag) {
             openJobCard(records[0]);
         } catch (err) {
             console.error('Open latest PM card failed:', err);
-            alert('⚠️ Could not open PM card: ' + err.message);
         }
     });
 
-    window.__qrCurrentTag = tag;
     const fromI = document.getElementById('qrReportFrom');
     const toI = document.getElementById('qrReportTo');
     if (fromI && !fromI.value) {
@@ -3493,7 +3697,7 @@ async function loadRefInfo(tag) {
         if (!from || !to) { stat.textContent = '⚠️ Pick both dates.'; return; }
         btn.disabled = true;
         try {
-            const all = await window.__DEV.fetchRefInfoFromCloud(tag);
+            const all = await fetchRefInfoFromCloud(tag);
             const fromTs = new Date(from + 'T00:00:00').getTime();
             const toTs = new Date(to + 'T23:59:59').getTime();
             const filtered = (all.records || []).filter(r => {
@@ -3503,17 +3707,15 @@ async function loadRefInfo(tag) {
                 return !isNaN(t) && t >= fromTs && t <= toTs;
             });
             if (!filtered.length) { stat.textContent = '📭 No records.'; btn.disabled = false; return; }
-            await window.__DEV.generatePDF(filtered);
+            await generatePDF(filtered);
             stat.textContent = '✅ PDF generated (' + filtered.length + ' records).';
         } catch(e) { stat.textContent = '⚠️ ' + e.message; }
         btn.disabled = false;
     });
 }
 const showingPublicInfo = initRefInfoPage();
-if (showingPublicInfo) document.querySelector('.app-container').style.display = 'none';
-
-/* ============================================================
-   PART 5 — IN-CHARGE: PENDING APPROVALS + JOB CARD
+if (showingPublicInfo) document.querySelector('.app-container').style.display = 'none';/* ============================================================
+   IN-CHARGE: PENDING APPROVALS
    ============================================================ */
 const pendingApprovalsList = document.getElementById('pendingApprovalsList');
 const pendingApprovalsCount = document.getElementById('pendingApprovalsCount');
@@ -3859,9 +4061,6 @@ function inferDepartmentFromIncharge(n) {
     for (const d of Object.keys(DEPARTMENTS)) {
         if (normalizeText(DEPARTMENTS[d].defaultIncharge) === normalizeText(n)) return d;
     }
-    for (const d of Object.keys(DEPARTMENTS)) {
-        if (normalizeText(DEPARTMENTS[d].defaultIncharge).startsWith(normalizeText((n || '').split(' ')[0]))) return d;
-    }
     return '';
 }
 function computeRefStatus(ref, records, now) {
@@ -3902,7 +4101,7 @@ function computeRefStatus(ref, records, now) {
 }
 
 /* ============================================================
-   PART 5 — DEPARTMENT INVENTORY (IN-CHARGE)
+   IN-CHARGE: DEPARTMENT INVENTORY
    ============================================================ */
 async function loadDepartmentInventory() {
     const tbody = document.getElementById('inventoryTableBody');
@@ -3914,11 +4113,23 @@ async function loadDepartmentInventory() {
         return;
     }
     deptBadge.textContent = dept;
+
+    // ✅ Dynamic title + icon based on the in-charge's department
+    const _titleEl = document.getElementById('invDeptTitle');
+    const _iconEl  = document.getElementById('invDeptIcon');
+    if (_titleEl) _titleEl.textContent = dept + ' Equipment Inventory';
+    if (_iconEl) {
+        if (normalizeText(dept) === 'INFRASTRUCTURE') _iconEl.textContent = '🏛️';
+        else if (normalizeText(dept) === 'LABORATORY')  _iconEl.textContent = '🧪';
+        else if (normalizeText(dept) === 'PHARMACY')    _iconEl.textContent = '💊';
+        else                                             _iconEl.textContent = '🧊';
+    }
+
     const allInv = await fetchAllInventory();
     const records = await fetchAllLogs();
     const mine = allInv.filter(a => normalizeText(a.dept) === normalizeText(dept));
     if (!mine.length) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#5b7b96;padding:14px;">No refrigerators under ' + dept + '.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#5b7b96;padding:14px;">No equipment under ' + dept + '.</td></tr>';
         return;
     }
     const now = new Date();
@@ -3937,7 +4148,7 @@ async function loadDepartmentInventory() {
             : '<span class="status-badge working">✅ Working</span>';
         const owner = getInventoryOwner(ref) || '—';
         return `<tr>
-            <td><strong>${escapeHtml(ref.tag)}</strong></td>
+            <td><strong>${escapeHtml(ref.tag)}</strong>${ref.equipName ? '<br><span style="font-size:.78rem;color:#5b7b96;">' + escapeHtml(ref.equipName) + '</span>' : ''}</td>
             <td>${escapeHtml(ref.loc)}</td>
             <td>${escapeHtml((ref.brand || '') + ' ' + (ref.model || ''))}</td>
             <td>${wb}</td>
@@ -3953,6 +4164,8 @@ async function loadDepartmentInventory() {
         if (ref) openEqPmHistory(ref);
     }));
 }
+document.getElementById('inchargeAddEquipBtn')?.addEventListener('click', () => addRefBtn.click());
+document.getElementById('inchargeRefreshInvBtn')?.addEventListener('click', loadDepartmentInventory);
 document.querySelectorAll('#inventoryFilterBar .filter-chip').forEach(c => c.addEventListener('click', function() {
     document.querySelectorAll('#inventoryFilterBar .filter-chip').forEach(x => x.classList.remove('active'));
     this.classList.add('active');
@@ -3991,7 +4204,7 @@ document.getElementById('inchargeDownloadAnalysisBtn').addEventListener('click',
 });
 
 /* ============================================================
-   PART 5 — EQ PM DOWNLOAD + HISTORY
+   EQ PM DOWNLOAD + HISTORY
    ============================================================ */
 const eqPmDownloadModal = document.getElementById('eqPmDownloadModal');
 const eqPmEquipSelect = document.getElementById('eqPmEquipSelect');
@@ -4079,9 +4292,6 @@ document.getElementById('eqPmDownloadBtn2')?.addEventListener('click', async fun
     btn.innerHTML = o;
 });
 
-/* ============================================================
-   PART 5 — EQ PM HISTORY MODAL
-   ============================================================ */
 const eqPmHistoryModal = document.getElementById('eqPmHistoryModal');
 let eqPmHistoryRecords = [];
 function setEqPmHisQuickRange(w) {
@@ -4197,7 +4407,7 @@ document.getElementById('eqPmHistoryDownloadBtn')?.addEventListener('click', asy
 });
 
 /* ============================================================
-   PART 6 — SUPERVISOR SELECTORS + EDITORS
+   SUPERVISOR: SELECTORS + EDITORS
    ============================================================ */
 function populateSupervisorDeptFilter() {
     const sel = document.getElementById('supervisorDeptFilter');
@@ -4379,7 +4589,6 @@ document.getElementById('saveInchargesBtn')?.addEventListener('click', async fun
     this.disabled = false;
     this.innerHTML = o;
 });
-
 async function renderTechnicianEditor() {
     const wrap = document.getElementById('technicianEditorList');
     if (!wrap) return;
@@ -4387,7 +4596,7 @@ async function renderTechnicianEditor() {
     const users = await loadUsersFromFirestore();
     const techs = {};
     Object.keys(users).forEach(n => {
-        if (users[n].role === 'technician' || users[n].role === 'supervisor') {
+        if (users[n].role === 'technician' || users[n].role === 'supervisor' || users[n].role === 'assetsmanager') {
             techs[n] = { role: users[n].role, pin: users[n].pin || '', phone: users[n].phone || '', email: users[n].email || '' };
         }
     });
@@ -4399,10 +4608,11 @@ async function renderTechnicianEditor() {
     }
     names.forEach(name => {
         const r = techs[name];
+        const roleTag = r.role === 'supervisor' ? ' · 👑 Manager' : (r.role === 'assetsmanager' ? ' · 🗑️ Assets Mgr' : '');
         const row = document.createElement('div');
         row.className = 'dept-editor-row';
         row.innerHTML = `<div>
-            <label style="font-size:.75rem;color:#5b7b96;font-weight:700;">FULL NAME${r.role === 'supervisor' ? ' · 👑' : ''}</label>
+            <label style="font-size:.75rem;color:#5b7b96;font-weight:700;">FULL NAME${roleTag}</label>
             <input type="text" class="tech-name-input" value="${escapeHtml(name)}" style="width:100%;font-weight:700;">
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;margin-top:8px;display:block;">PIN</label>
             <input type="text" inputmode="numeric" class="tech-pin-input" value="${escapeHtml(r.pin)}" style="width:100%;">
@@ -4417,6 +4627,7 @@ async function renderTechnicianEditor() {
     wrap.querySelectorAll('[data-del-tech]').forEach(b => b.addEventListener('click', async function() {
         const n = this.getAttribute('data-del-tech');
         if (n === SUPERVISOR_NAME) { alert('⚠️ Manager cannot be deleted.'); return; }
+        if (n === ASSETS_MANAGER_NAME) { alert('⚠️ Assets Manager cannot be deleted.'); return; }
         if (!confirm('Delete "' + n + '"?')) return;
         try {
             await window.FB.deleteDoc(window.FB.doc(window.FB.db, 'users', userDocId(n)));
@@ -4486,7 +4697,7 @@ document.getElementById('saveTechniciansBtn')?.addEventListener('click', async f
 });
 
 /* ============================================================
-   PART 6 — SUPERVISOR INVENTORY
+   SUPERVISOR: INVENTORY
    ============================================================ */
 document.querySelectorAll('#supervisorStatusFilterBar .filter-chip').forEach(c => c.addEventListener('click', function() {
     document.querySelectorAll('#supervisorStatusFilterBar .filter-chip').forEach(x => x.classList.remove('active'));
@@ -4591,7 +4802,7 @@ document.getElementById('supervisorDownloadAllAnalysisBtn')?.addEventListener('c
 });
 
 /* ============================================================
-   PART 6 — DASHBOARD
+   DASHBOARD
    ============================================================ */
 const DASH_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 let dashCharts = { deptBar: null, workingPie: null, overdueLine: null };
@@ -4809,7 +5020,7 @@ document.getElementById('dashDeptSelect')?.addEventListener('change', renderSupe
 document.getElementById('dashRefreshBtn')?.addEventListener('click', renderSupervisorDashboard);
 
 /* ============================================================
-   PART 6 — NOTIFICATIONS
+   NOTIFICATIONS
    ============================================================ */
 async function createNotification(o) {
     try {
@@ -4867,10 +5078,10 @@ async function deleteReadNotifications() {
     showStatus('🗑️ Cleared.', true);
 }
 function notifIcon(t) {
-    return ({ pm_cosigned: '✅', pm_rejected: '❌', curative_request: '🚨', curative_started: '🔧', curative_completed: '📸', curative_verified: '🎉', curative_rejected: '↩️' })[t] || '🔔';
+    return ({ pm_cosigned: '✅', pm_rejected: '❌', curative_request: '🚨', curative_started: '🔧', curative_completed: '📸', curative_verified: '🎉', curative_rejected: '↩️', disposal_requested: '🗑️', disposal_incharge_approved: '👔', disposal_am_approved: '✅', disposal_rejected: '❌' })[t] || '🔔';
 }
 function notifColor(t) {
-    return ({ pm_cosigned: '#1b6b3f', pm_rejected: '#b33a3a', curative_request: '#b33a3a', curative_started: '#1e4a6d', curative_completed: '#0b3d91', curative_verified: '#1b6b3f', curative_rejected: '#b33a3a' })[t] || '#1e4a6d';
+    return ({ pm_cosigned: '#1b6b3f', pm_rejected: '#b33a3a', curative_request: '#b33a3a', curative_started: '#1e4a6d', curative_completed: '#0b3d91', curative_verified: '#1b6b3f', curative_rejected: '#b33a3a', disposal_requested: '#7a5300', disposal_incharge_approved: '#1b6b3f', disposal_am_approved: '#1b6b3f', disposal_rejected: '#b33a3a' })[t] || '#1e4a6d';
 }
 function timeAgo(iso) {
     if (!iso) return '';
@@ -4944,6 +5155,15 @@ async function handleNotificationClick(n) {
             scrollToId('supervisorCurativeList');
         }
     }
+    if (n.type && n.type.startsWith('disposal')) {
+        if (currentRole === 'incharge') {
+            await refreshInchargeDisposals();
+            scrollToId('inchargeDisposalCard');
+        } else if (currentRole === 'assetsmanager') {
+            await refreshAssetsDisposals();
+            scrollToId('amDisposalList');
+        }
+    }
 }
 function scrollToId(id) {
     const e = document.getElementById(id);
@@ -4958,7 +5178,7 @@ function closeNotifPanel() {
 }
 
 /* ============================================================
-   PART 6 — CURATIVE REQUESTS
+   CURATIVE REQUESTS
    ============================================================ */
 async function fetchCurativeRequests(opts) {
     opts = opts || {};
@@ -4972,6 +5192,7 @@ async function fetchCurativeRequests(opts) {
                 _docId: doc.id, tag: d.tag || '', dept: d.dept || '', loc: d.loc || '',
                 brand: d.brand || '', model: d.model || '', serial: d.serial || '',
                 issue: d.issue || '', priority: d.priority || 'medium',
+                category: d.category || 'Refrigeration',
                 reportedBy: d.reportedBy || '',
                 reportedAt: d.reportedAt && d.reportedAt.toDate ? d.reportedAt.toDate().toISOString() : (d.reportedAt || ''),
                 assignedTo: d.assignedTo || '',
@@ -5001,6 +5222,7 @@ async function createCurativeRequest(p) {
         tag: p.tag, dept: p.dept, loc: p.loc,
         brand: p.brand || '', model: p.model || '', serial: p.serial || '',
         issue: p.issue, priority: p.priority || 'medium',
+        category: p.category || 'Refrigeration',
         reportedBy: p.reportedBy || currentLoggedInName,
         reportedAt: window.FB.serverTimestamp(),
         assignedTo: p.assignedTo || '',
@@ -5030,7 +5252,7 @@ async function findTechniciansForDepartment(dept) {
         const u = users[n];
         if (u.role !== 'technician') return;
         const ds = Array.isArray(u.depts) ? u.depts : (u.dept ? [u.dept] : []);
-        if (ds.some(d => normalizeText(d) === normalizeText(dept))) out.push(n);
+        if (ds.length === 0 || ds.some(d => normalizeText(d) === normalizeText(dept))) out.push(n);
     });
     return out;
 }
@@ -5038,48 +5260,62 @@ function renderCurativeCard(c, opts) {
     opts = opts || {};
     const sl = ({ pending: '⏳ Pending', in_progress: '🔧 In Progress', completed: '📸 Awaiting Verification', verified: '✅ Verified', rejected: '❌ Rejected' })[c.status] || c.status;
     const pl = c.priority.charAt(0).toUpperCase() + c.priority.slice(1);
-    return `<div class="curative-card priority-${c.priority} status-${c.status}">
-        <div class="cc-head">
+    return `<div class="curative-card priority-${c.priority} status-${c.status} collapsed">
+        <div class="cc-head" title="Click to expand / collapse">
             <div>
                 <div class="cc-tag">🧊 ${escapeHtml(c.tag)}</div>
-                <div class="cc-loc">${escapeHtml(c.loc || '—')} · ${escapeHtml(c.dept || '—')}</div>
+                <div class="cc-loc">${escapeHtml(c.loc || '—')} · ${escapeHtml(c.dept || '—')} · <em>${escapeHtml(c.category || '')}</em></div>
             </div>
             <div style="text-align:right;">
                 <span class="priority-badge ${c.priority}">${pl}</span>
                 <div style="margin-top:4px;"><span class="curative-status-badge ${c.status}">${sl}</span></div>
+                <span class="cc-caret">▼</span>
             </div>
         </div>
-        <div class="cc-issue">📝 ${escapeHtml(c.issue)}</div>
-        <div class="cc-meta">
-            👤 <strong>${escapeHtml(c.reportedBy || '—')}</strong> · 📅 ${formatDateOnly(c.reportedAt)}
-            ${c.assignedTo ? ' · 🔧 ' + escapeHtml(c.assignedTo) : ''}
-            ${c.completedAt ? ' · ✅ ' + formatDateOnly(c.completedAt) : ''}
-            ${c.verifiedAt ? ' · 🎉 ' + formatDateOnly(c.verifiedAt) : ''}
-        </div>
-        ${c.technicianNotes ? `<div class="cc-issue" style="border-left-color:#1b6b3f;background:#f0fdf4;">🔧 <strong>Tech:</strong> ${escapeHtml(c.technicianNotes)}</div>` : ''}
-        ${c.feedback ? `<div class="cc-issue" style="border-left-color:#f4a300;background:#fff9ec;">💬 ${escapeHtml(c.feedback)} ${c.feedbackQuality ? '<em>(' + escapeHtml(c.feedbackQuality) + ')</em>' : ''}</div>` : ''}
-        <div class="cc-actions">
-            <button class="btn-secondary" data-view-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">👁️ View</button>
-            ${opts.canStart && c.status === 'pending' && (!c.assignedTo || normalizeText(c.assignedTo) === normalizeText(currentLoggedInName)) ? `<button class="btn-primary" data-start-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">🔧 Take Job</button>` : ''}
-            ${opts.canComplete && c.status === 'in_progress' && normalizeText(c.assignedTo) === normalizeText(currentLoggedInName) ? `<button class="btn-approve" data-complete-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">✅ Complete</button>` : ''}
-            ${opts.canVerify && c.status === 'completed' ? `<button class="btn-approve" data-verify-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">👔 Verify</button>` : ''}
+        <div class="cc-body">
+            <div class="cc-issue" style="margin-top:8px;">📝 ${escapeHtml(c.issue)}</div>
+            <div class="cc-meta">
+                👤 <strong>${escapeHtml(c.reportedBy || '—')}</strong> · 📅 ${formatDateOnly(c.reportedAt)}
+                ${c.assignedTo ? ' · 🔧 ' + escapeHtml(c.assignedTo) : ''}
+                ${c.completedAt ? ' · ✅ ' + formatDateOnly(c.completedAt) : ''}
+                ${c.verifiedAt ? ' · 🎉 ' + formatDateOnly(c.verifiedAt) : ''}
+            </div>
+            ${c.technicianNotes ? `<div class="cc-issue" style="border-left-color:#1b6b3f;background:#f0fdf4;">🔧 <strong>Tech:</strong> ${escapeHtml(c.technicianNotes)}</div>` : ''}
+            ${c.feedback ? `<div class="cc-issue" style="border-left-color:#f4a300;background:#fff9ec;">💬 ${escapeHtml(c.feedback)} ${c.feedbackQuality ? '<em>(' + escapeHtml(c.feedbackQuality) + ')</em>' : ''}</div>` : ''}
+            <div class="cc-actions">
+                <button class="btn-secondary" data-view-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">👁️ View</button>
+                ${opts.canStart && c.status === 'pending' && (!c.assignedTo || normalizeText(c.assignedTo) === normalizeText(currentLoggedInName)) ? `<button class="btn-primary" data-start-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">🔧 Take Job</button>` : ''}
+                ${opts.canComplete && c.status === 'in_progress' && normalizeText(c.assignedTo) === normalizeText(currentLoggedInName) ? `<button class="btn-approve" data-complete-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">✅ Complete</button>` : ''}
+                ${opts.canVerify && c.status === 'completed' ? `<button class="btn-approve" data-verify-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">👔 Verify</button>` : ''}
+            </div>
         </div>
     </div>`;
 }
 function bindCurativeButtons(container, list, opts) {
-    container.querySelectorAll('[data-view-curative]').forEach(b => b.addEventListener('click', () => {
+    container.querySelectorAll('[data-view-curative]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const c = list.find(x => x._docId === b.getAttribute('data-view-curative'));
         if (c) openViewCurativeModal(c);
     }));
-    container.querySelectorAll('[data-start-curative]').forEach(b => b.addEventListener('click', () => startCurativeJob(b.getAttribute('data-start-curative'))));
-    container.querySelectorAll('[data-complete-curative]').forEach(b => b.addEventListener('click', () => {
+    container.querySelectorAll('[data-start-curative]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); startCurativeJob(b.getAttribute('data-start-curative')); }));
+    container.querySelectorAll('[data-complete-curative]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const c = list.find(x => x._docId === b.getAttribute('data-complete-curative'));
         if (c) openCompleteCurativeModal(c);
     }));
-    container.querySelectorAll('[data-verify-curative]').forEach(b => b.addEventListener('click', () => {
+    container.querySelectorAll('[data-verify-curative]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const c = list.find(x => x._docId === b.getAttribute('data-verify-curative'));
         if (c) openVerifyCurativeModal(c);
     }));
+
+    // ✅ Accordion toggle: click on card header expands / collapses
+    container.querySelectorAll('.curative-card > .cc-head').forEach(h => {
+        h.addEventListener('click', function(e) {
+            if (e.target.closest('button, a')) return;
+            this.parentElement.classList.toggle('collapsed');
+        });
+    });
 }
 async function refreshInchargeCurative() {
     const wrap = document.getElementById('inchargeCurativeList');
@@ -5088,7 +5324,11 @@ async function refreshInchargeCurative() {
     wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
     try {
         const dept = currentInchargeDept || inferDepartmentFromIncharge(currentLoggedInName);
-        const all = await fetchCurativeRequests({ dept: dept || 'all' });
+        if (!dept) {
+            wrap.innerHTML = '<div style="text-align:center;padding:18px;color:#b33a3a;font-weight:600;">⚠️ No department assigned to your account.<br><span style="font-size:.8rem;color:#5b7b96;">Ask the Manager to set your department.</span></div>';
+            return;
+        }
+        const all = await fetchCurativeRequests({ dept: dept });
         const f = INCHARGE_CURATIVE_STATUS_FILTER === 'all'
             ? all
             : all.filter(c => c.status === INCHARGE_CURATIVE_STATUS_FILTER);
@@ -5198,8 +5438,7 @@ function openViewCurativeModal(c) {
             ${jcRow('Tag', escapeHtml(c.tag))}
             ${jcRow('Department', escapeHtml(c.dept || '—'))}
             ${jcRow('Location', escapeHtml(c.loc || '—'))}
-            ${jcRow('Brand / Model', escapeHtml((c.brand || '') + ' ' + (c.model || '')))}
-            ${jcRow('Serial', escapeHtml(c.serial || '—'))}
+            ${jcRow('Category', escapeHtml(c.category || '—'))}
             ${jcRow('Priority', `<span class="priority-badge ${c.priority}">${escapeHtml(c.priority)}</span>`)}
             ${jcRow('Status', `<span class="curative-status-badge ${c.status}">${sl}</span>`)}
         </div>
@@ -5207,11 +5446,9 @@ function openViewCurativeModal(c) {
             <div class="cc-issue">${escapeHtml(c.issue)}</div>
             ${jcRow('Reported by', escapeHtml(c.reportedBy || '—'))}
             ${jcRow('Reported at', formatDateOnly(c.reportedAt))}
-            ${jcRow('Quarter', escapeHtml(c.quarterKey || '—'))}
         </div>
         <div class="info-card"><h2>🔧 Technician Work</h2>
             ${jcRow('Assigned to', escapeHtml(c.assignedTo || '—'))}
-            ${c.startedAt ? jcRow('Started', formatDateOnly(c.startedAt)) : ''}
             ${c.completedAt ? jcRow('Completed', formatDateOnly(c.completedAt)) : ''}
             ${c.technicianNotes ? jcRow('Notes', escapeHtml(c.technicianNotes)) : '<div style="color:#9cb9d0;font-style:italic;">Not completed yet.</div>'}
             ${c.technicianPhoto ? `<div style="margin-top:10px;"><img src="${c.technicianPhoto}" style="max-width:100%;border-radius:12px;border:2px solid #e2eaf1;"></div>` : ''}
@@ -5228,8 +5465,31 @@ async function openRaiseCurativeModal() {
     const select = document.getElementById('curativeEquipSelect');
     const assignSel = document.getElementById('curativeAssignTo');
     const errorEl = document.getElementById('curativeRaiseError');
-    errorEl.textContent = '';
+        errorEl.textContent = '';
     document.getElementById('curativeIssue').value = '';
+    document.getElementById('curativeFreeText').value = '';
+
+    // ─── STEP 3: Reset the Location field + populate room suggestions ───
+    const locInput = document.getElementById('curativeLocationInput');
+    const locDL    = document.getElementById('curativeLocationSuggestions');
+    if (locInput) locInput.value = '';
+    if (locDL) {
+        locDL.innerHTML = '';
+        const myDept = currentInchargeDept || inferDepartmentFromIncharge(currentLoggedInName);
+        const services = (DEPARTMENTS[myDept] && DEPARTMENTS[myDept].services) || [];
+        services.forEach(s => {
+            const o = document.createElement('option');
+            o.value = s;
+            locDL.appendChild(o);
+        });
+    }
+    document.getElementById('curativeLocationWrap').style.display = 'none';
+    document.getElementById('curativeEquipWrap').style.display = 'block';
+    document.getElementById('curativeFreeTextWrap').style.display = 'none';
+    const _catSel = document.getElementById('curativeCategory');
+    if (_catSel) _catSel.value = 'Refrigeration';
+    // ────────────────────────────────────────────────────────────────────
+
     const med = document.querySelector('#curativePriorityGroup input[value="medium"]');
     if (med) med.checked = true;
     document.querySelectorAll('#curativePriorityGroup label').forEach(l => l.classList.remove('selected'));
@@ -5253,12 +5513,8 @@ async function openRaiseCurativeModal() {
         let deptTechs = allTechs.filter(n => {
             const u = users[n];
             const ds = Array.isArray(u.depts) ? u.depts : (u.dept ? [u.dept] : []);
-            return ds.some(d => normalizeText(d) === normalizeText(dept));
+            return ds.length === 0 || ds.some(d => normalizeText(d) === normalizeText(dept));
         });
-        if (deptTechs.length === 0 && mine.length > 0) {
-            const ownersInDept = new Set(mine.map(a => normalizeText(getInventoryOwner(a))).filter(Boolean));
-            deptTechs = allTechs.filter(n => ownersInDept.has(normalizeText(n)));
-        }
         const techsToShow = deptTechs.length > 0 ? deptTechs : allTechs;
         if (techsToShow.length === 0) {
             const o = document.createElement('option');
@@ -5266,56 +5522,74 @@ async function openRaiseCurativeModal() {
             o.textContent = '— No technicians registered yet —';
             assignSel.appendChild(o);
         } else {
-            const header = document.createElement('option');
-            header.value = '';
-            header.disabled = true;
-            header.textContent = deptTechs.length > 0
-                ? `— Department technicians (${techsToShow.length}) —`
-                : `— All technicians (${techsToShow.length}) —`;
-            assignSel.appendChild(header);
             techsToShow.forEach(t => {
                 const o = document.createElement('option');
                 o.value = t; o.textContent = t;
                 assignSel.appendChild(o);
             });
         }
-    } catch(e) {
-        errorEl.textContent = '⚠️ ' + e.message;
-    }
+    } catch(e) { errorEl.textContent = '⚠️ ' + e.message; }
     document.getElementById('raiseCurativeModal').classList.add('show');
 }
 async function saveCurativeRequest() {
     const errorEl = document.getElementById('curativeRaiseError');
     errorEl.textContent = '';
+    const category = document.getElementById('curativeCategory').value || 'Refrigeration';
     const select = document.getElementById('curativeEquipSelect');
     const idx = select.value;
-    if (idx === '' || !select._list || !select._list[idx]) { errorEl.textContent = '⚠️ Pick equipment.'; return; }
-    const ref = select._list[idx];
+    const freeText = (document.getElementById('curativeFreeText').value || '').trim();
+        const manualLocation = (document.getElementById('curativeLocationInput')?.value || '').trim();
     const issue = (document.getElementById('curativeIssue').value || '').trim();
     if (!issue) { errorEl.textContent = '⚠️ Describe the problem.'; return; }
     const prio = (document.querySelector('#curativePriorityGroup input:checked') || {}).value || 'medium';
     const assignTo = (document.getElementById('curativeAssignTo').value || '').trim();
+
+    let tag = '', dept = '', loc = '', brand = '', model = '', serial = '';
+
+    if (category === 'Refrigeration') {
+        // ✅ Equipment dropdown path
+        if (idx === '' || !select._list || !select._list[idx]) {
+            errorEl.textContent = '⚠️ Pick equipment.';
+            return;
+        }
+        const ref = select._list[idx];
+        tag = ref.tag; dept = ref.dept; loc = ref.loc;
+        brand = ref.brand; model = ref.model; serial = ref.serial;
+    } else {
+        // ✅ Electrical / Other path — require BOTH location + item description
+        const manualLoc = (document.getElementById('curativeLocationInput').value || '').trim();
+        if (!manualLoc) {
+            errorEl.textContent = '⚠️ Enter the Location / Room (e.g. Hematology Room).';
+            return;
+        }
+        if (!freeText) {
+            errorEl.textContent = '⚠️ Describe the affected item (e.g. lamp, socket, switch).';
+            return;
+        }
+        const prefix = (category === 'Electrical') ? 'ELEC-' : 'OTHER-';
+        tag = prefix + manualLoc.substring(0, 20) + ' / ' + freeText.substring(0, 30);
+        loc = manualLoc;                                   // ✅ real location
+        dept = currentInchargeDept || inferDepartmentFromIncharge(currentLoggedInName);
+    }
     const btn = document.getElementById('curativeRaiseSaveBtn');
     const o = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '⏳ …';
     try {
         const id = await createCurativeRequest({
-            tag: ref.tag, dept: ref.dept, loc: ref.loc,
-            brand: ref.brand, model: ref.model, serial: ref.serial,
-            issue, priority: prio,
-            reportedBy: currentLoggedInName, assignedTo: assignTo
+            tag, dept, loc, brand, model, serial, issue, priority: prio,
+            category, reportedBy: currentLoggedInName, assignedTo: assignTo
         });
-        const recs = assignTo ? [assignTo] : await findTechniciansForDepartment(ref.dept);
+        const recs = assignTo ? [assignTo] : await findTechniciansForDepartment(dept);
         for (const r of recs) {
             await createNotification({
                 recipient: r,
                 type: 'curative_request',
-                title: '🚨 New Curative — ' + ref.tag,
-                message: `[${prio.toUpperCase()}] ${ref.loc} · ${issue.substring(0, 110)}`,
+                title: '🚨 New Curative — ' + tag,
+                message: `[${prio.toUpperCase()}] ${loc} · ${issue.substring(0, 110)}`,
                 relatedDocId: id,
-                relatedTag: ref.tag,
-                relatedDept: ref.dept
+                relatedTag: tag,
+                relatedDept: dept
             });
         }
         showStatus('🚨 Sent to ' + (recs.length || 0) + ' technician(s).', true);
@@ -5389,9 +5663,7 @@ async function saveCompleteCurative() {
         modal.classList.remove('show');
         await refreshTechnicianCurative();
         await renderNotificationBell();
-    } catch(e) {
-        errorEl.textContent = '⚠️ ' + (e.message || 'Failed.');
-    }
+    } catch(e) { errorEl.textContent = '⚠️ ' + (e.message || 'Failed.'); }
     btn.disabled = false;
     btn.innerHTML = o;
 }
@@ -5401,9 +5673,7 @@ function openVerifyCurativeModal(c) {
     const det = document.getElementById('verifyCurativeDetails');
     det.innerHTML = `
         <div class="info-row"><span class="k">Issue</span><span class="v" style="text-align:right;font-weight:600;">${escapeHtml(c.issue)}</span></div>
-        <div class="info-row"><span class="k">Priority</span><span class="v"><span class="priority-badge ${c.priority}">${escapeHtml(c.priority)}</span></span></div>
         <div class="info-row"><span class="k">Technician</span><span class="v">${escapeHtml(c.assignedTo || '—')}</span></div>
-        <div class="info-row"><span class="k">Completed</span><span class="v">${formatDateOnly(c.completedAt)}</span></div>
         <div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border-radius:10px;border-left:4px solid #1b6b3f;">
             <div style="font-weight:700;color:#1b6b3f;font-size:.82rem;margin-bottom:4px;">🔧 Tech notes</div>
             <div style="font-size:.88rem;color:#155231;">${escapeHtml(c.technicianNotes || '—')}</div>
@@ -5426,7 +5696,6 @@ async function saveVerifyCurative(approve) {
     errorEl.textContent = '';
     const comment = (document.getElementById('verifyCurativeComment').value || '').trim();
     const quality = (document.querySelector('#curativeQualityGroup input:checked') || {}).value || 'good';
-    if (!approve && !comment && !confirm('Reject without comment?')) return;
     const btn = approve
         ? document.getElementById('verifyCurativeApproveBtn')
         : document.getElementById('verifyCurativeRejectBtn');
@@ -5457,9 +5726,7 @@ async function saveVerifyCurative(approve) {
         modal.classList.remove('show');
         await refreshInchargeCurative();
         await renderNotificationBell();
-    } catch(e) {
-        errorEl.textContent = '⚠️ ' + (e.message || 'Failed.');
-    }
+    } catch(e) { errorEl.textContent = '⚠️ ' + (e.message || 'Failed.'); }
     btn.disabled = false;
     btn.innerHTML = o;
 }
@@ -5475,7 +5742,7 @@ async function downloadTechnicianQuarterlyCurativeReport() {
         const q = quarterKeyOf(new Date());
         const ql = mine.filter(c => c.quarterKey === q);
         if (!ql.length) { showStatus('📭 No jobs this quarter.', false); btn.disabled = false; btn.innerHTML = o; return; }
-        await generateCurativeQuarterlyPDF(currentLoggedInName, q, ql);
+        await generateCurativeAnalyticsPDF(ql, currentLoggedInName, q);
         showStatus('📄 Generated.', true);
     } catch(e) { showStatus('⚠️ ' + e.message, false); }
     btn.disabled = false;
@@ -5483,10 +5750,358 @@ async function downloadTechnicianQuarterlyCurativeReport() {
 }
 
 /* ============================================================
-   PART 6 — PDF GENERATION
+   DISPOSAL WORKFLOW
    ============================================================ */
+async function fetchDisposalRequests(opts) {
+    opts = opts || {};
+    try {
+        if (!window.FB || !window.FB.ready) return [];
+        const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'disposalRequests'));
+        const out = [];
+        snap.forEach(doc => {
+            const d = doc.data() || {};
+            const r = {
+                _docId: doc.id,
+                tag: d.tag || '', dept: d.dept || '', loc: d.loc || '',
+                reason: d.reason || '', condition: d.condition || '',
+                requestedBy: d.requestedBy || '',
+                requestedAt: d.requestedAt && d.requestedAt.toDate ? d.requestedAt.toDate().toISOString() : (d.requestedAt || ''),
+                inchargeDecision: d.inchargeDecision || '',
+                inchargeApprovedBy: d.inchargeApprovedBy || '',
+                inchargeApprovedAt: d.inchargeApprovedAt && d.inchargeApprovedAt.toDate ? d.inchargeApprovedAt.toDate().toISOString() : (d.inchargeApprovedAt || ''),
+                inchargeComment: d.inchargeComment || '',
+                amDecision: d.amDecision || '',
+                amApprovedBy: d.amApprovedBy || '',
+                amApprovedAt: d.amApprovedAt && d.amApprovedAt.toDate ? d.amApprovedAt.toDate().toISOString() : (d.amApprovedAt || ''),
+                amComment: d.amComment || '',
+                status: d.status || 'awaiting_incharge'
+            };
+            if (opts.dept && opts.dept !== 'all' && normalizeText(r.dept) !== normalizeText(opts.dept)) return;
+            if (opts.status && opts.status !== 'all' && r.status !== opts.status) return;
+            out.push(r);
+        });
+        out.sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt));
+        return out;
+    } catch(e) { return []; }
+}
+async function createDisposalRequest(p) {
+    const ref = await window.FB.addDoc(window.FB.collection(window.FB.db, 'disposalRequests'), {
+        tag: p.tag, dept: p.dept, loc: p.loc,
+        brand: p.brand || '', model: p.model || '', serial: p.serial || '',
+        reason: p.reason, condition: p.condition,
+        requestedBy: p.requestedBy || currentLoggedInName,
+        requestedAt: window.FB.serverTimestamp(),
+        status: 'awaiting_incharge'
+    });
+    return ref.id;
+}
+async function updateDisposalRequest(id, u) {
+    const f = Object.assign({}, u);
+    if (u.inchargeApprovedAt === 'NOW') f.inchargeApprovedAt = window.FB.serverTimestamp();
+    if (u.amApprovedAt === 'NOW') f.amApprovedAt = window.FB.serverTimestamp();
+    try {
+        await window.FB.updateDoc(window.FB.doc(window.FB.db, 'disposalRequests', id), f);
+        return true;
+    } catch(e) { return false; }
+}
+function openDisposalRequestModal(ref) {
+    const modal = document.getElementById('disposalRequestModal');
+    document.getElementById('disposalRequestSubtitle').textContent =
+        `Tag: ${ref.tag} · ${ref.loc} · ${ref.dept}`;
+    document.getElementById('disposalReason').value = '';
+    document.getElementById('disposalCondition').value = 'Not Working';
+    document.getElementById('disposalRequestError').textContent = '';
+    modal._ref = ref;
+    modal.classList.add('show');
+}
+async function submitDisposalRequest() {
+    const modal = document.getElementById('disposalRequestModal');
+    const ref = modal._ref;
+    if (!ref) return;
+    const reason = (document.getElementById('disposalReason').value || '').trim();
+    const condition = document.getElementById('disposalCondition').value || 'Not Working';
+    const errEl = document.getElementById('disposalRequestError');
+    if (!reason) { errEl.textContent = '⚠️ Reason is required.'; return; }
+    const btn = document.getElementById('disposalRequestSaveBtn');
+    const o = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ …';
+    try {
+        const id = await createDisposalRequest({
+            tag: ref.tag, dept: ref.dept, loc: ref.loc,
+            brand: ref.brand, model: ref.model, serial: ref.serial,
+            reason, condition, requestedBy: currentLoggedInName
+        });
+        const users = await loadUsersFromFirestore();
+        const deptIncharges = Object.keys(users).filter(n => {
+            const u = users[n];
+            return u.role === 'incharge' && normalizeText(u.dept) === normalizeText(ref.dept);
+        });
+        for (const r of deptIncharges) {
+            await createNotification({
+                recipient: r,
+                type: 'disposal_requested',
+                title: '🗑️ Disposal request — ' + ref.tag,
+                message: `${currentLoggedInName} requested disposal of ${ref.tag}. Reason: ${reason.substring(0, 100)}`,
+                relatedDocId: id, relatedTag: ref.tag, relatedDept: ref.dept
+            });
+        }
+        showStatus('🗑️ Disposal request submitted.', true);
+        modal.classList.remove('show');
+        await renderNotificationBell();
+    } catch(e) { errEl.textContent = '⚠️ ' + (e.message || 'Failed.'); }
+    btn.disabled = false;
+    btn.innerHTML = o;
+}
+async function refreshInchargeDisposals() {
+    const card = document.getElementById('inchargeDisposalCard');
+    const list = document.getElementById('inchargeDisposalList');
+    const cnt = document.getElementById('inchargeDisposalCount');
+    if (!card || !list) return;
+    const dept = currentInchargeDept || inferDepartmentFromIncharge(currentLoggedInName);
+    if (!dept) { card.style.display = 'none'; return; }
+    const all = await fetchDisposalRequests({ dept: dept });
+    const pending = all.filter(r => r.status === 'awaiting_incharge');
+    const others = all.filter(r => r.status !== 'awaiting_incharge').slice(0, 20);
+    cnt.textContent = pending.length;
+    if (all.length === 0) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    list.innerHTML = '';
+    if (pending.length) {
+        const h = document.createElement('div');
+        h.innerHTML = '<h3 style="font-size:.95rem;color:#7a5300;margin:8px 0;">⏳ Awaiting your approval</h3>';
+        list.appendChild(h);
+        pending.forEach(r => list.appendChild(renderDisposalCard(r, 'incharge')));
+    }
+    if (others.length) {
+        const h = document.createElement('div');
+        h.innerHTML = '<h3 style="font-size:.95rem;color:#5b7b96;margin:14px 0 8px;">📋 Recent</h3>';
+        list.appendChild(h);
+        others.forEach(r => list.appendChild(renderDisposalCard(r, 'incharge')));
+    }
+    bindDisposalButtons(list, all, 'incharge');
+}
+function renderDisposalCard(r, role) {
+    const el = document.createElement('div');
+    el.className = 'disposal-card';
+    const statusLabel = {
+        awaiting_incharge: '⏳ Awaiting In-Charge',
+        awaiting_am: '⏳ Awaiting Assets Manager',
+        disposed: '✅ Disposed',
+        rejected: '❌ Rejected'
+    }[r.status] || r.status;
+    el.innerHTML = `
+        <div class="dc-title">🗑️ ${escapeHtml(r.tag)} — ${escapeHtml(r.loc)}</div>
+        <div class="dc-meta">Dept: ${escapeHtml(r.dept)} · Requested by: <strong>${escapeHtml(r.requestedBy)}</strong> · ${formatDateOnly(r.requestedAt)}</div>
+        <div class="dc-meta">Condition: <strong>${escapeHtml(r.condition)}</strong></div>
+        <div style="margin-top:8px;padding:8px 12px;background:white;border-radius:8px;border-left:4px solid #f4a300;">
+            <strong>Reason:</strong> ${escapeHtml(r.reason)}
+        </div>
+        ${r.inchargeDecision ? `<div class="dc-meta">👔 In-Charge: <strong>${escapeHtml(r.inchargeDecision)}</strong> (${escapeHtml(r.inchargeApprovedBy || '')})${r.inchargeComment ? ' — ' + escapeHtml(r.inchargeComment) : ''}</div>` : ''}
+        ${r.amDecision ? `<div class="dc-meta">🗑️ Assets Mgr: <strong>${escapeHtml(r.amDecision)}</strong> (${escapeHtml(r.amApprovedBy || '')})${r.amComment ? ' — ' + escapeHtml(r.amComment) : ''}</div>` : ''}
+        <div class="dc-meta" style="margin-top:6px;"><strong>Status:</strong> ${statusLabel}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+            ${role === 'incharge' && r.status === 'awaiting_incharge' ? `<button class="btn-approve" data-disposal-incharge="${r._docId}">👔 Review</button>` : ''}
+            ${role === 'am' && r.status === 'awaiting_am' ? `<button class="btn-approve" data-disposal-am="${r._docId}">🗑️ Final Approval</button>` : ''}
+        </div>`;
+    return el;
+}
+function bindDisposalButtons(container, list, role) {
+    container.querySelectorAll('[data-disposal-incharge]').forEach(b => b.addEventListener('click', () => {
+        const r = list.find(x => x._docId === b.getAttribute('data-disposal-incharge'));
+        if (r) openDisposalApprovalModal(r, 'incharge');
+    }));
+    container.querySelectorAll('[data-disposal-am]').forEach(b => b.addEventListener('click', () => {
+        const r = list.find(x => x._docId === b.getAttribute('data-disposal-am'));
+        if (r) openDisposalApprovalModal(r, 'am');
+    }));
+}
+function openDisposalApprovalModal(r, role) {
+    const modal = document.getElementById('disposalApprovalModal');
+    document.getElementById('disposalApprovalTitle').textContent =
+        role === 'incharge' ? '👔 In-Charge Disposal Approval' : '🗑️ Assets Manager Final Approval';
+    document.getElementById('disposalApprovalDetails').innerHTML = `
+        <div class="info-row"><span class="k">Tag</span><span class="v">${escapeHtml(r.tag)}</span></div>
+        <div class="info-row"><span class="k">Location</span><span class="v">${escapeHtml(r.loc)}</span></div>
+        <div class="info-row"><span class="k">Department</span><span class="v">${escapeHtml(r.dept)}</span></div>
+        <div class="info-row"><span class="k">Requested by</span><span class="v">${escapeHtml(r.requestedBy)}</span></div>
+        <div class="info-row"><span class="k">Condition</span><span class="v">${escapeHtml(r.condition)}</span></div>
+        <div style="margin-top:8px;padding:8px 12px;background:white;border-radius:8px;border-left:4px solid #f4a300;">
+            <strong>Reason:</strong> ${escapeHtml(r.reason)}
+        </div>`;
+    const approved = document.querySelector('#disposalDecisionGroup input[value="approved"]');
+    if (approved) approved.checked = true;
+    document.querySelectorAll('#disposalDecisionGroup label').forEach(l => l.classList.remove('selected'));
+    if (approved) approved.closest('label').classList.add('selected');
+    document.getElementById('disposalApprovalComment').value = '';
+    document.getElementById('disposalApprovalError').textContent = '';
+    modal._request = r;
+    modal._role = role;
+    modal.classList.add('show');
+}
+async function submitDisposalApproval() {
+    const modal = document.getElementById('disposalApprovalModal');
+    const r = modal._request;
+    const role = modal._role;
+    if (!r) return;
+    const decision = (document.querySelector('#disposalDecisionGroup input:checked') || {}).value || 'approved';
+    const comment = (document.getElementById('disposalApprovalComment').value || '').trim();
+    const errEl = document.getElementById('disposalApprovalError');
+    const btn = document.getElementById('disposalApprovalSaveBtn');
+    const o = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ …';
+    try {
+        if (role === 'incharge') {
+            const u = {
+                inchargeDecision: decision,
+                inchargeApprovedBy: currentLoggedInName,
+                inchargeApprovedAt: 'NOW',
+                inchargeComment: comment,
+                status: decision === 'approved' ? 'awaiting_am' : 'rejected'
+            };
+            const ok = await updateDisposalRequest(r._docId, u);
+            if (!ok) throw new Error('Update failed');
+            await createNotification({
+                recipient: r.requestedBy,
+                type: 'disposal_incharge_approved',
+                title: (decision === 'approved' ? '👔 In-Charge approved — ' : '❌ In-Charge rejected — ') + r.tag,
+                message: `${currentLoggedInName}: ${comment || decision}`,
+                relatedDocId: r._docId, relatedTag: r.tag, relatedDept: r.dept
+            });
+            if (decision === 'approved') {
+                const users = await loadUsersFromFirestore();
+                const ams = Object.keys(users).filter(n => users[n].role === 'assetsmanager');
+                for (const am of ams) {
+                    await createNotification({
+                        recipient: am,
+                        type: 'disposal_requested',
+                        title: '🗑️ Final disposal approval — ' + r.tag,
+                        message: `${r.tag} at ${r.loc} needs your final approval.`,
+                        relatedDocId: r._docId, relatedTag: r.tag, relatedDept: r.dept
+                    });
+                }
+            }
+        } else {
+            const u = {
+                amDecision: decision,
+                amApprovedBy: currentLoggedInName,
+                amApprovedAt: 'NOW',
+                amComment: comment,
+                status: decision === 'approved' ? 'disposed' : 'rejected'
+            };
+            const ok = await updateDisposalRequest(r._docId, u);
+            if (!ok) throw new Error('Update failed');
+            if (decision === 'approved') {
+                const inv = await fetchAllInventory();
+                const found = inv.find(x => x.tag === r.tag && normalizeText(x.loc) === normalizeText(r.loc));
+                if (found) {
+                    try { await removeInventoryItemInCloud(found, currentLoggedInName); } catch(e) {}
+                }
+            }
+            await createNotification({
+                recipient: r.requestedBy,
+                type: 'disposal_am_approved',
+                title: (decision === 'approved' ? '✅ Disposed — ' : '❌ Rejected by Assets Mgr — ') + r.tag,
+                message: `${currentLoggedInName}: ${comment || decision}`,
+                relatedDocId: r._docId, relatedTag: r.tag, relatedDept: r.dept
+            });
+        }
+        showStatus(decision === 'approved' ? '✅ Approval recorded.' : '❌ Rejection recorded.', decision === 'approved');
+        modal.classList.remove('show');
+        if (role === 'incharge') await refreshInchargeDisposals();
+        else await refreshAssetsDisposals();
+        await renderNotificationBell();
+    } catch(e) { errEl.textContent = '⚠️ ' + (e.message || 'Failed.'); }
+    btn.disabled = false;
+    btn.innerHTML = o;
+}
+async function refreshAssetsDisposals() {
+    const list = document.getElementById('amDisposalList');
+    const cnt = document.getElementById('amDisposalCount');
+    if (!list) return;
+    list.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+    try {
+        const all = await fetchDisposalRequests({});
+        let f = all;
+        if (CURRENT_AM_DISPOSAL_FILTER === 'awaiting_am') f = all.filter(r => r.status === 'awaiting_am');
+        else if (CURRENT_AM_DISPOSAL_FILTER === 'awaiting_incharge') f = all.filter(r => r.status === 'awaiting_incharge');
+        else if (CURRENT_AM_DISPOSAL_FILTER === 'disposed') f = all.filter(r => r.status === 'disposed');
+        cnt.textContent = f.length;
+        if (!f.length) {
+            list.innerHTML = '<div style="text-align:center;padding:18px;color:#9cb9d0;font-style:italic;">📭 No requests in this filter.</div>';
+            return;
+        }
+        list.innerHTML = '';
+        f.forEach(r => list.appendChild(renderDisposalCard(r, 'am')));
+        bindDisposalButtons(list, f, 'am');
+    } catch(e) { list.innerHTML = '<div class="info-error">⚠️ ' + escapeHtml(e.message) + '</div>'; }
+}
+document.querySelectorAll('#amDisposalFilterBar .filter-chip').forEach(c => c.addEventListener('click', function() {
+    document.querySelectorAll('#amDisposalFilterBar .filter-chip').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+    CURRENT_AM_DISPOSAL_FILTER = this.dataset.status;
+    refreshAssetsDisposals();
+}));
+async function refreshAssetsInventory() {
+    const tbody = document.getElementById('amInventoryTableBody');
+    const cnt = document.getElementById('amInvCount');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#5b7b96;font-style:italic;padding:14px;">Loading…</td></tr>';
+    try {
+        const inv = await fetchAllInventory();
+        const records = await fetchAllLogs();
+        cnt.textContent = inv.length;
+        if (!inv.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#5b7b96;padding:14px;">No equipment.</td></tr>';
+            return;
+        }
+        const now = new Date();
+        tbody.innerHTML = inv.map(a => {
+            const st = computeRefStatus(a, records, now);
+            const ws = a.workingStatus || 'Working';
+            const wb = ws === 'Not Working' ? '<span class="status-badge not-working">⛔</span>' : '<span class="status-badge working">✅</span>';
+            const lbl = { maintained: '✅', pending: '⏳', overdue: '🚨', never: '⚪' };
+            return `<tr>
+                <td><strong>${escapeHtml(a.tag)}</strong></td>
+                <td>${escapeHtml(a.dept)}</td>
+                <td>${escapeHtml(a.loc)}</td>
+                <td>${escapeHtml((a.brand || '') + ' ' + (a.model || ''))}</td>
+                <td>${wb}</td>
+                <td>${escapeHtml(getInventoryOwner(a) || '—')}</td>
+                <td><span class="status-badge ${st.status}">${lbl[st.status] || ''} ${st.status}</span></td>
+                <td>
+                    <button class="btn-dl-row" data-am-edit="${escapeHtml(a._docId || a.tag)}">✏️ Edit</button>
+                    <button class="btn-danger" data-am-del="${escapeHtml(a._docId || a.tag)}" style="margin-left:4px;">🗑️</button>
+                </td>
+            </tr>`;
+        }).join('');
+        tbody.querySelectorAll('[data-am-edit]').forEach(b => b.addEventListener('click', () => {
+            const k = b.getAttribute('data-am-edit');
+            const item = inv.find(x => (x._docId || x.tag) === k);
+            if (item) openEditRefModal(item);
+        }));
+        tbody.querySelectorAll('[data-am-del]').forEach(b => b.addEventListener('click', async () => {
+            const k = b.getAttribute('data-am-del');
+            const item = inv.find(x => (x._docId || x.tag) === k);
+            if (!item) return;
+            if (!confirm(`Delete ${item.tag} immediately?`)) return;
+            try {
+                await removeInventoryItemInCloud(item, currentLoggedInName);
+                showStatus('🗑️ Deleted.', true);
+                refreshAssetsInventory();
+            } catch(e) { showStatus('⚠️ ' + e.message, false); }
+        }));
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#b33a3a;padding:14px;">⚠️ ' + escapeHtml(e.message) + '</td></tr>';
+    }
+}
+document.getElementById('amRefreshInvBtn')?.addEventListener('click', refreshAssetsInventory);
+document.getElementById('amAddEquipmentBtn')?.addEventListener('click', () => addRefBtn.click());
 
-/* Main PM PDF generator — one record per section, page-safe. */
+/* ============================================================
+   PDF GENERATORS
+   ============================================================ */
 async function generatePDF(records) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -5495,7 +6110,6 @@ async function generatePDF(records) {
     const margin = 18;
     const contentWidth = pageWidth - margin * 2;
 
-    /* Ensure PFX loaded before signing — prompts if not in memory */
     if (!isCertLoaded() && records.length > 0) {
         const firstTech = safeStr(records[0].technician || records[0]['Technician'] || '');
         if (firstTech) await ensurePfxLoadedFor(firstTech);
@@ -5532,7 +6146,7 @@ async function generatePDF(records) {
 
     let isFirstPage = true;
 
-    function addHeader(data, isPrimary) {
+    function addHeader(data) {
         if (isFirstPage) {
             isFirstPage = false;
             return drawChubHeader(doc, {
@@ -5552,9 +6166,8 @@ async function generatePDF(records) {
     for (let i = 0; i < records.length; i++) {
         const data = records[i];
         if (i > 0) doc.addPage();
-        let y = addHeader(data, i === 0);
+        let y = addHeader(data);
 
-        /* Ref header band */
         doc.setFillColor(30, 74, 109);
         doc.rect(margin, y, contentWidth, 15, 'F');
         doc.setTextColor(255, 255, 255);
@@ -5567,7 +6180,6 @@ async function generatePDF(records) {
         doc.text(pdfSanitize(`Dept: ${data.refDept || '—'}  |  ${data.refType || ''}  |  ${data.refBrand || ''}  |  ${data.refModel || ''}  |  SN: ${data.refSerial || ''}  |  Working: ${data.refWorkingStatus || 'Working'}`), margin + 4, y + 12);
         y += 19;
 
-        /* Legend */
         doc.setFillColor(248, 250, 252);
         doc.setDrawColor(203, 213, 225);
         doc.roundedRect(margin, y, contentWidth, 7, 1.5, 1.5, 'FD');
@@ -5586,12 +6198,10 @@ async function generatePDF(records) {
         doc.text('Not checked', margin + 65, y + 5);
         y += 12;
 
-        /* Section drawer */
         const drawSection = (title, label, value, items, remark) => {
-            /* Ensure there's room for at least the section header + 1 row */
             if (y + 30 > pageHeight - 22) {
                 doc.addPage();
-                y = addHeader(data, false);
+                y = addHeader(data);
             }
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
@@ -5637,15 +6247,14 @@ async function generatePDF(records) {
                     1: { cellWidth: (contentWidth / 2) - 6 },
                     2: { cellWidth: 6 },
                     3: { cellWidth: (contentWidth / 2) - 6 }
-                },
-                didDrawPage: () => { /* autoTable manages this */ }
+                }
             });
             y = doc.lastAutoTable.finalY + 3;
 
             if (remark && remark !== '—' && remark !== '') {
                 if (y + 15 > pageHeight - 22) {
                     doc.addPage();
-                    y = addHeader(data, false);
+                    y = addHeader(data);
                 }
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'italic');
@@ -5668,11 +6277,10 @@ async function generatePDF(records) {
         drawSection('Temperature & Performance', 'Status', data.tempRating, ti, data.tempRemarks);
         drawSection('Door, Seals & Function', 'Performance', data.doorRating, di, data.doorRemarks);
 
-        /* Sign-off blocks */
         const boxH = 50;
         if (y + boxH + 20 > pageHeight - 22) {
             doc.addPage();
-            y = addHeader(data, false);
+            y = addHeader(data);
         }
         const gap = 4;
         const halfW = (contentWidth - gap) / 2;
@@ -5718,7 +6326,6 @@ async function generatePDF(records) {
         doc.setTextColor(91, 123, 150);
         doc.text('Signature', lbx + 3, y + 28);
 
-        /* In-charge block */
         doc.setFillColor(255, 251, 235);
         doc.setDrawColor(244, 217, 122);
         doc.roundedRect(rbx, y, halfW, boxH, 2, 2, 'FD');
@@ -5727,7 +6334,6 @@ async function generatePDF(records) {
         doc.setTextColor(122, 83, 0);
         doc.text('REVIEWED BY (DEPT. IN-CHARGE)', rbx + 3, y + 4.5);
 
-        /* ✅ BUGFIX: declare signer + sigAt from the record */
         const sigAt  = safeStr(data.inchargeSignedAt  || data['In-Charge Signed At'] || '');
         const signer = safeStr(data.inchargeSigner    || data['In-Charge Signer'] ||
                                data.inchargeName      || data['In-Charge Name']    || '');
@@ -5800,11 +6406,6 @@ async function generatePDF(records) {
             doc.text('Pending co-signature', rbx + 3, y + 32);
         }
         y += boxH + 3;
-
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(91, 123, 150);
-        doc.text(pdfSanitize('Generated from CHUB Refrigerator Fleet PM System | ' + (data.reportId || '')), margin, y);
     }
 
     const totalPages = doc.internal.getNumberOfPages();
@@ -5820,7 +6421,6 @@ async function generatePDF(records) {
     else doc.save(fname);
 }
 
-/* Analysis PDF — KPIs + breakdowns. */
 async function generateAnalysisPDF(records, dept) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -5844,7 +6444,6 @@ async function generateAnalysisPDF(records, dept) {
     const rejected = records.filter(r => safeStr(r.inchargeReviewStatus) === 'rejected').length;
     const uniqueRefs = new Set(records.map(r => safeStr(r['Ref Tag'] || r.refTag))).size;
 
-    /* KPI section */
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(18, 64, 94);
@@ -5875,8 +6474,7 @@ async function generateAnalysisPDF(records, dept) {
     });
     y += 3 * (bH + 4) + 4;
 
-    /* Breakdown by refrigerator */
-    if (y > pH - 60) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR ANALYSIS REPORT (cont.)', ref: 'CHUB/FRG/ANA' }); }
+    if (y > pH - 60) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR ANALYSIS (cont.)', ref: 'CHUB/FRG/ANA' }); }
     doc.setFillColor(238, 246, 252);
     doc.rect(mL, y - 4, cW, 6, 'F');
     doc.setFont('helvetica', 'bold');
@@ -5905,7 +6503,7 @@ async function generateAnalysisPDF(records, dept) {
         rRows.forEach((r, i) => {
             if (y > pH - 22) {
                 doc.addPage();
-                y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR ANALYSIS REPORT (cont.)', ref: 'CHUB/FRG/ANA' });
+                y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR ANALYSIS (cont.)', ref: 'CHUB/FRG/ANA' });
             }
             if (i % 2 === 1) {
                 doc.setFillColor(249, 252, 255);
@@ -5918,10 +6516,9 @@ async function generateAnalysisPDF(records, dept) {
     }
     y += 6;
 
-    /* Breakdown by technician */
     if (y > pH - 40) {
         doc.addPage();
-        y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR ANALYSIS REPORT (cont.)', ref: 'CHUB/FRG/ANA' });
+        y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR ANALYSIS (cont.)', ref: 'CHUB/FRG/ANA' });
     }
     doc.setFillColor(238, 246, 252);
     doc.rect(mL, y - 4, cW, 6, 'F');
@@ -5951,7 +6548,7 @@ async function generateAnalysisPDF(records, dept) {
         tRows.forEach((r, i) => {
             if (y > pH - 22) {
                 doc.addPage();
-                y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR ANALYSIS REPORT (cont.)', ref: 'CHUB/FRG/ANA' });
+                y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR ANALYSIS (cont.)', ref: 'CHUB/FRG/ANA' });
             }
             if (i % 2 === 1) {
                 doc.setFillColor(249, 252, 255);
@@ -5963,7 +6560,6 @@ async function generateAnalysisPDF(records, dept) {
         });
     }
 
-    /* Footer every page */
     const totalPages = doc.internal.getNumberOfPages();
     for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
@@ -5977,7 +6573,6 @@ async function generateAnalysisPDF(records, dept) {
     else doc.save(fname);
 }
 
-/* Small job-card PDF (used inside ZIP backup). */
 async function buildJobCardPdfBytes(rec) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -5989,13 +6584,6 @@ async function buildJobCardPdfBytes(rec) {
         ref: (rec.reportId || '').substring(0, 32),
         date: new Date().toLocaleDateString('en-GB')
     });
-
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(91, 123, 150);
-    doc.text('Report ID: ' + (safeStr(rec.reportId) || '—'), m, y);
-    doc.text('Generated: ' + new Date().toLocaleString('en-GB'), pW - m, y, { align: 'right' });
-    y += 6;
 
     const rows = [
         ['Tag', safeStr(rec.refTag)],
@@ -6011,7 +6599,7 @@ async function buildJobCardPdfBytes(rec) {
         ['Report hash', safeStr(rec.reportHash)]
     ];
     rows.forEach((r, i) => {
-        if (y > pH - 20) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
+        if (y > pH - 20) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
         if (i % 2 === 0) {
             doc.setFillColor(249, 252, 255);
             doc.rect(m, y - 3.5, cW, 5.5, 'F');
@@ -6028,7 +6616,7 @@ async function buildJobCardPdfBytes(rec) {
     y += 4;
 
     const sec = (t, texts, items, off, rating, remarks) => {
-        if (y > pH - 40) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
+        if (y > pH - 40) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
         doc.setFillColor(238, 246, 252);
         doc.rect(m, y - 4, cW, 7, 'F');
         doc.setFont('helvetica', 'bold');
@@ -6040,7 +6628,7 @@ async function buildJobCardPdfBytes(rec) {
         doc.setFontSize(8);
         texts.forEach((x, i) => {
             const ok = s.has(String(i + off));
-            if (y > pH - 20) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
+            if (y > pH - 20) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(ok ? 27 : 179, ok ? 107 : 58, ok ? 63 : 58);
             doc.text(ok ? 'V' : 'X', m + 2, y);
@@ -6067,7 +6655,7 @@ async function buildJobCardPdfBytes(rec) {
     sec('Temperature & Performance', JC_TEMP_TEXTS, rec.tempItems, 6, rec.tempRating, rec.tempRemarks);
     sec('Door, Seals & Function', JC_DOOR_TEXTS, rec.doorItems, 11, rec.doorRating, rec.doorRemarks);
 
-    if (y > pH - 45) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'REFRIGERATOR PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
+    if (y > pH - 45) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
     doc.setDrawColor(207, 224, 238);
     doc.setFillColor(240, 246, 252);
     doc.roundedRect(m, y, cW, 32, 2, 2, 'FD');
@@ -6109,7 +6697,6 @@ async function buildJobCardPdfBytes(rec) {
     return doc.output('arraybuffer');
 }
 
-/* Download helper */
 function downloadBytes(bytes, filename) {
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
@@ -6122,7 +6709,6 @@ function downloadBytes(bytes, filename) {
     }, 1000);
 }
 
-/* PKCS#7 PDF signing — quietly returns null if no cert loaded. */
 async function signPdfBytes(pdfArrayBuffer) {
     if (!isCertLoaded() || typeof PDFLib === 'undefined') return null;
     try {
@@ -6228,44 +6814,26 @@ async function signPdfBytes(pdfArrayBuffer) {
     }
 }
 
-/* ============================================================
-   PART 6 — CURATIVE QUARTERLY PDF
-   ============================================================ */
-async function generateCurativeQuarterlyPDF(techName, qKey, records) {
+async function generateCurativeAnalyticsPDF(records, who, qKey) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pW = 210, pH = 297, mL = 14, mR = 14;
     const cW = pW - mL - mR;
     const A = computeCurativeAnalytics(records);
     const issueDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const refNo = 'CHUB/FRG/CUR/' + qKey.replace(/[^A-Z0-9]/gi, '') + '/' + String(records.length).padStart(3, '0');
+    const refNo = 'CHUB/CUR/' + (qKey || 'ALL').replace(/[^A-Z0-9]/gi, '') + '/' + String(records.length).padStart(3, '0');
 
-    let techSig = getSignatureFor(techName);
-    if (!techSig) {
-        try {
-            const cfg = await firestoreConfigGet('TechSig_' + techName);
-            if (cfg) techSig = cfg.startsWith('data:') ? cfg : ('data:image/png;base64,' + cfg);
-        } catch(e) {}
-    }
-    const techSigDims = techSig ? await loadImageDimensions(techSig) : null;
-
-    const inchargeNames = [...new Set(records.map(r => safeStr(r.verifiedBy)).filter(Boolean))];
-    const inchargeSigs = {}, inchargeDims = {};
-    for (const n of inchargeNames) {
-        let s = getInchargeSignatureCached(n);
-        if (!s) s = await fetchInchargeSignatureFromCloud(n);
-        if (s) { inchargeSigs[n] = s; inchargeDims[n] = await loadImageDimensions(s); }
+    if (!isCertLoaded() && currentLoggedInName) {
+        await ensurePfxLoadedFor(currentLoggedInName);
     }
 
-    /* Page 1 — full header */
     let y = drawChubHeader(doc, {
         title: 'CURATIVE MAINTENANCE REPORT',
-        subtitle: quarterLabelOf(qKey) + '   -   Technician: ' + (techName || 'N/A'),
+        subtitle: quarterLabelOf(qKey || 'all') + '   -   ' + (who || 'N/A'),
         ref: refNo,
         date: issueDate
     });
 
-    /* Section 1 — Performance overview */
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(11, 59, 92);
@@ -6285,23 +6853,10 @@ async function generateCurativeQuarterlyPDF(techName, qKey, records) {
     drawKpiTile(doc, mL + 3 * (kW + 3), y, kW, kH, 'SLA <= 24 H', A.slaRate + '%', A.slaMet + ' / ' + A.slaTotal + ' met', [249, 252, 255], [30, 74, 109]);
     y += kH + 5;
 
-    if (A.fastestRespMs != null || A.slowestRespMs != null) {
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(7.5);
-        doc.setTextColor(91, 123, 150);
-        doc.text(
-            'Fastest response: ' + formatDurationMs(A.fastestRespMs) +
-            '     |     Slowest response: ' + formatDurationMs(A.slowestRespMs),
-            mL, y
-        );
-        y += 6;
-    }
-
-    /* Section 2 — Quality */
     if (A.verified.length > 0) {
         if (y + 30 > pH - 20) {
             doc.addPage();
-            y = drawChubSlimHeader(doc, { title: 'CURATIVE MAINTENANCE REPORT (cont.)', ref: refNo });
+            y = drawChubSlimHeader(doc, { title: 'CURATIVE REPORT (cont.)', ref: refNo });
         }
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
@@ -6331,19 +6886,17 @@ async function generateCurativeQuarterlyPDF(techName, qKey, records) {
         y += 16;
     }
 
-    /* Section 3 — Root causes */
     const activeCauses = Object.values(A.rootCounts).filter(c => c.count > 0).sort((a, b) => b.count - a.count);
     if (activeCauses.length) {
         if (y + 25 + activeCauses.length * 6 > pH - 15) {
             doc.addPage();
-            y = drawChubSlimHeader(doc, { title: 'CURATIVE MAINTENANCE REPORT (cont.)', ref: refNo });
+            y = drawChubSlimHeader(doc, { title: 'CURATIVE REPORT (cont.)', ref: refNo });
         }
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(11, 59, 92);
         doc.text('3.  ROOT CAUSE BREAKDOWN', mL, y);
         y += 4;
-
         doc.setFillColor(212, 227, 239);
         doc.rect(mL, y, cW, 6, 'F');
         doc.setFontSize(7);
@@ -6360,7 +6913,7 @@ async function generateCurativeQuarterlyPDF(techName, qKey, records) {
         activeCauses.forEach((c, i) => {
             if (y > pH - 18) {
                 doc.addPage();
-                y = drawChubSlimHeader(doc, { title: 'CURATIVE MAINTENANCE REPORT (cont.)', ref: refNo });
+                y = drawChubSlimHeader(doc, { title: 'CURATIVE REPORT (cont.)', ref: refNo });
             }
             if (i % 2 === 1) {
                 doc.setFillColor(249, 252, 255);
@@ -6381,12 +6934,11 @@ async function generateCurativeQuarterlyPDF(techName, qKey, records) {
         y += 4;
     }
 
-    /* Section 4 — Top problem equipment */
-    const topEquip = A.topEquip.slice(0, 10);
+    const topEquip = A.topEquip.slice(0, 12);
     if (topEquip.length) {
         if (y + 20 + topEquip.length * 6 > pH - 15) {
             doc.addPage();
-            y = drawChubSlimHeader(doc, { title: 'CURATIVE MAINTENANCE REPORT (cont.)', ref: refNo });
+            y = drawChubSlimHeader(doc, { title: 'CURATIVE REPORT (cont.)', ref: refNo });
         }
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
@@ -6396,8 +6948,6 @@ async function generateCurativeQuarterlyPDF(techName, qKey, records) {
         doc.setFillColor(212, 227, 239);
         doc.rect(mL, y, cW, 6, 'F');
         doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(11, 59, 92);
         doc.text('Equipment', mL + 2, y + 4);
         doc.text('Location', mL + 55, y + 4);
         doc.text('Jobs', mL + 108, y + 4);
@@ -6408,7 +6958,7 @@ async function generateCurativeQuarterlyPDF(techName, qKey, records) {
         topEquip.forEach((e, i) => {
             if (y > pH - 18) {
                 doc.addPage();
-                y = drawChubSlimHeader(doc, { title: 'CURATIVE MAINTENANCE REPORT (cont.)', ref: refNo });
+                y = drawChubSlimHeader(doc, { title: 'CURATIVE REPORT (cont.)', ref: refNo });
             }
             if (i % 2 === 1) {
                 doc.setFillColor(249, 252, 255);
@@ -6426,99 +6976,15 @@ async function generateCurativeQuarterlyPDF(techName, qKey, records) {
             doc.text(topCause ? (stripEmojiForPdf(topCause[0]).substring(0, 32) + ' (' + topCause[1] + ')') : '-', mL + 122, y + 4);
             y += 6;
         });
-        y += 4;
     }
 
-    /* Section 5 — Detailed timeline */
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(11, 59, 92);
-    doc.text('5.  DETAILED JOB TIMELINE', mL, y);
-    y += 5;
-
-    A.jobs.forEach((j, i) => {
-        const rowH = 32;
-        if (y + rowH > pH - 18) {
-            doc.addPage();
-            y = drawChubSlimHeader(doc, { title: 'CURATIVE MAINTENANCE REPORT (cont.)', ref: refNo });
-        }
-        const stColor = j.status === 'verified' ? [27, 107, 63]
-                     : j.status === 'rejected' ? [179, 58, 58]
-                     : j.status === 'completed' ? [11, 61, 145]
-                     : [122, 83, 0];
-        doc.setFillColor(...stColor);
-        doc.rect(mL, y, 1.5, rowH, 'F');
-        doc.setFillColor(250, 252, 255);
-        doc.rect(mL + 1.5, y, cW - 1.5, rowH, 'F');
-        doc.setDrawColor(212, 227, 239);
-        doc.setLineWidth(0.2);
-        doc.rect(mL + 1.5, y, cW - 1.5, rowH, 'S');
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.setTextColor(11, 59, 92);
-        doc.text((i + 1) + '.  ' + stripEmojiForPdf(j.tag || '-') + '  -  ' + stripEmojiForPdf(j.loc || '-'), mL + 4, y + 5);
-        doc.setFontSize(7);
-        doc.setTextColor(...stColor);
-        doc.text(j.status.toUpperCase() + '   |   ' + (j.priority || 'medium').toUpperCase(), mL + cW - 2, y + 5, { align: 'right' });
-
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(7);
-        doc.setTextColor(58, 101, 131);
-        const issueLines = doc.splitTextToSize('Issue: ' + stripEmojiForPdf(j.issue || '-'), cW - 8);
-        doc.text(issueLines.slice(0, 1), mL + 4, y + 10);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6.5);
-        doc.setTextColor(91, 123, 150);
-        doc.text(
-            'Reported ' + (j._reported ? formatDateOnly(j._reported.toISOString()) : '-') +
-            '   ->   Started ' + (j._started ? formatDateOnly(j._started.toISOString()) : '-') +
-            '   ->   Completed ' + (j._completed ? formatDateOnly(j._completed.toISOString()) : '-') +
-            '   ->   Verified ' + (j._verified ? formatDateOnly(j._verified.toISOString()) : '-'),
-            mL + 4, y + 15
-        );
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
-        doc.setTextColor(30, 74, 109);
-        doc.text(
-            'Response: ' + formatDurationMs(j._respMs) +
-            '     |     Resolution: ' + formatDurationMs(j._resMs) +
-            '     |     Total: ' + formatDurationMs(j._totMs),
-            mL + 4, y + 20
-        );
-
-        if (j.technicianNotes) {
-            doc.setFont('helvetica', 'italic');
-            doc.setFontSize(6.5);
-            doc.setTextColor(27, 107, 63);
-            const nLines = doc.splitTextToSize('Work done: ' + stripEmojiForPdf(j.technicianNotes), cW - 8);
-            doc.text(nLines.slice(0, 1), mL + 4, y + 25);
-        } else if (j.feedback) {
-            doc.setFont('helvetica', 'italic');
-            doc.setFontSize(6.5);
-            doc.setTextColor(122, 83, 0);
-            const fLines = doc.splitTextToSize('Feedback: ' + stripEmojiForPdf(j.feedback), cW - 8);
-            doc.text(fLines.slice(0, 1), mL + 4, y + 25);
-        }
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(5.5);
-        doc.setTextColor(122, 76, 156);
-        doc.text('Root cause: ' + stripEmojiForPdf(j._rootCause.label), mL + 4, y + rowH - 3);
-
-        y += rowH + 2;
-    });
-
-    /* Footer every page */
     const totalPages = doc.internal.getNumberOfPages();
     for (let p = 1; p <= totalPages; p++) {
         doc.setPage(p);
         drawChubFooter(doc, p, totalPages);
     }
 
-    const fname = 'CHUB_Curative_SmartReport_' + qKey + '_' + (techName || 'tech').replace(/\s+/g, '_') + '.pdf';
+    const fname = 'CHUB_Curative_Report_' + (qKey || 'ALL').replace(/[^A-Z0-9]/gi, '') + '_' + (who || 'fleet').replace(/\s+/g, '_') + '.pdf';
     const bytes = doc.output('arraybuffer');
     const sb = await signPdfBytes(bytes);
     if (sb) downloadBytes(sb, fname);
@@ -6526,7 +6992,7 @@ async function generateCurativeQuarterlyPDF(techName, qKey, records) {
 }
 
 /* ============================================================
-   PART 6 — ZIP BACKUP
+   ZIP BACKUP
    ============================================================ */
 function safeFolderName(s) {
     return String(s || 'Unknown')
@@ -6545,12 +7011,9 @@ async function downloadFullBackupZip() {
     try {
         const logs = await fetchAllLogs();
         if (!logs.length) { showStatus('📭 No PM records.', false); btn.disabled = false; btn.innerHTML = orig; return; }
-
-        /* Ensure PFX loaded once for the current user (manager typically) */
         if (!isCertLoaded() && currentLoggedInName) {
             await ensurePfxLoadedFor(currentLoggedInName);
         }
-
         const rootName = 'CHUB_PM_Backup_' + new Date().toISOString().slice(0, 10);
         const zip = new JSZip();
         const root = zip.folder(rootName);
@@ -6610,7 +7073,7 @@ async function downloadFullBackupZip() {
 document.getElementById('supervisorBackupZipBtn')?.addEventListener('click', downloadFullBackupZip);
 
 /* ============================================================
-   PART 6 — REJECTION WARNING
+   REJECTION WARNING
    ============================================================ */
 async function checkTechnicianRejections(techName) {
     if (!techName) return;
@@ -6657,7 +7120,7 @@ document.getElementById('rejectionCloseBtn')?.addEventListener('click',
     () => document.getElementById('rejectionWarningModal').classList.remove('show'));
 
 /* ============================================================
-   PART 6 — SIGNATURE MODAL
+   SIGNATURE MODAL
    ============================================================ */
 const signatureModal = document.getElementById('signatureModal');
 const sigFileInput = document.getElementById('sigFileInput');
@@ -6851,7 +7314,7 @@ document.getElementById('sigSave').addEventListener('click', async () => {
 });
 
 /* ============================================================
-   PART 6 — LOGIN / SESSION / UNLOCK
+   LOGIN / SESSION / UNLOCK
    ============================================================ */
 const loginModal = document.getElementById('loginModal');
 const loginRoleSelect = document.getElementById('loginRoleSelect');
@@ -6874,13 +7337,16 @@ async function populateTechnicianLoginSelect() {
     const prev = sel.value;
     const users = await loadUsersFromFirestore();
     const techs = Object.keys(users)
-        .filter(n => users[n].role === 'technician' || users[n].role === 'supervisor')
+        .filter(n => users[n].role === 'technician' || users[n].role === 'supervisor' || users[n].role === 'assetsmanager')
         .sort();
     sel.innerHTML = '<option value="">— Choose your name —</option>';
     techs.forEach(n => {
         const o = document.createElement('option');
         o.value = n;
-        o.textContent = n + (users[n].role === 'supervisor' ? ' · 👑 Manager' : '');
+        const rt = users[n].role === 'supervisor' ? ' · 👑 Manager'
+                 : users[n].role === 'assetsmanager' ? ' · 🗑️ Assets Mgr'
+                 : '';
+        o.textContent = n + rt;
         sel.appendChild(o);
     });
     if (prev && techs.includes(prev)) sel.value = prev;
@@ -6917,7 +7383,8 @@ async function populateInchargeSuggestions() {
     await populateInchargeLoginList();
 }
 loginRoleSelect.addEventListener('change', () => {
-    const isIC = loginRoleSelect.value === 'incharge';
+    const v = loginRoleSelect.value;
+    const isIC = v === 'incharge';
     loginTechGroup.style.display = isIC ? 'none' : 'block';
     loginInchargeGroup.style.display = isIC ? 'block' : 'none';
     loginError.textContent = '';
@@ -6934,15 +7401,6 @@ document.getElementById('loginInchargeDept')?.addEventListener('change', functio
 function saveSession(p) {
     try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...p, time: Date.now() })); } catch(e) {}
 }
-function loadSession() {
-    try {
-        const r = sessionStorage.getItem(SESSION_KEY);
-        if (!r) return null;
-        const s = JSON.parse(r);
-        if (Date.now() - s.time > 12 * 3600 * 1000) { sessionStorage.removeItem(SESSION_KEY); return null; }
-        return s;
-    } catch(e) { return null; }
-}
 function clearSession() {
     try { sessionStorage.removeItem(SESSION_KEY); } catch(e) {}
 }
@@ -6953,6 +7411,12 @@ async function unlockApp(p) {
     if (p.name === SUPERVISOR_NAME) currentRole = 'supervisor';
     else currentRole = p.role || 'technician';
     currentLoggedInName = p.name;
+
+    // ✅ FIX: set in-charge department BEFORE applyRoleVisibility()
+    if (currentRole === 'incharge') {
+        currentInchargeDept = p.dept || '';
+    }
+
     if (currentRole === 'technician') {
         let found = false;
         for (let i = 0; i < technicianSelect.options.length; i++) {
@@ -6969,23 +7433,30 @@ async function unlockApp(p) {
     }
     const sfx = currentRole === 'incharge'
         ? ' (In-Charge)'
-        : (currentRole === 'supervisor' ? ' (Manager)' : '');
+        : (currentRole === 'supervisor' ? ' (Manager)' : (currentRole === 'assetsmanager' ? ' (Assets Mgr)' : ''));
     loggedInUserName.textContent = p.name + sfx;
     lockedTechName.textContent = p.name;
     updateTechnicianDisplay();
     applyRoleVisibility();
     loginModal.classList.remove('show');
     await ensureDepartmentsLoaded();
+    if (currentRole === 'incharge' && !currentInchargeDept) {
+        currentInchargeDept = inferDepartmentFromIncharge(p.name);
+    }
     await fetchTechnicianAssetsFromCloud(p.name);
     await populateInchargeSuggestions();
     await populateTechnicianLoginSelect();
     await refreshHeaderAvatar();
     await renderNotificationBell();
+
+    // 🔔 Start the WhatsApp-style notification poller
+    initNotificationPoller();
+
     if (currentRole === 'incharge') {
         currentInchargeDept = p.dept || inferDepartmentFromIncharge(p.name);
         fetchInchargeSignatureFromCloud(p.name).then(s => { if (s) currentInchargeSignature = s; });
-        setTimeout(() => Promise.resolve(refreshPendingApprovals()).catch(e => console.error('pending:', e)), 300);
-        setTimeout(() => Promise.resolve(loadDepartmentInventory()).catch(e => console.error('dept inventory:', e)), 400);
+        setTimeout(() => Promise.resolve(refreshPendingApprovals()).catch(() => {}), 300);
+        setTimeout(() => Promise.resolve(loadDepartmentInventory()).catch(() => {}), 400);
     } else if (currentRole === 'supervisor') {
         REF_INVENTORY = [];
         populateSupervisorDeptFilter();
@@ -6994,11 +7465,16 @@ async function unlockApp(p) {
         populateCurativeDeptSelect();
         populateCurativeTechSelect();
         populateCurativeQuarterSelect();
-        setTimeout(() => Promise.resolve(refreshSupervisorInventory()).catch(e => console.error('inventory:', e)), 300);
-        setTimeout(() => Promise.resolve(renderInchargeEditor()).catch(e => console.error('incharge editor:', e)), 200);
-        setTimeout(() => Promise.resolve(renderTechnicianEditor()).catch(e => console.error('tech editor:', e)), 200);
-        setTimeout(() => Promise.resolve(renderSupervisorDashboard()).catch(e => console.error('dashboard:', e)), 500);
+        setTimeout(() => Promise.resolve(refreshSupervisorInventory()).catch(() => {}), 300);
+        setTimeout(() => Promise.resolve(renderInchargeEditor()).catch(() => {}), 200);
+        setTimeout(() => Promise.resolve(renderTechnicianEditor()).catch(() => {}), 200);
+        setTimeout(() => Promise.resolve(renderSupervisorDashboard()).catch(() => {}), 500);
         showStatus('👑 Welcome ' + p.name, true);
+    } else if (currentRole === 'assetsmanager') {
+        REF_INVENTORY = [];
+        setTimeout(() => Promise.resolve(refreshAssetsDisposals()).catch(() => {}), 400);
+        setTimeout(() => Promise.resolve(refreshAssetsInventory()).catch(() => {}), 500);
+        showStatus('🗑️ Welcome ' + p.name, true);
     } else {
         REF_INVENTORY = [];
         renderRefSelector();
@@ -7030,9 +7506,7 @@ async function unlockApp(p) {
             showStatus('📥 Offline — ' + REF_INVENTORY.length + ' from cache.', false);
             setTimeout(() => checkTechnicianRejections(p.name), 900);
         }
-    }
-    if (currentRole === 'technician') {
-        setTimeout(() => Promise.resolve(refreshTechnicianCurative()).catch(e => console.error('tech curative:', e)), 1200);
+        setTimeout(() => Promise.resolve(refreshTechnicianCurative()).catch(() => {}), 1200);
     }
 }
 function lockApp() {
@@ -7058,6 +7532,7 @@ function lockApp() {
     CURRENT_INCHARGE_CURATIVE = [];
     CURRENT_TECH_CURATIVE = [];
     CURRENT_SUPERVISOR_CURATIVE = [];
+    stopNotificationPoller();
     closeNotifPanel();
     const b = document.getElementById('notifBadge');
     if (b) { b.classList.remove('show', 'pulse'); b.textContent = '0'; }
@@ -7070,6 +7545,15 @@ loginBtn.addEventListener('click', async function() {
     const role = loginRoleSelect.value;
     const pin = loginPinInput.value.trim();
     loginError.textContent = '';
+
+    // 🔓 Unlock audio on the login click (required by browser autoplay policy)
+    primeAudioContext();
+
+    // 🔔 Request desktop-notification permission the first time (WhatsApp-style pop-ups)
+    if ('Notification' in window && Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch(e) {}
+    }
+
     if (!pin) { loginError.textContent = 'Enter your PIN.'; return; }
     loginBtn.disabled = true;
     const o = loginBtn.innerHTML;
@@ -7077,13 +7561,14 @@ loginBtn.addEventListener('click', async function() {
     try { LIVE_USERS = await loadUsersFromFirestore(); } catch(e) {}
     loginBtn.disabled = false;
     loginBtn.innerHTML = o;
-    if (role === 'technician') {
+    if (role === 'technician' || role === 'assetsmanager') {
         const n = loginTechSelect.value;
         if (!n) { loginError.textContent = 'Select your name.'; return; }
         const r = LIVE_USERS[n];
         if (!r || !r.pin) { loginError.textContent = 'User not found. Contact manager.'; loginPinInput.value = ''; loginPinInput.focus(); return; }
         if (String(r.pin) !== pin) { loginError.textContent = 'Wrong PIN for ' + n; loginPinInput.value = ''; loginPinInput.focus(); return; }
-        const ar = (n === SUPERVISOR_NAME) ? 'supervisor' : 'technician';
+        let ar = r.role;
+        if (n === SUPERVISOR_NAME) ar = 'supervisor';
         saveSession({ name: n, role: ar });
         unlockApp({ name: n, role: ar });
         return;
@@ -7106,7 +7591,7 @@ logoutBtn.addEventListener('click', () => {
 });
 
 /* ============================================================
-   PART 6 — ACTION BUTTON BINDINGS (technician)
+   PDF BUTTONS
    ============================================================ */
 pdfBtn.addEventListener('click', async function() {
     const data = collectFormData();
@@ -7138,7 +7623,7 @@ historyPdfBtn.addEventListener('click', async function() {
 });
 
 /* ============================================================
-   PART 6 — ANALYSIS MODAL
+   ANALYSIS MODAL
    ============================================================ */
 const analysisModal = document.getElementById('analysisModal');
 const analysisFrom = document.getElementById('analysisFrom');
@@ -7208,7 +7693,7 @@ document.getElementById('analysisGenerate').addEventListener('click', async func
 });
 
 /* ============================================================
-   PART 6 — NOTIFICATION BELL + PROFILE + PHOTO UPLOADS
+   NOTIFICATION BELL + PROFILE + PHOTO UPLOADS
    ============================================================ */
 document.getElementById('notifBell')?.addEventListener('click', e => {
     e.stopPropagation();
@@ -7301,7 +7786,6 @@ async function refreshHeaderAvatar() {
     else el.innerHTML = `<span>${escapeHtml(initialsOf(name))}</span><span class="edit-badge">✎</span>`;
 }
 
-/* Equipment photo pickers */
 document.getElementById('newRefPhotoPickBtn')?.addEventListener('click',
     () => document.getElementById('newRefPhotoInput').click());
 document.getElementById('newRefPhotoInput')?.addEventListener('change', async function() {
@@ -7327,7 +7811,7 @@ document.getElementById('editRefPhotoInput')?.addEventListener('change', async f
 });
 
 /* ============================================================
-   PART 6 — CURATIVE MODAL BINDINGS
+   CURATIVE MODAL BINDINGS
    ============================================================ */
 document.getElementById('raiseCurativeBtn')?.addEventListener('click', openRaiseCurativeModal);
 document.getElementById('curativeRaiseCancel')?.addEventListener('click',
@@ -7381,7 +7865,41 @@ document.getElementById('curativeTechFilter')?.addEventListener('change', refres
 document.getElementById('curativeQuarterFilter')?.addEventListener('change', refreshSupervisorCurative);
 
 /* ============================================================
-   PART 6 — PFX AUTO-LOAD (silent fetch on login)
+   DISPOSAL MODAL BINDINGS
+   ============================================================ */
+document.getElementById('disposalRequestCancel')?.addEventListener('click',
+    () => document.getElementById('disposalRequestModal').classList.remove('show'));
+document.getElementById('disposalRequestSaveBtn')?.addEventListener('click', submitDisposalRequest);
+document.getElementById('disposalApprovalCancel')?.addEventListener('click',
+    () => document.getElementById('disposalApprovalModal').classList.remove('show'));
+document.getElementById('disposalApprovalSaveBtn')?.addEventListener('click', submitDisposalApproval);
+document.querySelectorAll('#disposalDecisionGroup label').forEach(l => l.addEventListener('click', () => {
+    document.querySelectorAll('#disposalDecisionGroup label').forEach(x => x.classList.remove('selected'));
+    l.classList.add('selected');
+}));
+document.getElementById('curativeCategory')?.addEventListener('change', function() {
+    const eqW = document.getElementById('curativeEquipWrap');
+    const locW = document.getElementById('curativeLocationWrap');
+    const ftW = document.getElementById('curativeFreeTextWrap');
+    const isFridge = (this.value === 'Refrigeration');
+
+    if (eqW) eqW.style.display = isFridge ? 'block' : 'none';
+    if (locW) locW.style.display = isFridge ? 'none' : 'block';
+    if (ftW) ftW.style.display = isFridge ? 'none' : 'block';
+
+    if (isFridge) {
+        const li = document.getElementById('curativeLocationInput');
+        const ft = document.getElementById('curativeFreeText');
+        if (li) li.value = '';
+        if (ft) ft.value = '';
+    } else {
+        const es = document.getElementById('curativeEquipSelect');
+        if (es) es.value = '';
+    }
+});
+
+/* ============================================================
+   PFX AUTO-LOAD
    ============================================================ */
 async function fetchTechnicianAssetsFromCloud(techName) {
     try {
@@ -7462,37 +7980,15 @@ function askPfxPassword() {
         input.addEventListener('keydown', onKey);
     });
 }
-
-/* ============================================================
-   PART 6 — PFX ENSURE (used before signing PDFs)
-   ============================================================ */
-/**
- * Make sure a PFX is loaded for the given technician.
- * Returns true if the cert is ready for signing.
- * Prompts the user if the PFX is not in memory yet.
- */
 async function ensurePfxLoadedFor(techName) {
-    if (isCertLoaded() && window.__cachedPfxBinary && window.__cachedPfxPassword) {
-        console.log('[PFX] Already loaded for', techName);
-        return true;
-    }
-    if (!techName) {
-        console.warn('[PFX] No technician name — cannot load certificate.');
-        return false;
-    }
+    if (isCertLoaded() && window.__cachedPfxBinary && window.__cachedPfxPassword) return true;
+    if (!techName) return false;
     try {
         const cfg = await firestoreConfigGetAll();
         const pfxB64 = cfg['TechPFX_' + techName];
-        if (!pfxB64) {
-            console.warn('[PFX] No certificate uploaded for', techName, '— PDF will be unsigned.');
-            return false;
-        }
-        console.log('[PFX] Prompting for password of', techName);
+        if (!pfxB64) return false;
         const pw = await askPfxPassword();
-        if (!pw) {
-            console.warn('[PFX] Password prompt cancelled.');
-            return false;
-        }
+        if (!pw) return false;
         let cb = pfxB64;
         if (cb.startsWith('data:')) cb = cb.split(',')[1];
         const bin = forge.util.decode64(cb);
@@ -7505,7 +8001,7 @@ async function ensurePfxLoadedFor(techName) {
             const pb = p12.getBags({ bagType: forge.pki.oids.keyBag });
             kb = pb[forge.pki.oids.keyBag] && pb[forge.pki.oids.keyBag][0];
         }
-        if (!c || !c.cert || !kb || !kb.key) throw new Error('Invalid PFX contents.');
+        if (!c || !c.cert || !kb || !kb.key) throw new Error('Invalid PFX.');
         CERT_STATE.certificate = c.cert;
         CERT_STATE.privateKey = kb.key;
         const gf = (obj, nm) => { try { const f = obj.getField(nm); return f ? f.value : ''; } catch(e) { return ''; } };
@@ -7521,21 +8017,142 @@ async function ensurePfxLoadedFor(techName) {
         window.__cachedPfxBinary = bin;
         window.__cachedPfxPassword = pw;
         updateTechnicianDisplay();
-        console.log('[PFX] Loaded OK for', techName);
-        showStatus('🔐 Certificate loaded — PDFs will be cryptographically signed.', true);
+        showStatus('🔐 Certificate loaded.', true);
         return true;
     } catch(e) {
-        console.error('[PFX] Load failed:', e);
         alert('❌ Could not load certificate: ' + (e.message || 'wrong password'));
         return false;
     }
 }
 
 /* ============================================================
-   PART 6 — APP INIT
+   INIT
    ============================================================ */
+document.addEventListener('DOMContentLoaded', async () => { 
+       document.querySelectorAll('.collapsible-card > .card-header').forEach(h => {
+        h.addEventListener('click', function(e) {
+            if (e.target.closest('button, a, select, input, textarea')) return;
+            this.parentElement.classList.toggle('collapsed');
+        });
+    });
+    try {
+        await ensureDepartmentsLoaded();
+    } catch(e) { console.warn(e); }
+    setAutoWorkDate();
+    updatePendingCount();
+    setSyncStatus('', 'Ready');
+    updateTechnicianDisplay();
+    setTimeout(() => { try { flushQueue(); } catch(e) {} }, 2000);
+});
+/* ============================================================
+   NOTIFICATION SOUND + POLLER (WhatsApp-style)
+   ============================================================ */
+let __audioCtx = null;
+let __seenNotifIds = new Set();
+let __notifPollTimer = null;
 
-/* Expose internal helpers for the QR public info page */
+function primeAudioContext() {
+    try {
+        if (!__audioCtx) {
+            __audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (__audioCtx.state === 'suspended') __audioCtx.resume();
+    } catch(e) { console.warn('AudioContext init failed:', e); }
+}
+
+function playNotificationSound() {
+    if (!__audioCtx) {
+        try { __audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch(e) { return; }
+    }
+    if (__audioCtx.state === 'suspended') __audioCtx.resume();
+
+    const now = __audioCtx.currentTime;
+
+    // Tone 1 — rising chirp
+    const o1 = __audioCtx.createOscillator();
+    const g1 = __audioCtx.createGain();
+    o1.type = 'sine';
+    o1.frequency.setValueAtTime(880, now);
+    o1.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
+    g1.gain.setValueAtTime(0, now);
+    g1.gain.linearRampToValueAtTime(0.35, now + 0.02);
+    g1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    o1.connect(g1).connect(__audioCtx.destination);
+    o1.start(now); o1.stop(now + 0.2);
+
+    // Tone 2 — higher "pop" finish
+    const o2 = __audioCtx.createOscillator();
+    const g2 = __audioCtx.createGain();
+    o2.type = 'sine';
+    o2.frequency.setValueAtTime(1760, now + 0.15);
+    o2.frequency.exponentialRampToValueAtTime(2200, now + 0.22);
+    g2.gain.setValueAtTime(0, now + 0.15);
+    g2.gain.linearRampToValueAtTime(0.28, now + 0.17);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+    o2.connect(g2).connect(__audioCtx.destination);
+    o2.start(now + 0.15); o2.stop(now + 0.35);
+}
+
+async function initNotificationPoller() {
+    if (__notifPollTimer) clearInterval(__notifPollTimer);
+    // Mark existing notifications as already-seen (don't chime on backlog)
+    try {
+        const existing = await fetchMyNotifications();
+        __seenNotifIds = new Set(existing.map(n => n._docId));
+    } catch(e) {}
+    // Poll every 15 seconds (light load, plenty fast for a whatsapp feel)
+    __notifPollTimer = setInterval(pollNotifications, 15000);
+    // Optional: also poll on tab focus so it feels instant
+    window.addEventListener('focus', pollNotifications);
+}
+
+async function pollNotifications() {
+    if (!currentLoggedInName) return;
+    try {
+        const list = await fetchMyNotifications();
+        const newOnes = list.filter(n => !n.read && !__seenNotifIds.has(n._docId));
+
+        if (newOnes.length > 0) {
+            playNotificationSound();
+
+            // Desktop / system notification (WhatsApp style pop-up)
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const latest = newOnes[0];
+                try {
+                    const desktop = new Notification(latest.title || 'New notification', {
+                        body: latest.message || '',
+                        icon: 'icon-192.png',
+                        badge: 'icon-192.png',
+                        tag: latest._docId,
+                        renotify: true
+                    });
+                    desktop.onclick = function() {
+                        window.focus();
+                        handleNotificationClick(latest);
+                        desktop.close();
+                    };
+                } catch(e) { /* some browsers block Notification constructor — silent fallback */ }
+            }
+        }
+
+        // Mark all current ones as seen so we never re-chime
+        list.forEach(n => __seenNotifIds.add(n._docId));
+        await renderNotificationBell();
+    } catch(e) { /* silent */ }
+}
+
+function stopNotificationPoller() {
+    if (__notifPollTimer) { clearInterval(__notifPollTimer); __notifPollTimer = null; }
+    __seenNotifIds = new Set();
+}
+
+// Global first-interaction unlock (belt & braces for autoplay policy)
+document.addEventListener('click', function __onceUnlock() {
+    primeAudioContext();
+    document.removeEventListener('click', __onceUnlock);
+}, { once: true });
+/* Expose helpers */
 window.__DEV = {
     fetchAllLogs,
     fetchRefInfoFromCloud,
@@ -7552,7 +8169,7 @@ window.__DEV = {
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=33')
+        navigator.serviceWorker.register('sw.js?v=6')
             .then(reg => console.log('✅ Service Worker:', reg.scope))
             .catch(err => console.warn('⚠️ SW failed:', err));
     });
