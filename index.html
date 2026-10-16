@@ -620,6 +620,7 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
           <div class="filter-chip" data-status="completed">📸 Awaiting Verification</div>
           <div class="filter-chip" data-status="verified">✅ Verified</div>
           <div class="filter-chip" data-status="rejected">❌ Rejected</div>
+          <div class="filter-chip" data-status="escalated">⚠️ Escalated</div>
           <div class="filter-chip" data-status="all">📋 All</div>
         </div>
         <div id="techCurativeList">
@@ -884,6 +885,29 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
     <div class="card" style="margin-bottom:24px;border:2px solid #0b3d91;">
       <div class="card-header" style="background:#e8f1fb;color:#0b3d91;">
         <span>📊</span> Fleet Overview — All Departments
+            <!-- ============ SUPERVISOR: ESCALATED CURATIVE QUEUE ============ -->
+    <div class="card collapsible-card collapsed" style="margin-bottom:24px;border:2px solid #b33a3a;">
+      <div class="card-header" style="background:#fff5f5;color:#8f2929;">
+        <span>⚠️</span> Escalated Curative Jobs — Awaiting Reassignment
+        <span id="escalatedCount"
+              style="margin-left:auto;background:#b33a3a;color:white;padding:3px 12px;border-radius:20px;font-size:.8rem;font-weight:700;">0</span>
+        <span class="collapse-caret">▼</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:.88rem;color:#8f2929;margin-bottom:14px;">
+          Technicians who cannot handle a curative job have escalated it to you.
+          Pick a technician below and press <strong>🔁 Reassign Job</strong> to hand it over.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-secondary" id="escalatedRefreshBtn"
+                  style="padding:10px 20px;font-size:.88rem;">🔄 Refresh</button>
+        </div>
+        <div id="escalatedCurativeList">
+          <div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>
+        </div>
+      </div>
+    </div>
+
         <span style="margin-left:auto;font-size:.78rem;background:#0b3d91;color:white;padding:3px 12px;border-radius:20px;font-weight:700;">Manager View · Read-only</span>
       </div>
       <div class="card-body">
@@ -1478,6 +1502,32 @@ textarea.remark-input{resize:vertical;min-height:70px;font-family:inherit;line-h
     <div class="modal-actions">
       <button class="btn-cancel" id="completeCurativeCancel">Cancel</button>
       <button class="btn-go" id="completeCurativeSaveBtn" style="background:#1b6b3f;">✅ Submit for Verification</button>
+    </div>
+  </div>
+</div>
+<!-- ============ ESCALATE CURATIVE MODAL ============ -->
+<div class="modal-overlay" id="escalateCurativeModal">
+  <div class="modal-box" style="max-width:560px;border:2px solid #b33a3a;">
+    <h2 style="color:#b33a3a;">⚠️ Escalate to Manager</h2>
+    <p id="escalateCurativeSubtitle">Send this job to the Manager so it can be reassigned to another technician.</p>
+    <div id="escalateCurativeDetails"
+         style="background:#fff5f5;border-radius:14px;padding:14px 16px;margin-bottom:14px;border:1px solid #f0b8b8;"></div>
+    <div class="field-group">
+      <label for="escalateReason">Why can't you handle this job? *</label>
+      <textarea id="escalateReason" class="remark-input" rows="4"
+                placeholder="e.g. I'm not trained for compressor repairs / I'm off-site / special tools required"></textarea>
+    </div>
+    <div class="field-group">
+      <label for="escalateSuggestTo">Suggest a technician (optional)</label>
+      <select id="escalateSuggestTo"><option value="">— No suggestion —</option></select>
+      <div style="font-size:.78rem;color:#5b7b96;margin-top:4px;">
+        💡 The Manager sees this suggestion highlighted when reassigning.
+      </div>
+    </div>
+    <div id="escalateCurativeError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="escalateCurativeCancel">Cancel</button>
+      <button class="btn-go" id="escalateCurativeSaveBtn" style="background:#b33a3a;">⚠️ Escalate to Manager</button>
     </div>
   </div>
 </div>
@@ -3481,6 +3531,7 @@ function applyRoleVisibility() {
         renderTechnicianEditor();
         setTimeout(() => renderSupervisorDashboard(), 500);
         setTimeout(() => refreshSupervisorCurative(), 600);
+        setTimeout(() => refreshEscalatedCurative(), 700);
     }
     if (isAM) {
         setTimeout(() => refreshAssetsDisposals(), 500);
@@ -5144,10 +5195,10 @@ async function deleteReadNotifications() {
     showStatus('🗑️ Cleared.', true);
 }
 function notifIcon(t) {
-    return ({ pm_cosigned: '✅', pm_rejected: '❌', curative_request: '🚨', curative_started: '🔧', curative_completed: '📸', curative_verified: '🎉', curative_rejected: '↩️', disposal_requested: '🗑️', disposal_incharge_approved: '👔', disposal_am_approved: '✅', disposal_rejected: '❌' })[t] || '🔔';
+    return ({ pm_cosigned: '✅', pm_rejected: '❌', curative_request: '🚨', curative_started: '🔧', curative_completed: '📸', curative_verified: '🎉', curative_rejected: '↩️', curative_escalated: '⚠️', curative_reassigned: '🔁', disposal_requested: '🗑️', disposal_incharge_approved: '👔', disposal_am_approved: '✅', disposal_rejected: '❌' })[t] || '🔔';
 }
 function notifColor(t) {
-    return ({ pm_cosigned: '#1b6b3f', pm_rejected: '#b33a3a', curative_request: '#b33a3a', curative_started: '#1e4a6d', curative_completed: '#0b3d91', curative_verified: '#1b6b3f', curative_rejected: '#b33a3a', disposal_requested: '#7a5300', disposal_incharge_approved: '#1b6b3f', disposal_am_approved: '#1b6b3f', disposal_rejected: '#b33a3a' })[t] || '#1e4a6d';
+    return ({ pm_cosigned: '#1b6b3f', pm_rejected: '#b33a3a', curative_request: '#b33a3a', curative_started: '#1e4a6d', curative_completed: '#0b3d91', curative_verified: '#1b6b3f', curative_rejected: '#b33a3a', curative_escalated: '#b33a3a', curative_reassigned: '#1e4a6d', disposal_requested: '#7a5300', disposal_incharge_approved: '#1b6b3f', disposal_am_approved: '#1b6b3f', disposal_rejected: '#b33a3a' })[t] || '#1e4a6d';
 }
 function timeAgo(iso) {
     if (!iso) return '';
@@ -5207,6 +5258,28 @@ async function handleNotificationClick(n) {
         const logs = await fetchAllLogs();
         const rec = logs.find(r => r._docId === n.relatedDocId);
         if (rec) openJobCard(rec);
+        return;
+    }
+        if (n.type === 'curative_escalated') {
+        if (currentRole === 'supervisor') {
+            await refreshEscalatedCurative();
+            scrollToId('escalatedCurativeList');
+        } else if (currentRole === 'technician') {
+            await refreshTechnicianCurative();
+            scrollToId('technicianCurativeCard');
+        }
+        return;
+    }
+    if (n.type === 'curative_reassigned') {
+        if (currentRole === 'technician') {
+            await refreshTechnicianCurative();
+            scrollToId('technicianCurativeCard');
+        } else if (currentRole === 'incharge') {
+            await refreshInchargeCurative();
+            scrollToId('inchargeCurativeList');
+        } else if (currentRole === 'supervisor') {
+            await refreshSupervisorCurative();
+        }
         return;
     }
     if (n.type && n.type.startsWith('curative')) {
@@ -5273,7 +5346,18 @@ async function fetchCurativeRequests(opts) {
                 verifiedAt: d.verifiedAt && d.verifiedAt.toDate ? d.verifiedAt.toDate().toISOString() : (d.verifiedAt || ''),
                 feedback: d.feedback || '',
                 feedbackQuality: d.feedbackQuality || '',
-                quarterKey: quarterKeyOf(d.reportedAt || new Date())
+                quarterKey: quarterKeyOf(d.reportedAt || new Date()),
+                // ── Escalation / reassignment ──
+                escalated: d.escalated === true,
+                escalatedBy: d.escalatedBy || '',
+                escalatedAt: d.escalatedAt && d.escalatedAt.toDate ? d.escalatedAt.toDate().toISOString() : (d.escalatedAt || ''),
+                escalationReason: d.escalationReason || '',
+                escalationSuggestedTo: d.escalationSuggestedTo || '',
+                escalationResolved: d.escalationResolved === true,
+                previousAssignee: d.previousAssignee || '',
+                reassignedBy: d.reassignedBy || '',
+                reassignedAt: d.reassignedAt && d.reassignedAt.toDate ? d.reassignedAt.toDate().toISOString() : (d.reassignedAt || ''),
+                escalationHistory: Array.isArray(d.escalationHistory) ? d.escalationHistory : []
             };
             if (opts.dept && opts.dept !== 'all' && normalizeText(r.dept) !== normalizeText(opts.dept)) return;
             if (opts.status && opts.status !== 'all' && r.status !== opts.status) return;
@@ -5308,9 +5392,11 @@ async function createCurativeRequest(p) {
 }
 async function updateCurativeRequest(id, u) {
     const f = Object.assign({}, u);
-    if (u.completedAt === 'NOW') f.completedAt = window.FB.serverTimestamp();
-    if (u.startedAt === 'NOW')   f.startedAt = window.FB.serverTimestamp();
-    if (u.verifiedAt === 'NOW')  f.verifiedAt = window.FB.serverTimestamp();
+    if (u.completedAt === 'NOW')  f.completedAt  = window.FB.serverTimestamp();
+    if (u.startedAt === 'NOW')    f.startedAt    = window.FB.serverTimestamp();
+    if (u.verifiedAt === 'NOW')   f.verifiedAt   = window.FB.serverTimestamp();
+    if (u.escalatedAt === 'NOW')  f.escalatedAt  = window.FB.serverTimestamp();
+    if (u.reassignedAt === 'NOW') f.reassignedAt = window.FB.serverTimestamp();
     try {
         await window.FB.updateDoc(window.FB.doc(window.FB.db, 'curativeRequests', id), f);
         return true;
@@ -5331,6 +5417,11 @@ function renderCurativeCard(c, opts) {
     opts = opts || {};
     const sl = ({ pending: '⏳ Pending', in_progress: '🔧 In Progress', completed: '📸 Awaiting Verification', verified: '✅ Verified', rejected: '❌ Rejected' })[c.status] || c.status;
     const pl = c.priority.charAt(0).toUpperCase() + c.priority.slice(1);
+        const _isEscalated = c.escalated === true && c.escalationResolved !== true;
+    const _canEscalate = opts.canEscalate === true
+        && !c.escalated
+        && (c.status === 'pending' || c.status === 'in_progress')
+        && (normalizeText(c.assignedTo) === normalizeText(currentLoggedInName) || !c.assignedTo);
     return `<div class="curative-card priority-${c.priority} status-${c.status} collapsed">
         <div class="cc-head" title="Click to expand / collapse">
             <div>
@@ -5339,6 +5430,7 @@ function renderCurativeCard(c, opts) {
             </div>
             <div style="text-align:right;">
                 <span class="priority-badge ${c.priority}">${pl}</span>
+                ${_isEscalated ? '<span class="priority-badge critical" style="margin-left:4px;">⚠️ ESCALATED</span>' : ''}
                 <div style="margin-top:4px;"><span class="curative-status-badge ${c.status}">${sl}</span></div>
                 <span class="cc-caret">▼</span>
             </div>
@@ -5351,11 +5443,18 @@ function renderCurativeCard(c, opts) {
                 ${c.completedAt ? ' · ✅ ' + formatDateOnly(c.completedAt) : ''}
                 ${c.verifiedAt ? ' · 🎉 ' + formatDateOnly(c.verifiedAt) : ''}
             </div>
+            ${_isEscalated ? `<div class="cc-issue" style="border-left-color:#b33a3a;background:#fff5f5;">
+                <strong>⚠️ Escalated by ${escapeHtml(c.escalatedBy || '—')}</strong> on ${formatDateOnly(c.escalatedAt)}<br>
+                💬 ${escapeHtml(c.escalationReason || '(no reason given)')}
+                ${c.escalationSuggestedTo ? '<br>💡 Suggested: <strong>' + escapeHtml(c.escalationSuggestedTo) + '</strong>' : ''}
+            </div>` : ''}
+            ${c.reassignedBy ? `<div class="cc-meta">🔁 Reassigned by <strong>${escapeHtml(c.reassignedBy)}</strong> on ${formatDateOnly(c.reassignedAt)}</div>` : ''}
             ${c.technicianNotes ? `<div class="cc-issue" style="border-left-color:#1b6b3f;background:#f0fdf4;">🔧 <strong>Tech:</strong> ${escapeHtml(c.technicianNotes)}</div>` : ''}
             ${c.feedback ? `<div class="cc-issue" style="border-left-color:#f4a300;background:#fff9ec;">💬 ${escapeHtml(c.feedback)} ${c.feedbackQuality ? '<em>(' + escapeHtml(c.feedbackQuality) + ')</em>' : ''}</div>` : ''}
             <div class="cc-actions">
                 <button class="btn-secondary" data-view-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">👁️ View</button>
-                ${opts.canStart && c.status === 'pending' && (!c.assignedTo || normalizeText(c.assignedTo) === normalizeText(currentLoggedInName)) ? `<button class="btn-primary" data-start-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">🔧 Take Job</button>` : ''}
+                ${opts.canStart && c.status === 'pending' && !c.escalated && (!c.assignedTo || normalizeText(c.assignedTo) === normalizeText(currentLoggedInName)) ? `<button class="btn-primary" data-start-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">🔧 Take Job</button>` : ''}
+                ${_canEscalate ? `<button class="btn-remove" data-escalate-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">⚠️ Escalate to Manager</button>` : ''}
                 ${opts.canComplete && c.status === 'in_progress' && normalizeText(c.assignedTo) === normalizeText(currentLoggedInName) ? `<button class="btn-approve" data-complete-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">✅ Complete</button>` : ''}
                 ${opts.canVerify && c.status === 'completed' ? `<button class="btn-approve" data-verify-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">👔 Verify</button>` : ''}
             </div>
@@ -5379,6 +5478,11 @@ function bindCurativeButtons(container, list, opts) {
         const c = list.find(x => x._docId === b.getAttribute('data-verify-curative'));
         if (c) openVerifyCurativeModal(c);
     }));
+        container.querySelectorAll('[data-escalate-curative]').forEach(b => b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const c = list.find(x => x._docId === b.getAttribute('data-escalate-curative'));
+        if (c) openEscalateCurativeModal(c);
+    }));
 
     // ✅ Accordion toggle: click on card header expands / collapses
     container.querySelectorAll('.curative-card > .cc-head').forEach(h => {
@@ -5388,6 +5492,269 @@ function bindCurativeButtons(container, list, opts) {
         });
     });
 }
+/* ============================================================
+   ESCALATION TO MANAGER  +  MANAGER REASSIGNMENT
+   ============================================================ */
+async function getSupervisorNames_() {
+    const names = [];
+    try {
+        const users = await loadUsersFromFirestore();
+        Object.keys(users).forEach(n => { if (users[n].role === 'supervisor') names.push(n); });
+    } catch(e) {}
+    if (names.indexOf(SUPERVISOR_NAME) === -1) names.push(SUPERVISOR_NAME);
+    return names;
+}
+
+async function openEscalateCurativeModal(c) {
+    if (!c) return;
+    const modal = document.getElementById('escalateCurativeModal');
+    document.getElementById('escalateCurativeSubtitle').textContent =
+        'Escalating ' + c.tag + ' to the Manager for reassignment.';
+    document.getElementById('escalateCurativeDetails').innerHTML = `
+        <div class="info-row"><span class="k">Tag</span><span class="v">${escapeHtml(c.tag || '—')}</span></div>
+        <div class="info-row"><span class="k">Location</span><span class="v">${escapeHtml(c.loc || '—')}</span></div>
+        <div class="info-row"><span class="k">Department</span><span class="v">${escapeHtml(c.dept || '—')}</span></div>
+        <div class="info-row"><span class="k">Priority</span><span class="v">${escapeHtml((c.priority || 'medium').toUpperCase())}</span></div>
+        <div style="margin-top:8px;padding:8px 12px;background:white;border-radius:8px;border-left:4px solid #b33a3a;">
+            <strong>Issue:</strong> ${escapeHtml(c.issue || '—')}
+        </div>`;
+    document.getElementById('escalateReason').value = '';
+    document.getElementById('escalateCurativeError').textContent = '';
+    const sel = document.getElementById('escalateSuggestTo');
+    sel.innerHTML = '<option value="">— No suggestion —</option>';
+    try {
+        const users = await loadUsersFromFirestore();
+        Object.keys(users)
+            .filter(n => users[n].role === 'technician' && normalizeText(n) !== normalizeText(currentLoggedInName))
+            .sort()
+            .forEach(n => {
+                const o = document.createElement('option');
+                o.value = n; o.textContent = n;
+                sel.appendChild(o);
+            });
+    } catch(e) {}
+    modal._curative = c;
+    modal.classList.add('show');
+}
+
+async function submitCurativeEscalation() {
+    const modal = document.getElementById('escalateCurativeModal');
+    const c = modal._curative;
+    if (!c) return;
+    const errEl = document.getElementById('escalateCurativeError');
+    errEl.textContent = '';
+    const reason = (document.getElementById('escalateReason').value || '').trim();
+    const suggestedTo = (document.getElementById('escalateSuggestTo').value || '').trim();
+    if (!reason) { errEl.textContent = '⚠️ Please give a reason for the escalation.'; return; }
+
+    const btn = document.getElementById('escalateCurativeSaveBtn');
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Sending…';
+
+    try {
+        const history = (Array.isArray(c.escalationHistory) ? c.escalationHistory.slice() : []);
+        history.push({
+            at: new Date().toISOString(),
+            by: currentLoggedInName,
+            reason: reason,
+            suggestedTo: suggestedTo || ''
+        });
+
+        const ok = await updateCurativeRequest(c._docId, {
+            status: 'pending',
+            assignedTo: '',
+            previousAssignee: c.assignedTo || currentLoggedInName,
+            escalated: true,
+            escalatedBy: currentLoggedInName,
+            escalatedAt: 'NOW',
+            escalationReason: reason,
+            escalationSuggestedTo: suggestedTo,
+            escalationResolved: false,
+            escalationHistory: history
+        });
+        if (!ok) throw new Error('Could not update the job.');
+
+        // Notify the Manager(s)
+        const supNames = await getSupervisorNames_();
+        for (const s of supNames) {
+            await createNotification({
+                recipient: s,
+                type: 'curative_escalated',
+                title: '⚠️ Curative Escalated — ' + c.tag,
+                message: `${currentLoggedInName} escalated ${c.tag} at ${c.loc}. Reason: ${reason}` +
+                         (suggestedTo ? ` (suggests ${suggestedTo})` : ''),
+                relatedDocId: c._docId,
+                relatedTag: c.tag,
+                relatedDept: c.dept
+            });
+        }
+
+        // Notify the In-Charge who raised it
+        if (c.reportedBy) {
+            await createNotification({
+                recipient: c.reportedBy,
+                type: 'curative_escalated',
+                title: '⚠️ Escalated — ' + c.tag,
+                message: `${currentLoggedInName} could not handle the job at ${c.loc} and escalated it to the Manager.`,
+                relatedDocId: c._docId,
+                relatedTag: c.tag,
+                relatedDept: c.dept
+            });
+        }
+
+        showStatus('⚠️ Escalated to Manager ' + (supNames[0] || '') + '.', true);
+        modal.classList.remove('show');
+        await refreshTechnicianCurative();
+        await renderNotificationBell();
+    } catch(e) {
+        errEl.textContent = '⚠️ ' + (e.message || 'Failed.');
+    }
+    btn.disabled = false;
+    btn.innerHTML = orig;
+}
+
+function renderEscalatedCard(c, techList) {
+    const el = document.createElement('div');
+    el.className = 'curative-card priority-critical';
+    const suggested = c.escalationSuggestedTo || '';
+    const pl = (c.priority || 'medium').charAt(0).toUpperCase() + (c.priority || 'medium').slice(1);
+    el.innerHTML = `
+        <div class="cc-head">
+            <div>
+                <div class="cc-tag">⚠️ ${escapeHtml(c.tag)}</div>
+                <div class="cc-loc">${escapeHtml(c.loc || '—')} · ${escapeHtml(c.dept || '—')} · <em>${escapeHtml(c.category || '')}</em></div>
+            </div>
+            <div style="text-align:right;">
+                <span class="priority-badge ${c.priority}">${pl}</span>
+                <div style="margin-top:4px;"><span class="curative-status-badge pending">⚠️ Escalated</span></div>
+            </div>
+        </div>
+        <div class="cc-body">
+            <div class="cc-issue" style="margin-top:8px;">📝 ${escapeHtml(c.issue)}</div>
+            <div class="cc-meta">👤 Raised by <strong>${escapeHtml(c.reportedBy || '—')}</strong> · 📅 ${formatDateOnly(c.reportedAt)}</div>
+            <div class="cc-issue" style="border-left-color:#b33a3a;background:#fff5f5;">
+                <strong>⚠️ Escalated by ${escapeHtml(c.escalatedBy || '—')}</strong> on ${formatDateOnly(c.escalatedAt)}<br>
+                💬 ${escapeHtml(c.escalationReason || '(no reason given)')}
+                ${suggested ? '<br>💡 Suggested: <strong>' + escapeHtml(suggested) + '</strong>' : ''}
+            </div>
+            <div class="field-group" style="margin-top:12px;">
+                <label style="font-size:.82rem;font-weight:700;color:#12405e;">Reassign to technician *</label>
+                <select class="escalate-assign-select"
+                        style="width:100%;padding:10px 14px;border-radius:14px;border:1.5px solid #cfdfeb;font-weight:600;font-family:inherit;">
+                    <option value="">— Choose technician —</option>
+                </select>
+            </div>
+            <div class="cc-actions">
+                <button class="btn-secondary" data-view-curative="${escapeHtml(c._docId)}"
+                        style="padding:6px 14px;font-size:.82rem;">👁️ View</button>
+                <button class="btn-approve" data-reassign-curative="${escapeHtml(c._docId)}"
+                        style="padding:6px 14px;font-size:.82rem;background:#b33a3a;">🔁 Reassign Job</button>
+            </div>
+        </div>`;
+    const sel = el.querySelector('.escalate-assign-select');
+    techList.forEach(t => {
+        const o = document.createElement('option');
+        o.value = t;
+        o.textContent = t + (normalizeText(t) === normalizeText(suggested) ? '  ⭐ (suggested)' : '');
+        sel.appendChild(o);
+    });
+    if (suggested) sel.value = suggested;
+    return el;
+}
+
+async function refreshEscalatedCurative() {
+    const wrap = document.getElementById('escalatedCurativeList');
+    const cnt  = document.getElementById('escalatedCount');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+    try {
+        const all = await fetchCurativeRequests({});
+        const esc = all.filter(c => c.escalated === true && c.escalationResolved !== true);
+        if (cnt) cnt.textContent = esc.length;
+        if (!esc.length) {
+            wrap.innerHTML = '<div style="text-align:center;padding:18px;color:#1b6b3f;font-weight:600;">✅ No escalated jobs waiting.</div>';
+            return;
+        }
+        const users = await loadUsersFromFirestore();
+        const techList = Object.keys(users).filter(n => users[n].role === 'technician').sort();
+        wrap.innerHTML = '';
+        esc.forEach(c => wrap.appendChild(renderEscalatedCard(c, techList)));
+
+        wrap.querySelectorAll('[data-view-curative]').forEach(b => b.addEventListener('click', () => {
+            const c = esc.find(x => x._docId === b.getAttribute('data-view-curative'));
+            if (c) openViewCurativeModal(c);
+        }));
+        wrap.querySelectorAll('[data-reassign-curative]').forEach(b => b.addEventListener('click', async function() {
+            const id  = b.getAttribute('data-reassign-curative');
+            const sel = b.closest('.curative-card').querySelector('.escalate-assign-select');
+            const target = sel ? sel.value : '';
+            if (!target) { alert('⚠️ Choose a technician to reassign to.'); return; }
+            await reassignCurativeJob(id, target);
+        }));
+    } catch(e) {
+        wrap.innerHTML = '<div class="info-error">⚠️ ' + escapeHtml(e.message) + '</div>';
+    }
+}
+
+async function reassignCurativeJob(id, newTech) {
+    const all = await fetchCurativeRequests({});
+    const c = all.find(x => x._docId === id);
+    if (!c) return;
+    if (!confirm(`Reassign ${c.tag} to ${newTech}?`)) return;
+
+    const history = (Array.isArray(c.escalationHistory) ? c.escalationHistory.slice() : []);
+    history.push({
+        at: new Date().toISOString(),
+        by: currentLoggedInName,
+        action: 'reassigned',
+        to: newTech
+    });
+
+    const ok = await updateCurativeRequest(id, {
+        assignedTo: newTech,
+        status: 'pending',
+        escalated: false,
+        escalationResolved: true,
+        reassignedBy: currentLoggedInName,
+        reassignedAt: 'NOW',
+        previousAssignee: c.escalatedBy || c.previousAssignee || '',
+        escalationHistory: history
+    });
+    if (!ok) { showStatus('⚠️ Reassign failed.', false); return; }
+
+    await createNotification({
+        recipient: newTech,
+        type: 'curative_reassigned',
+        title: '🔁 Job Reassigned to You — ' + c.tag,
+        message: `${currentLoggedInName} assigned you ${c.tag} at ${c.loc}. Original escalation by ${c.escalatedBy || '—'}.`,
+        relatedDocId: c._docId, relatedTag: c.tag, relatedDept: c.dept
+    });
+    if (c.escalatedBy && normalizeText(c.escalatedBy) !== normalizeText(newTech)) {
+        await createNotification({
+            recipient: c.escalatedBy,
+            type: 'curative_reassigned',
+            title: '✅ Your escalation was resolved — ' + c.tag,
+            message: `${currentLoggedInName} reassigned ${c.tag} to ${newTech}.`,
+            relatedDocId: c._docId, relatedTag: c.tag, relatedDept: c.dept
+        });
+    }
+    if (c.reportedBy && normalizeText(c.reportedBy) !== normalizeText(newTech)) {
+        await createNotification({
+            recipient: c.reportedBy,
+            type: 'curative_reassigned',
+            title: '🔄 Job reassigned — ' + c.tag,
+            message: `${c.tag} at ${c.loc} is now assigned to ${newTech}.`,
+            relatedDocId: c._docId, relatedTag: c.tag, relatedDept: c.dept
+        });
+    }
+
+    showStatus('🔁 Reassigned to ' + newTech + '.', true);
+    await refreshEscalatedCurative();
+    await refreshSupervisorCurative();
+    await renderNotificationBell();
+}
+
 async function refreshInchargeCurative() {
     const wrap = document.getElementById('inchargeCurativeList');
     const cnt = document.getElementById('curativeRaisedCount');
@@ -5426,21 +5793,28 @@ async function refreshTechnicianCurative() {
         try { myDepts = JSON.parse(sessionStorage.getItem('tech_depts_' + me) || '[]'); } catch(e) {}
         const mine = all.filter(c => {
             if (normalizeText(c.assignedTo) === normalizeText(me)) return true;
-            if (!c.assignedTo && myDepts.length > 0) return myDepts.some(d => normalizeText(d) === normalizeText(c.dept));
+            if (normalizeText(c.escalatedBy) === normalizeText(me)) return true;
+            if (!c.assignedTo && !c.escalated && myDepts.length > 0) {
+                return myDepts.some(d => normalizeText(d) === normalizeText(c.dept));
+            }
             return false;
         });
+        const _openCount = mine.filter(c => (c.status === 'pending' || c.status === 'in_progress') && !c.escalated).length;
         card.style.display = mine.length > 0 ? 'block' : 'none';
-        cnt.textContent = mine.filter(c => c.status === 'pending' || c.status === 'in_progress').length;
+        cnt.textContent = _openCount;
+
         let f = mine;
-        if (TECH_CURATIVE_FILTER === 'open') f = mine.filter(c => c.status === 'pending' || c.status === 'in_progress');
-        else if (TECH_CURATIVE_FILTER === 'completed') f = mine.filter(c => c.status === 'completed');
-        else if (TECH_CURATIVE_FILTER === 'verified') f = mine.filter(c => c.status === 'verified');
-        else if (TECH_CURATIVE_FILTER === 'rejected') f = mine.filter(c => c.status === 'rejected');
+        if (TECH_CURATIVE_FILTER === 'open')            f = mine.filter(c => (c.status === 'pending' || c.status === 'in_progress') && !c.escalated);
+        else if (TECH_CURATIVE_FILTER === 'escalated')  f = mine.filter(c => c.escalated && !c.escalationResolved);
+        else if (TECH_CURATIVE_FILTER === 'completed')  f = mine.filter(c => c.status === 'completed');
+        else if (TECH_CURATIVE_FILTER === 'verified')   f = mine.filter(c => c.status === 'verified');
+        else if (TECH_CURATIVE_FILTER === 'rejected')   f = mine.filter(c => c.status === 'rejected');
+
         if (!f.length) {
             wrap.innerHTML = '<div style="text-align:center;padding:18px;color:#9cb9d0;font-style:italic;">📭 No jobs in this filter.</div>';
         } else {
-            wrap.innerHTML = f.map(c => renderCurativeCard(c, { canStart: true, canComplete: true })).join('');
-            bindCurativeButtons(wrap, f, { canStart: true, canComplete: true });
+            wrap.innerHTML = f.map(c => renderCurativeCard(c, { canStart: true, canComplete: true, canEscalate: true })).join('');
+            bindCurativeButtons(wrap, f, { canStart: true, canComplete: true, canEscalate: true });
         }
         renderTechCurativeStats(mine);
     } catch(e) {
@@ -7976,6 +8350,7 @@ async function unlockApp(p) {
         setTimeout(() => Promise.resolve(renderInchargeEditor()).catch(() => {}), 200);
         setTimeout(() => Promise.resolve(renderTechnicianEditor()).catch(() => {}), 200);
         setTimeout(() => Promise.resolve(renderSupervisorDashboard()).catch(() => {}), 500);
+        setTimeout(() => Promise.resolve(refreshEscalatedCurative()).catch(() => {}), 700);
         showStatus('👑 Welcome ' + p.name, true);
     } else if (currentRole === 'assetsmanager') {
         REF_INVENTORY = [];
@@ -8362,6 +8737,10 @@ document.getElementById('completeCurativePhotoInput')?.addEventListener('change'
 document.getElementById('completeCurativeCancel')?.addEventListener('click',
     () => document.getElementById('completeCurativeModal').classList.remove('show'));
 document.getElementById('completeCurativeSaveBtn')?.addEventListener('click', saveCompleteCurative);
+document.getElementById('escalateCurativeCancel')?.addEventListener('click',
+    () => document.getElementById('escalateCurativeModal').classList.remove('show'));
+document.getElementById('escalateCurativeSaveBtn')?.addEventListener('click', submitCurativeEscalation);
+document.getElementById('escalatedRefreshBtn')?.addEventListener('click', refreshEscalatedCurative);
 document.getElementById('techCurativeQuarterlyBtn')?.addEventListener('click', downloadTechnicianQuarterlyCurativeReport);
 document.getElementById('verifyCurativeCancel')?.addEventListener('click',
     () => document.getElementById('verifyCurativeModal').classList.remove('show'));
