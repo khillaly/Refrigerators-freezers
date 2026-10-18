@@ -6549,6 +6549,15 @@ signInAnonymously(auth)
                     removeRefBtn.title = ed ? 'Request disposal' : 'Only the owner can request disposal';
                 }
             }
+            function isDefaultIncharge(name) {
+                if (!name || !name.trim()) return true;
+                const n = name.trim();
+                for (const d of Object.keys(DEPARTMENTS)) {
+                    if (DEPARTMENTS[d].defaultIncharge === n) return true;
+                }
+                return false;
+            }
+
             function updateRefBanner() {
                 const idx = refSelect.value;
                 if (idx === '' || !REF_FILTERED[idx]) {
@@ -6565,10 +6574,12 @@ signInAnonymously(auth)
                 refTitle.textContent = `${ref.tag} — ${ref.loc}`;
                 refSub.textContent = `${ref.equipName ? ref.equipName + ' · ' : ''}${ref.dept} · ${ref.type} · ${ref.brand} · ${ref.model} · SN: ${ref.serial || 'N/A'}`;
                 updateNextPmDisplay();
+                
                 const di = DEPARTMENTS[ref.dept];
-                if (di && di.defaultIncharge && !inchargeNameInput.value.trim()) {
+                if (di && di.defaultIncharge && isDefaultIncharge(inchargeNameInput.value)) {
                     inchargeNameInput.value = di.defaultIncharge;
                 }
+                
                 updateInchargeDisplay();
                 if (refWorkingStatus) {
                     const ws = ref.workingStatus || 'Working';
