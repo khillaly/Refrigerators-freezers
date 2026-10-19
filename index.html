@@ -3245,6 +3245,7 @@ signInAnonymously(auth)
                     Profile</button>
                 <button id="signatureBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;">🖊️ Signature
                     &amp; Cert</button>
+                    <button id="userGuideBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;background:#e8f1fb;color:#0b3d91;border-color:#0b3d91;display:none;">📖 User Guide</button>
                 <button id="logoutBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;">🚪
                     Logout</button>
                 <div class="workdate-tag" id="workdateTag">
@@ -13586,6 +13587,8 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
                     : (currentRole === 'supervisor' ? ' (Manager)' : (currentRole === 'assetsmanager' ? ' (Assets Mgr)' : ''));
                 loggedInUserName.textContent = p.name + sfx;
                 lockedTechName.textContent = p.name;
+                const _ugBtn = document.getElementById('userGuideBtn');
+if (_ugBtn) _ugBtn.style.display = 'inline-flex';
                 updateTechnicianDisplay();
                 applyRoleVisibility();
 
@@ -13697,6 +13700,8 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
                 if (av) av.innerHTML = '<span>—</span>';
                 const cc = document.getElementById('technicianCurativeCard');
                 if (cc) cc.style.display = 'none';
+                const _ugBtn = document.getElementById('userGuideBtn');
+if (_ugBtn) _ugBtn.style.display = 'none';
             }
             loginBtn.addEventListener('click', async function () {
                 const role = loginRoleSelect.value;
@@ -14358,7 +14363,22 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
                 if (__notifPollTimer) { clearInterval(__notifPollTimer); __notifPollTimer = null; }
                 __seenNotifIds = new Set();
             }
-
+            /* ========= USER GUIDE BUTTON ========= */
+document.getElementById('userGuideBtn')?.addEventListener('click', function () {
+    const guides = {
+        technician:     'guide-technician.pdf',
+        incharge:       'guide-incharge.pdf',
+        supervisor:     'guide-manager.pdf',
+        infra_manager:  'guide-infra-manager.pdf',
+        assetsmanager:  'guide-assets-manager.pdf'
+    };
+    const url = guides[currentRole];
+    if (url) {
+        window.open(url, '_blank');
+    } else {
+        alert('Please log in first to view the user guide.');
+    }
+});
             document.addEventListener('click', function __onceUnlock() {
                 primeAudioContext();
                 document.removeEventListener('click', __onceUnlock);
