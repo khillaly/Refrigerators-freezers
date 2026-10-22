@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CHUB Refrigerator Fleet — Preventive Maintenance</title>
+    <title>CHUB Maint_ Fleet — Infrastructure & Maintenance</title>
     <meta name="theme-color" content="#0b3d91">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="icon" type="image/png" href="icon-192.png">
@@ -3151,6 +3151,20 @@ signInAnonymously(auth)
                 border: 1px solid #1e4a6d
             }
         }
+                /* Force 2FA modal to sit above the Login modal */
+        #twoFactorVerifyModal {
+            z-index: 5000 !important;
+        }
+        #twoFactorVerifyModal .modal-box {
+            z-index: 5001 !important;
+        }
+                /* Force PFX Password modal to sit above all other modals */
+        #pfxPasswordModal {
+            z-index: 6000 !important;
+        }
+        #pfxPasswordModal .modal-box {
+            z-index: 6001 !important;
+        }
     </style>
 </head>
 
@@ -3208,8 +3222,8 @@ signInAnonymously(auth)
         <div class="title-hero">
             <h1>
                 <span class="title-ornament">🧊</span>
-                Refrigerator Fleet
-                <span class="title-accent">— Preventive Maintenance</span>
+                CHUB Maint Fleet System
+                <span class="title-accent">— Infrastructure & Maintenance</span>
             </h1>
             <div class="title-sub">
                 <span>CHUB Site</span><span class="dot-sep"></span>
@@ -3244,6 +3258,7 @@ signInAnonymously(auth)
                 </div>
                 <button id="profileBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;">🖼️
                     Profile</button>
+                                    <button id="twoFactorBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;background:#e8f1fb;color:#0b3d91;border-color:#0b3d91;">🔐 Security</button>
                 <button id="signatureBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;">🖊️ Signature
                     &amp; Cert</button>
                     <button id="userGuideBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;background:#e8f1fb;color:#0b3d91;border-color:#0b3d91;display:none;">📖 User Guide</button>
@@ -4256,7 +4271,45 @@ signInAnonymously(auth)
                 Buy me a coffee</a>
         </div>
     </div>
+    <!-- ============ 2FA SETUP MODAL ============ -->
+    <div class="modal-overlay" id="twoFactorSetupModal">
+        <div class="modal-box" style="max-width:480px;text-align:center;">
+            <div style="font-size:2.4rem;margin-bottom:8px;">🔐</div>
+            <h2 style="justify-content:center;">Enable Two-Factor Authentication</h2>
+            <p style="margin-bottom:14px;">Scan this QR code with Google Authenticator (or Authy / Microsoft Authenticator).</p>
+            <div id="twoFactorQr" style="display:inline-block;padding:10px;background:#fff;border:2px dashed #1e4a6d;border-radius:12px;margin-bottom:10px;"></div>
+            <div id="twoFactorSecretText" style="font-size:.78rem;color:#5b7b96;word-break:break-all;margin-bottom:14px;"></div>
+            <div class="field-group" style="text-align:left;">
+                <label for="twoFactorConfirmCode">Enter the 6-digit code from your app *</label>
+                <input type="text" id="twoFactorConfirmCode" inputmode="numeric" maxlength="6"
+                       placeholder="123456" style="text-align:center;font-size:1.4rem;letter-spacing:8px;">
+            </div>
+            <div id="twoFactorSetupError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
+            <div class="modal-actions" style="justify-content:center;">
+                <button class="btn-cancel" id="twoFactorSetupCancel">Cancel</button>
+                <button class="btn-go" id="twoFactorSetupSave">✅ Enable 2FA</button>
+            </div>
+        </div>
+    </div>
 
+    <!-- ============ 2FA VERIFY MODAL (shown during login) ============ -->
+    <div class="modal-overlay" id="twoFactorVerifyModal">
+        <div class="modal-box" style="max-width:420px;text-align:center;">
+            <div style="font-size:2.4rem;margin-bottom:8px;">📱</div>
+            <h2 style="justify-content:center;">Enter your 2FA code</h2>
+            <p style="margin-bottom:14px;">Open Google Authenticator and type the 6-digit code for <strong id="tfUserLabel">—</strong>.</p>
+            <div class="field-group" style="text-align:left;">
+                <input type="text" id="twoFactorLoginCode" inputmode="numeric" maxlength="6"
+                       placeholder="123456"
+                       style="text-align:center;font-size:1.6rem;letter-spacing:10px;padding:14px;border-radius:16px;border:1.5px solid #cfdfeb;">
+            </div>
+            <div id="twoFactorVerifyError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
+            <div class="modal-actions" style="justify-content:center;">
+                <button class="btn-cancel" id="twoFactorVerifyCancel">Cancel</button>
+                <button class="btn-go" id="twoFactorVerifySubmit">🔓 Verify</button>
+            </div>
+        </div>
+    </div>
     <!-- ============ LOGIN MODAL ============ -->
     <div class="modal-overlay show" id="loginModal">
         <div class="modal-box" style="max-width:420px;text-align:center;">
@@ -5377,6 +5430,114 @@ signInAnonymously(auth)
                 return name.split(/\s+/).filter(Boolean).slice(0, 2)
                     .map(p => p[0].toUpperCase()).join('') || '?';
             }
+                        /* ============================================================
+               TOTP / Google Authenticator helpers (RFC 6238 · SHA-1 · 30s · 6 digits)
+               ============================================================ */
+            const B32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+            function b32Encode(rawBytes) {
+                let bits = 0, value = 0, out = '';
+                for (let i = 0; i < rawBytes.length; i++) {
+                    value = (value << 8) | rawBytes.charCodeAt(i);
+                    bits += 8;
+                    while (bits >= 5) {
+                        out += B32_ALPHABET[(value >>> (bits - 5)) & 31];
+                        bits -= 5;
+                    }
+                }
+                if (bits > 0) out += B32_ALPHABET[(value << (5 - bits)) & 31];
+                return out;
+            }
+
+            function b32Decode(str) {
+                const clean = String(str).toUpperCase().replace(/=+$/, '');
+                let bits = 0, value = 0, out = '';
+                for (let i = 0; i < clean.length; i++) {
+                    const idx = B32_ALPHABET.indexOf(clean[i]);
+                    if (idx === -1) continue;
+                    value = (value << 5) | idx;
+                    bits += 5;
+                    if (bits >= 8) {
+                        out += String.fromCharCode((value >>> (bits - 8)) & 0xFF);
+                        bits -= 8;
+                    }
+                }
+                return out;
+            }
+
+            function generateTotpSecret() {
+                return b32Encode(forge.random.getBytesSync(20));
+            }
+
+            function totpCode(secretB32, forStep) {
+                const step = forStep != null ? forStep : Math.floor(Date.now() / 1000 / 30);
+                const msg =
+                    String.fromCharCode(0, 0, 0, 0,
+                        (step >> 24) & 0xFF, (step >> 16) & 0xFF, (step >> 8) & 0xFF, step & 0xFF);
+                const hmac = forge.hmac.create();
+                hmac.start('sha1', b32Decode(secretB32));
+                hmac.update(msg);
+                const h = hmac.digest().getBytes();
+                const off = h.charCodeAt(h.length - 1) & 0x0F;
+                const bin =
+                    ((h.charCodeAt(off)     & 0x7F) << 24) |
+                    ((h.charCodeAt(off + 1) & 0xFF) << 16) |
+                    ((h.charCodeAt(off + 2) & 0xFF) << 8)  |
+                    ( h.charCodeAt(off + 3) & 0xFF);
+                return String(bin % 1000000).padStart(6, '0');
+            }
+
+            function verifyTotp(secretB32, userCode, window_) {
+                window_ = window_ == null ? 1 : window_;
+                const step = Math.floor(Date.now() / 1000 / 30);
+                const code = String(userCode).trim();
+                if (!/^\d{6}$/.test(code)) return false;
+                for (let i = -window_; i <= window_; i++) {
+                    if (totpCode(secretB32, step + i) === code) return true;
+                }
+                return false;
+            }
+
+            function otpauthUri(secretB32, userLabel) {
+                const issuer = encodeURIComponent('CHUB Maint');
+                const label  = encodeURIComponent('CHUB:' + (userLabel || 'user'));
+                return 'otpauth://totp/' + label + '?secret=' + secretB32 +
+                    '&issuer=' + issuer + '&algorithm=SHA1&digits=6&period=30';
+            }
+
+            async function saveUserTotpSecret(name, secretB32) {
+                return window.FB.setDoc(
+                    window.FB.doc(window.FB.db, 'users', userDocId(name)),
+                    { totpSecret: secretB32, totpEnabled: !!secretB32, updatedAt: window.FB.serverTimestamp() },
+                    { merge: true }
+                );
+            }
+
+            async function fetchUserTotpSecret(name) {
+                try {
+                    // Race the Firestore request against a 5-second timeout
+                    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Network timeout')), 5000));
+                    const fetchPromise = window.FB.getDoc(window.FB.doc(window.FB.db, 'users', userDocId(name)));
+                    
+                    const snap = await Promise.race([fetchPromise, timeout]);
+
+                    if (!snap.exists()) {
+                        console.log(`[2FA] No document found for user: ${name}`);
+                        return null;
+                    }
+                    const d = snap.data();
+                    if (!d.totpEnabled || !d.totpSecret) {
+                        console.log(`[2FA] 2FA is not enabled for: ${name}`);
+                        return null;
+                    }
+                    console.log(`[2FA] 2FA is enabled for: ${name}`);
+                    return d.totpSecret;
+                } catch (e) {
+                    console.error('[2FA] Fetch failed or timed out:', e);
+                    // If it times out, return null so the user can still log in
+                    return null;
+                }
+            }
             function userDocId(name) {
                 return String(name || '').replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-\.]/g, '');
             }
@@ -6059,7 +6220,8 @@ signInAnonymously(auth)
                                 depts: Array.isArray(d.depts) ? d.depts : [],
                                 phone: d.phone || '',
                                 email: d.email || '',
-                                photo: d.photo || ''
+                                photo: d.photo || '',
+                                totpEnabled: d.totpEnabled === true // <--- ADD THIS
                             };
                         }
                     });
@@ -7629,7 +7791,11 @@ signInAnonymously(auth)
             document.getElementById('jobCardClose')?.addEventListener('click',
                 () => document.getElementById('jobCardModal').classList.remove('show'));
             document.getElementById('jobCardPdf')?.addEventListener('click', async function () {
-                if (!currentJobCardRecord) return;
+                               if (!currentJobCardRecord) return;
+                
+                // Close the modal so the PFX prompt can be seen clearly
+                document.getElementById('jobCardModal').classList.remove('show');
+
                 const o = this.innerHTML;
                 this.disabled = true;
                 this.innerHTML = '⏳ …';
@@ -8011,9 +8177,15 @@ signInAnonymously(auth)
                         return true;
                     });
                     if (!matched.length) { eqPmStatus.textContent = '📭 No co-signed PMs.'; btn.disabled = false; btn.innerHTML = o; return; }
+                    
+                    // Close the modal so the PFX prompt can be seen clearly
+                    eqPmDownloadModal.classList.remove('show');
+                    
                     await generatePDF(matched);
-                    eqPmStatus.textContent = '✅ PDF downloaded (' + matched.length + ').';
-                } catch (e) { eqPmStatus.textContent = '⚠️ ' + e.message; }
+                    showStatus('✅ PDF downloaded (' + matched.length + ').', true);
+                } catch (e) { 
+                    showStatus('⚠️ ' + e.message, false); 
+                }
                 btn.disabled = false;
                 btn.innerHTML = o;
             });
@@ -8118,15 +8290,19 @@ signInAnonymously(auth)
                         && t <= new Date(to + 'T23:59:59').getTime();
                 });
                 if (!filtered.length) { document.getElementById('eqPmHistoryStatus').textContent = '📭 No cards.'; return; }
+                
+                // Close the modal so the PFX prompt can be seen clearly
+                eqPmHistoryModal.classList.remove('show');
+
                 const btn = this;
                 const o = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = '⏳ …';
                 try {
                     await generatePDF(filtered);
-                    document.getElementById('eqPmHistoryStatus').textContent = '✅ PDF downloaded.';
+                    showStatus('✅ PDF downloaded.', true);
                 } catch (e) {
-                    document.getElementById('eqPmHistoryStatus').textContent = '⚠️ ' + e.message;
+                    showStatus('⚠️ ' + e.message, false);
                 }
                 btn.disabled = false;
                 btn.innerHTML = o;
@@ -8227,7 +8403,7 @@ signInAnonymously(auth)
                 const users = await loadUsersFromFirestore();
                 const ic = {};
                 Object.keys(users).forEach(n => {
-                    if (users[n].role === 'incharge') ic[n] = { pin: users[n].pin || '', dept: users[n].dept || '' };
+                    if (users[n].role === 'incharge') ic[n] = { pin: users[n].pin || '', dept: users[n].dept || '', totpEnabled: users[n].totpEnabled };
                 });
                 wrap.innerHTML = '';
                 const names = Object.keys(ic).sort();
@@ -8247,7 +8423,10 @@ signInAnonymously(auth)
         </div><div>
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;">DEPARTMENT</label>
             <select class="incharge-dept-input" style="width:100%;"><option value="">— choose —</option></select>
-        </div><div class="actions"><button type="button" class="btn-danger" data-del-incharge="${escapeHtml(name)}">🗑️</button></div>`;
+        </div><div class="actions">
+            <button type="button" class="btn-warning" data-disable-2fa="${escapeHtml(name)}" style="padding:8px 12px;font-size:.8rem;background:#f4a300;color:white;border:none;border-radius:40px;cursor:pointer;margin-right:4px;">🔓 Disable 2FA</button>
+            <button type="button" class="btn-danger" data-del-incharge="${escapeHtml(name)}">🗑️</button>
+        </div>`;
                     wrap.appendChild(row);
                     const sel = row.querySelector('.incharge-dept-input');
                     Object.keys(DEPARTMENTS).forEach(d => {
@@ -8257,6 +8436,19 @@ signInAnonymously(auth)
                         sel.appendChild(o);
                     });
                 });
+                wrap.querySelectorAll('[data-disable-2fa]').forEach(b => b.addEventListener('click', async function () {
+                    const n = this.getAttribute('data-disable-2fa');
+                    if (!confirm('⚠️ Disable 2FA for "' + n + '"?\n\nThey will no longer be prompted for a 6-digit code when logging in.')) return;
+                    try {
+                        await window.FB.updateDoc(window.FB.doc(window.FB.db, 'users', userDocId(n)), {
+                            totpEnabled: false,
+                            totpSecret: ''
+                        });
+                        showStatus('🔓 2FA disabled for ' + n, true);
+                        renderInchargeEditor();
+                    } catch (e) { alert('Failed to disable 2FA: ' + e.message); }
+                }));
+
                 wrap.querySelectorAll('[data-del-incharge]').forEach(b => b.addEventListener('click', async function () {
                     const n = this.getAttribute('data-del-incharge');
                     if (!confirm('Delete "' + n + '"?')) return;
@@ -8350,9 +8542,25 @@ signInAnonymously(auth)
             <input type="tel" class="tech-phone-input" value="${escapeHtml(r.phone)}" style="width:100%;">
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;margin-top:8px;display:block;">✉️ EMAIL</label>
             <input type="email" class="tech-email-input" value="${escapeHtml(r.email)}" style="width:100%;">
-        </div><div class="actions"><button type="button" class="btn-danger" data-del-tech="${escapeHtml(name)}">🗑️</button></div>`;
+        </div><div class="actions">
+            <button type="button" class="btn-warning" data-disable-2fa="${escapeHtml(name)}" style="padding:8px 12px;font-size:.8rem;background:#f4a300;color:white;border:none;border-radius:40px;cursor:pointer;margin-right:4px;">🔓 Disable 2FA</button>
+            <button type="button" class="btn-danger" data-del-tech="${escapeHtml(name)}">🗑️</button>
+        </div>`;
                     wrap.appendChild(row);
                 });
+                wrap.querySelectorAll('[data-disable-2fa]').forEach(b => b.addEventListener('click', async function () {
+                    const n = this.getAttribute('data-disable-2fa');
+                    if (!confirm('⚠️ Disable 2FA for "' + n + '"?\n\nThey will no longer be prompted for a 6-digit code when logging in.')) return;
+                    try {
+                        await window.FB.updateDoc(window.FB.doc(window.FB.db, 'users', userDocId(n)), {
+                            totpEnabled: false,
+                            totpSecret: ''
+                        });
+                        showStatus('🔓 2FA disabled for ' + n, true);
+                        renderTechnicianEditor();
+                    } catch (e) { alert('Failed to disable 2FA: ' + e.message); }
+                }));
+
                 wrap.querySelectorAll('[data-del-tech]').forEach(b => b.addEventListener('click', async function () {
                     const n = this.getAttribute('data-del-tech');
                     if (n === SUPERVISOR_NAME) { alert('⚠️ Manager cannot be deleted.'); return; }
@@ -9184,7 +9392,9 @@ signInAnonymously(auth)
                     const ok = await updateCurativeRequest(c._docId, {
                         status: 'pending',
                         assignedTo: '',
-                        previousAssignee: c.assignedTo || currentLoggedInName,
+                        startedAt: '',                                            // ← NEW: drop Tech A's start time
+                        completedAt: '',                                          // ← NEW: drop Tech A's completion time
+                        previousAssignee: c.previousAssignee || c.assignedTo || currentLoggedInName,
                         escalated: true,
                         escalatedBy: currentLoggedInName,
                         escalatedAt: 'NOW',
@@ -9330,11 +9540,15 @@ signInAnonymously(auth)
                 const ok = await updateCurativeRequest(id, {
                     assignedTo: newTech,
                     status: 'pending',
+                    startedAt: '',                                        // ← NEW: fresh start for new tech
+                    completedAt: '',                                      // ← NEW
+                    technicianNotes: '',                                  // ← NEW: clear old tech's notes
+                    technicianPhoto: '',                                  // ← NEW
                     escalated: false,
                     escalationResolved: true,
                     reassignedBy: currentLoggedInName,
                     reassignedAt: 'NOW',
-                    previousAssignee: c.escalatedBy || c.previousAssignee || '',
+                    previousAssignee: c.previousAssignee || c.escalatedBy || c.assignedTo || '',
                     escalationHistory: history
                 });
                 if (!ok) { showStatus('⚠️ Reassign failed.', false); return; }
@@ -9831,11 +10045,26 @@ signInAnonymously(auth)
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pW = 210, pH = 297, m = 16, cW = pW - m * 2;
-                if (!isCertLoaded() && currentLoggedInName) {
-                    await ensurePfxLoadedFor(currentLoggedInName);
-                }
+                // ── Who actually did the work?
                 const techName = safeStr(curative.assignedTo);
-                const ichName = safeStr(curative.verifiedBy) || safeStr(curative.reportedBy && '');
+                const assignedTechLoggedIn =
+                    normalizeText(currentLoggedInName) === normalizeText(techName);
+
+                // ── Load the PFX of the ASSIGNED tech only when that person is
+                //    the downloader. Otherwise ensure any stale cert is dropped.
+                if (assignedTechLoggedIn) {
+                    await ensurePfxLoadedFor(techName, { forceReload: true });
+                } else if (isCertLoaded()) {
+                    const loaded = normalizeText(CERT_STATE.subject || '');
+                    if (loaded && loaded.indexOf(normalizeText(techName)) === -1) {
+                        clearCert();
+                        window.__cachedPfxBinary = null;
+                        window.__cachedPfxPassword = null;
+                    }
+                }
+
+                // ── Fixed the broken reportedBy fallback.
+                const ichName = safeStr(curative.verifiedBy) || safeStr(curative.reportedBy) || '';
                 let techSig = techName ? (getSignatureFor(techName) || '') : '';
                 if (!techSig && techName) {
                     try {
@@ -9964,7 +10193,8 @@ signInAnonymously(auth)
                 doc.text('Completed: ' + formatDateOnly(curative.completedAt), m + 3, y + 15.5);
                 if (techSig) {
                     try {
-                        const saX = m + 3, saY = y + 19, saW = halfW - 6, saH = 22;
+                        // Move visual signature to the right side, higher up
+                        const saX = m + (halfW / 2) + 2, saY = y + 7, saW = (halfW / 2) - 5, saH = 16;
                         let w = saW, h = w, aspect = 1;
                         if (techDims && techDims.width && techDims.height) {
                             aspect = techDims.width / techDims.height;
@@ -10033,13 +10263,35 @@ signInAnonymously(auth)
                 }
                 const fname = 'CHUB_Curative_JobCard_' + String(curative.tag || 'UNIT').replace(/[^\w\-]/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
                 const bytes = doc.output('arraybuffer');
-                const sb = await signPdfBytes(bytes, {
-                    page: doc.getNumberOfPages() - 1,
-                    yFromTopMm: y + 6,
-                    xMm: m
-                });
-                if (sb) downloadBytes(sb, fname);
-                else doc.save(fname);
+
+                // ── Only sign when the current user IS the assigned technician.
+                let sb = null;
+                if (assignedTechLoggedIn && isCertLoaded()) {
+                    sb = await signPdfBytes(bytes, {
+                        placements: [{
+                            page: doc.getNumberOfPages() - 1,
+                            yFromTopMm: y + 24, // Right below the visual signature
+                            xMm: m + (halfW / 2) + 2 // Right side of the box
+                        }]
+                    });
+                }
+                if (sb) {
+                    downloadBytes(sb, fname);
+                } else {
+                    // Audit trail for downstreams that are not the performer.
+                    if (!assignedTechLoggedIn) {
+                        const pW2 = doc.internal.pageSize.getWidth();
+                        const pH2 = doc.internal.pageSize.getHeight();
+                        doc.setFontSize(7);
+                        doc.setTextColor(120, 130, 140);
+                        doc.text(
+                            'Downloaded by ' + pdfSanitize(currentLoggedInName || '—') +
+                            ' on ' + new Date().toLocaleString('en-GB'),
+                            pW2 - 14, pH2 - 8, { align: 'right' }
+                        );
+                    }
+                    doc.save(fname);
+                }
             }
 
             /* ============================================================
@@ -10403,9 +10655,14 @@ signInAnonymously(auth)
                 const margin = 18;
                 const contentWidth = pageWidth - margin * 2;
 
-                if (!isCertLoaded() && records.length > 0) {
-                    const firstTech = safeStr(records[0].technician || records[0]['Technician'] || '');
-                    if (firstTech) await ensurePfxLoadedFor(firstTech);
+                // The crypto seal must belong to the DOWNLOADER, not record[0].
+                if (currentLoggedInName) {
+                    const loadedMatchesUser =
+                        isCertLoaded() &&
+                        normalizeText(CERT_STATE.subject || '').indexOf(normalizeText(currentLoggedInName)) !== -1;
+                    if (!loadedMatchesUser) {
+                        await ensurePfxLoadedFor(currentLoggedInName, { forceReload: true });
+                    }
                 }
 
                 let sigs = loadSignatures();
@@ -10438,6 +10695,7 @@ signInAnonymously(auth)
                 }
 
                 let isFirstPage = true;
+                let sigPlacements = []; // <--- ADD THIS
 
                 function addHeader(data) {
                     if (isFirstPage) {
@@ -10712,6 +10970,14 @@ signInAnonymously(auth)
                         doc.setTextColor(179, 58, 58);
                         doc.text('Pending co-signature', rbx + 3, y + 32);
                     }
+
+                    // Store where the cryptographic stamp should go
+                    sigPlacements.push({
+                        page: doc.internal.getNumberOfPages() - 1,
+                        yFromTopMm: y + 24, // Right below the visual signature
+                        xMm: lbx + (halfW / 2) + 2 // Right side of the box
+                    });
+
                     y += boxH + 3;
                 }
 
@@ -10723,11 +10989,14 @@ signInAnonymously(auth)
 
                 const fname = 'CHUB_Refrigerator_PM_Report_' + new Date().toISOString().slice(0, 10) + '_' + records.length + 'records.pdf';
                 const bytes = doc.output('arraybuffer');
-                const signedBytes = await signPdfBytes(bytes, {
-                    allPages: true,
-                    yFromTopMm: 250,
-                    xMm: 18
-                });
+
+                // If a cert is loaded in memory, it belongs to the current user (enforced by ensurePfxLoadedFor)
+                const safeToSign = isCertLoaded();
+
+                const signedBytes = safeToSign
+                    ? await signPdfBytes(bytes, { placements: sigPlacements })
+                    : null;
+
                 if (signedBytes) downloadBytes(signedBytes, fname);
                 else doc.save(fname);
             }
@@ -10736,9 +11005,14 @@ signInAnonymously(auth)
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pW = 210, pH = 297, mL = 14, mR = 14;
                 const cW = pW - mL - mR;
-                if (!isCertLoaded() && records.length > 0) {
-                    const firstTech = safeStr(records[0].technician || records[0]['Technician'] || '');
-                    if (firstTech) await ensurePfxLoadedFor(firstTech);
+                // The crypto seal must belong to the DOWNLOADER, not record[0].
+                if (currentLoggedInName) {
+                    const loadedMatchesUser =
+                        isCertLoaded() &&
+                        normalizeText(CERT_STATE.subject || '').indexOf(normalizeText(currentLoggedInName)) !== -1;
+                    if (!loadedMatchesUser) {
+                        await ensurePfxLoadedFor(currentLoggedInName, { forceReload: true });
+                    }
                 }
                 let y = drawChubHeader(doc, {
                     title: 'REFRIGERATOR ANALYSIS REPORT',
@@ -10867,11 +11141,14 @@ signInAnonymously(auth)
                 }
                 const fname = 'CHUB_Refrigerator_Dept_Analysis_' + dept.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
                 const bytes = doc.output('arraybuffer');
-                const signedBytes = await signPdfBytes(bytes, {
-                    page: doc.getNumberOfPages() - 1,
-                    yFromTopMm: 250,
-                    xMm: 18
-                });
+                
+                // If a cert is loaded in memory, it belongs to the current user (enforced by ensurePfxLoadedFor)
+                const safeToSign = isCertLoaded();
+                    
+                const signedBytes = safeToSign
+                    ? await signPdfBytes(bytes, { page: doc.getNumberOfPages() - 1, yFromTopMm: 250, xMm: 18 })
+                    : null;
+                    
                 if (signedBytes) downloadBytes(signedBytes, fname);
                 else doc.save(fname);
             }
@@ -11042,37 +11319,44 @@ signInAnonymously(auth)
                     const sRef = ctx.register(sDict);
 
                     const pages = pdfDoc.getPages();
-                    const targetPages = [];
-                    if (opts.allPages === true) {
-                        for (let i = 0; i < pages.length; i++) targetPages.push(i);
+                    
+                    // ✅ FIX: Define placements by normalizing the incoming options
+                    let placements = [];
+                    if (Array.isArray(opts.placements)) {
+                        placements = opts.placements;
+                    } else if (opts.allPages === true) {
+                        for (let i = 0; i < pages.length; i++) placements.push({ page: i });
+                    } else if (typeof opts.page === 'number' || opts.yFromTopMm != null || opts.xMm != null) {
+                        placements.push({
+                            page: (typeof opts.page === 'number' && opts.page >= 0 && opts.page < pages.length) ? opts.page : pages.length - 1,
+                            yFromTopMm: opts.yFromTopMm,
+                            xMm: opts.xMm
+                        });
                     } else {
-                        const pageIdx = (typeof opts.page === 'number' && opts.page >= 0 && opts.page < pages.length)
-                            ? opts.page
-                            : pages.length - 1;
-                        targetPages.push(pageIdx);
+                        // Default to the last page if no coordinates are provided
+                        placements.push({ page: pages.length - 1 });
                     }
 
-                    const AP_W_PT = 260, AP_H_PT = 60;
+                    const AP_W_PT = 110, AP_H_PT = 40; // Shrunk to fit inside the visual signature box
                     const MM2PT = 2.8346456693;
 
                     const signedAtStr = new Date().toLocaleString('en-GB', { hour12: false });
-                    const subject = pdfSanitize(CERT_STATE.subject || 'CHUB Signer').substring(0, 60);
-                    const issuer = pdfSanitize(CERT_STATE.issuer || 'Unknown CA').substring(0, 60);
-                    const serialShort = (CERT_STATE.serial || '').substring(0, 24);
-                    const fpShort = (CERT_STATE.fingerprint || '').substring(0, 29) + '…';
+                    const subject = pdfSanitize(CERT_STATE.subject || 'CHUB Signer').substring(0, 32);
+                    const issuer = pdfSanitize(CERT_STATE.issuer || 'Unknown CA').substring(0, 22);
+                    const serialShort = (CERT_STATE.serial || '').substring(0, 12);
                     const apStream =
-                        `q 0.85 0.93 1 rg 0 0 260 60 re f Q\n` +
-                        `q 0.11 0.29 0.57 RG 1 w 0.5 0.5 259 59 re S Q\n` +
-                        `q 0 0 0 rg BT /F1 8 Tf 8 50 Td (Digitally signed by) Tj ET Q\n` +
-                        `q 0 0 0 rg BT /F2 9 Tf 8 39 Td (${subject.replace(/[()\\]/g, '')}) Tj ET Q\n` +
-                        `q 0.2 0.35 0.5 rg BT /F1 7 Tf 8 28 Td (Issuer: ${issuer.replace(/[()\\]/g, '')}) Tj ET Q\n` +
-                        `q 0.2 0.35 0.5 rg BT /F1 7 Tf 8 18 Td (Date: ${signedAtStr}) Tj ET Q\n` +
-                        `q 0.4 0.5 0.6 rg BT /F1 6 Tf 8 8 Td (Serial ${serialShort}  SHA-256 ${fpShort}) Tj ET Q\n`;
+                        `q 0.95 0.98 1 rg 0 0 110 40 re f Q\n` +
+                        `q 0.11 0.29 0.57 RG 0.5 w 0.5 0.5 109 39 re S Q\n` +
+                        `q 0 0 0 rg BT /F1 5 Tf 3 34 Td (Digitally signed by) Tj ET Q\n` +
+                        `q 0 0 0 rg BT /F2 6 Tf 3 27 Td (${subject.replace(/[()\\]/g, '')}) Tj ET Q\n` +
+                        `q 0.2 0.35 0.5 rg BT /F1 5 Tf 3 19 Td (Issuer: ${issuer.replace(/[()\\]/g, '')}) Tj ET Q\n` +
+                        `q 0.2 0.35 0.5 rg BT /F1 5 Tf 3 12 Td (Date: ${signedAtStr.substring(0,16)}) Tj ET Q\n` +
+                        `q 0.4 0.5 0.6 rg BT /F1 4 Tf 3 4 Td (Serial ${serialShort}) Tj ET Q\n`;
                     const apStreamRef = ctx.register(
                         ctx.flateStream(apStream, {
                             Type: 'XObject', Subtype: 'Form',
                             FormType: 1,
-                            BBox: [0, 0, 260, 60],
+                            BBox: [0, 0, 110, 40],
                             Resources: ctx.obj({
                                 Font: ctx.obj({
                                     F1: ctx.obj({ Type: 'Font', Subtype: 'Type1', BaseFont: 'Helvetica', Encoding: 'WinAnsiEncoding' }),
@@ -11083,15 +11367,16 @@ signInAnonymously(auth)
                     );
 
                     let firstWdRef = null;
-                    for (let t = 0; t < targetPages.length; t++) {
-                        const idx = targetPages[t];
+                    for (let t = 0; t < placements.length; t++) {
+                        const place = placements[t];
+                        const idx = place.page;
                         const page = pages[idx];
                         const { width, height } = page.getSize();
 
                         let rect;
-                        if (opts.yFromTopMm != null) {
-                            const xLeftPt = (opts.xMm != null ? opts.xMm : 16) * MM2PT;
-                            const yTopPt = height - (opts.yFromTopMm * MM2PT);
+                        if (place.yFromTopMm != null) {
+                            const xLeftPt = (place.xMm != null ? place.xMm : 16) * MM2PT;
+                            const yTopPt = height - (place.yFromTopMm * MM2PT);
                             rect = [xLeftPt, yTopPt - AP_H_PT, xLeftPt + AP_W_PT, yTopPt];
                         } else {
                             rect = [width - AP_W_PT - 20, 40, width - 20, 40 + AP_H_PT];
@@ -11205,8 +11490,13 @@ signInAnonymously(auth)
                 const A = computeCurativeAnalytics(records);
                 const issueDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                 const refNo = 'CHUB/CUR/' + (qKey || 'ALL').replace(/[^A-Z0-9]/gi, '') + '/' + String(records.length).padStart(3, '0');
-                if (!isCertLoaded() && currentLoggedInName) {
-                    await ensurePfxLoadedFor(currentLoggedInName);
+                if (currentLoggedInName) {
+                    const loadedMatchesUser =
+                        isCertLoaded() &&
+                        normalizeText(CERT_STATE.subject || '').indexOf(normalizeText(currentLoggedInName)) !== -1;
+                    if (!loadedMatchesUser) {
+                        await ensurePfxLoadedFor(currentLoggedInName, { forceReload: true });
+                    }
                 }
                 let y = drawChubHeader(doc, {
                     title: 'CURATIVE MAINTENANCE REPORT',
@@ -11352,14 +11642,76 @@ signInAnonymously(auth)
                         y += 6;
                     });
                 }
+                // ── Load Visual Signature for the report
+                let techSig = who ? (getSignatureFor(who) || '') : '';
+                if (!techSig && who) {
+                    try {
+                        const cfg = await firestoreConfigGet('TechSig_' + who);
+                        if (cfg) techSig = cfg.startsWith('data:') ? cfg : 'data:image/png;base64,' + cfg;
+                    } catch (e) { }
+                }
+                const techDims = techSig ? await loadImageDimensions(techSig) : null;
+
                 const totalPages = doc.internal.getNumberOfPages();
+                
+                // Draw the visual signature box on the LAST page
+                doc.setPage(totalPages);
+                const sigBoxY = pH - 55; 
+                const sigBoxW = 80;
+                const sigBoxH = 35;
+
+                doc.setFillColor(240, 246, 252);
+                doc.setDrawColor(207, 224, 238);
+                doc.roundedRect(mL, sigBoxY, sigBoxW, sigBoxH, 2, 2, 'FD');
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(6.5);
+                doc.setTextColor(91, 123, 150);
+                doc.text('SIGNED BY (TECHNICIAN)', mL + 3, sigBoxY + 4.5);
+
+                doc.setFontSize(9.5);
+                doc.setTextColor(10, 42, 63);
+                doc.text(pdfSanitize(who || '—'), mL + 3, sigBoxY + 11);
+
+                               if (techSig) {
+                    try {
+                        const saX = m + (halfW / 2) + 2, saY = y + 7, saW = (halfW / 2) - 5, saH = 16;
+                        let w = saW, h = w, aspect = 1;
+                        if (techDims && techDims.width && techDims.height) {
+                            aspect = techDims.width / techDims.height;
+                            h = w / aspect;
+                            if (h > saH) { h = saH; w = h * aspect; }
+                        }
+                        doc.addImage(techSig, 'PNG', saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
+                    } catch (e) { }
+                }
+
+                doc.setDrawColor(150, 180, 200);
+                doc.setLineWidth(0.3);
+                doc.line(mL + 3, sigBoxY + 30, mL + sigBoxW - 3, sigBoxY + 30);
+                doc.setFont('helvetica', 'italic');
+                doc.setFontSize(6);
+                doc.setTextColor(91, 123, 150);
+                doc.text('Signature', mL + 3, sigBoxY + 33);
+
+                // Apply footers to all pages
                 for (let p = 1; p <= totalPages; p++) {
                     doc.setPage(p);
                     drawChubFooter(doc, p, totalPages);
                 }
+
                 const fname = 'CHUB_Curative_Report_' + (qKey || 'ALL').replace(/[^A-Z0-9]/gi, '') + '_' + (who || 'fleet').replace(/\s+/g, '_') + '.pdf';
                 const bytes = doc.output('arraybuffer');
-                const sb = await signPdfBytes(bytes);
+                
+                // If a cert is loaded in memory, it belongs to the current user (enforced by ensurePfxLoadedFor)
+                const safeToSign = isCertLoaded();
+                const sb = safeToSign ? await signPdfBytes(bytes, {
+                    placements: [{
+                        page: doc.getNumberOfPages() - 1,
+                        yFromTopMm: sigBoxY + 31, // Just below the visual signature box
+                        xMm: mL + 3
+                    }]
+                }) : null;
                 if (sb) downloadBytes(sb, fname);
                 else doc.save(fname);
             }
@@ -12586,7 +12938,12 @@ signInAnonymously(auth)
                         originalAssignee: t.originalAssignee || t.assignedTo || currentLoggedInName,
                         delegatedBy: currentLoggedInName,
                         delegatedAt: 'NOW',
-                        status: t.status === 'in_progress' ? 'in_progress' : 'pending',
+                        status: 'pending',        // ← NEW: reset status so new tech must start fresh
+                        notes: '',                // ← NEW: clear old tech's notes
+                        startedAt: '',            // ← NEW
+                        completedAt: '',          // ← NEW
+                        feedback: '',             // ← NEW
+                        feedbackQuality: '',      // ← NEW
                         history: history
                     });
                     if (!ok) throw new Error('Update failed');
@@ -13526,148 +13883,160 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
                 try { sessionStorage.removeItem(SESSION_KEY); } catch (e) { }
             }
             async function unlockApp(p) {
-                window.__cachedPfxBinary = null;
-                window.__cachedPfxPassword = null;
-                clearCert();
                 try {
-                    const _cb = sessionStorage.getItem('chub_pfx_bin_' + p.name);
-                    const _cp = sessionStorage.getItem('chub_pfx_pw_' + p.name);
-                    if (_cb && _cp && typeof forge !== 'undefined') {
-                        const _p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(_cb), _cp);
-                        const _cB = _p12.getBags({ bagType: forge.pki.oids.certBag });
-                        const _c = _cB[forge.pki.oids.certBag] && _cB[forge.pki.oids.certBag][0];
-                        const _kB = _p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
-                        let _kb = _kB[forge.pki.oids.pkcs8ShroudedKeyBag] && _kB[forge.pki.oids.pkcs8ShroudedKeyBag][0];
-                        if (!_kb) {
-                            const _pb = _p12.getBags({ bagType: forge.pki.oids.keyBag });
-                            _kb = _pb[forge.pki.oids.keyBag] && _pb[forge.pki.oids.keyBag][0];
-                        }
-                        if (_c && _c.cert && _kb && _kb.key) {
-                            CERT_STATE.certificate = _c.cert;
-                            CERT_STATE.privateKey = _kb.key;
-                            const _gf = (o, n) => { try { const f = o.getField(n); return f ? f.value : ''; } catch (e) { return ''; } };
-                            CERT_STATE.subject = pdfSanitize(_gf(_c.cert.subject, 'CN') || '(unknown)');
-                            CERT_STATE.issuer = pdfSanitize(_gf(_c.cert.issuer, 'CN') || '(unknown)');
-                            CERT_STATE.serial = _c.cert.serialNumber || '';
-                            CERT_STATE.validFrom = _c.cert.validity.notBefore;
-                            CERT_STATE.validTo = _c.cert.validity.notAfter;
-                            const _der = forge.asn1.toDer(forge.pki.certificateToAsn1(_c.cert)).getBytes();
-                            const _md = forge.md.sha256.create(); _md.update(_der);
-                            CERT_STATE.fingerprint = _md.digest().toHex().match(/.{1,2}/g).join(':').toUpperCase();
-                            window.__cachedPfxBinary = _cb;
-                            window.__cachedPfxPassword = _cp;
-                            console.log('[unlockApp] PFX restored silently from sessionStorage');
-                        }
-                    }
-                } catch (e) { console.warn('[unlockApp] sessionStorage PFX restore failed:', e); }
-                if (p.name === SUPERVISOR_NAME) currentRole = 'supervisor';
-                else if (p.name === INFRA_MANAGER_NAME) currentRole = 'infra_manager';
-                else currentRole = p.role || 'technician';
-                currentLoggedInName = p.name;
-
-                if (currentRole === 'incharge') {
-                    currentInchargeDept = p.dept || '';
-                }
-
-                if (currentRole === 'technician') {
-                    let found = false;
-                    for (let i = 0; i < technicianSelect.options.length; i++) {
-                        if (technicianSelect.options[i].value === p.name) { found = true; break; }
-                    }
-                    if (!found) {
-                        const o = document.createElement('option');
-                        o.value = p.name; o.textContent = p.name;
-                        technicianSelect.appendChild(o);
-                    }
-                    technicianSelect.value = p.name;
-                } else {
-                    technicianSelect.value = '';
-                }
-                const sfx = currentRole === 'incharge'
-                    ? ' (In-Charge)'
-                    : (currentRole === 'supervisor' ? ' (Manager)' : (currentRole === 'assetsmanager' ? ' (Assets Mgr)' : ''));
-                loggedInUserName.textContent = p.name + sfx;
-                lockedTechName.textContent = p.name;
-                const _ugBtn = document.getElementById('userGuideBtn');
-if (_ugBtn) _ugBtn.style.display = 'inline-flex';
-                updateTechnicianDisplay();
-                applyRoleVisibility();
-
-                loginModal.classList.remove('show');
-                showStatus('👋 Welcome ' + p.name, true);
-
-                ensureDepartmentsLoaded().catch(() => { });
-                if (currentRole === 'incharge' && !currentInchargeDept) {
-                    currentInchargeDept = inferDepartmentFromIncharge(p.name);
-                }
-                fetchTechnicianAssetsFromCloud(p.name).catch(() => { });
-                populateInchargeSuggestions().catch(() => { });
-                populateTechnicianLoginSelect().catch(() => { });
-                refreshHeaderAvatar().catch(() => { });
-                renderNotificationBell().catch(() => { });
-
-                initNotificationPoller();
-
-                if (currentRole === 'incharge') {
-                    currentInchargeDept = p.dept || inferDepartmentFromIncharge(p.name);
-                    fetchInchargeSignatureFromCloud(p.name).then(s => { if (s) currentInchargeSignature = s; });
-                    setTimeout(() => Promise.resolve(refreshPendingApprovals()).catch(() => { }), 300);
-                    setTimeout(() => Promise.resolve(loadDepartmentInventory()).catch(() => { }), 400);
-                } else if (currentRole === 'supervisor') {
-                    REF_INVENTORY = [];
-                    populateSupervisorDeptFilter();
-                    populateSupervisorOwnerFilter();
-                    populateDashDeptSelect();
-                    populateCurativeDeptSelect();
-                    populateCurativeTechSelect();
-                    populateCurativeQuarterSelect();
-                    setTimeout(() => Promise.resolve(refreshSupervisorInventory()).catch(() => { }), 300);
-                    setTimeout(() => Promise.resolve(renderInchargeEditor()).catch(() => { }), 200);
-                    setTimeout(() => Promise.resolve(renderTechnicianEditor()).catch(() => { }), 200);
-                    setTimeout(() => Promise.resolve(renderSupervisorDashboard()).catch(() => { }), 500);
-                    setTimeout(() => Promise.resolve(refreshEscalatedCurative()).catch(() => { }), 700);
-                    showStatus('👑 Welcome ' + p.name, true);
-                } else if (currentRole === 'assetsmanager') {
-                    REF_INVENTORY = [];
-                    setTimeout(() => Promise.resolve(refreshAssetsDisposals()).catch(() => { }), 400);
-                    setTimeout(() => Promise.resolve(refreshAssetsInventory()).catch(() => { }), 500);
-                    showStatus('🗑️ Welcome ' + p.name, true);
-                } else if (currentRole === 'infra_manager') {
-                    REF_INVENTORY = [];
-                    setTimeout(() => Promise.resolve(refreshInfraManagerTasks()).catch(() => { }), 400);
-                    showStatus('🏗️ Welcome ' + p.name, true);
-                } else {
-                    REF_INVENTORY = [];
-                    renderRefSelector();
-                    showStatus('⏳ Loading equipment…', true);
-                    let myDepts = [];
+                    window.__cachedPfxBinary = null;
+                    window.__cachedPfxPassword = null;
+                    clearCert();
                     try {
-                        const users = await loadUsersFromFirestore();
-                        const rec = users[p.name];
-                        if (rec) {
-                            if (Array.isArray(rec.depts) && rec.depts.length > 0) myDepts = rec.depts.map(d => String(d).trim()).filter(Boolean);
-                            else if (rec.dept) myDepts = [String(rec.dept).trim()].filter(Boolean);
+                        const _cb = sessionStorage.getItem('chub_pfx_bin_' + p.name);
+                        const _cp = sessionStorage.getItem('chub_pfx_pw_' + p.name);
+                        if (_cb && _cp && typeof forge !== 'undefined') {
+                            const _p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(_cb), _cp);
+                            const _cB = _p12.getBags({ bagType: forge.pki.oids.certBag });
+                            const _c = _cB[forge.pki.oids.certBag] && _cB[forge.pki.oids.certBag][0];
+                            const _kB = _p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+                            let _kb = _kB[forge.pki.oids.pkcs8ShroudedKeyBag] && _kB[forge.pki.oids.pkcs8ShroudedKeyBag][0];
+                            if (!_kb) {
+                                const _pb = _p12.getBags({ bagType: forge.pki.oids.keyBag });
+                                _kb = _pb[forge.pki.oids.keyBag] && _pb[forge.pki.oids.keyBag][0];
+                            }
+                            if (_c && _c.cert && _kb && _kb.key) {
+                                CERT_STATE.certificate = _c.cert;
+                                CERT_STATE.privateKey = _kb.key;
+                                const _gf = (o, n) => { try { const f = o.getField(n); return f ? f.value : ''; } catch (e) { return ''; } };
+                                CERT_STATE.subject = pdfSanitize(_gf(_c.cert.subject, 'CN') || '(unknown)');
+                                CERT_STATE.issuer = pdfSanitize(_gf(_c.cert.issuer, 'CN') || '(unknown)');
+                                CERT_STATE.serial = _c.cert.serialNumber || '';
+                                CERT_STATE.validFrom = _c.cert.validity.notBefore;
+                                CERT_STATE.validTo = _c.cert.validity.notAfter;
+                                const _der = forge.asn1.toDer(forge.pki.certificateToAsn1(_c.cert)).getBytes();
+                                const _md = forge.md.sha256.create(); _md.update(_der);
+                                CERT_STATE.fingerprint = _md.digest().toHex().match(/.{1,2}/g).join(':').toUpperCase();
+                                window.__cachedPfxBinary = _cb;
+                                window.__cachedPfxPassword = _cp;
+                                console.log('[unlockApp] PFX restored silently from sessionStorage');
+                            }
                         }
-                    } catch (e) { }
-                    try {
-                        const all = await fetchAllInventory();
-                        REF_INVENTORY = all.filter(a => {
-                            if (myDepts.length > 0) return myDepts.some(d => normalizeText(d) === normalizeText(a.dept));
-                            return sameOwner(a.owner, p.name) || sameOwner(a.technician, p.name);
-                        });
-                        cacheInventoryLocally(p.name, REF_INVENTORY);
-                        try { sessionStorage.setItem('tech_depts_' + p.name, JSON.stringify(myDepts)); } catch (e) { }
-                        renderRefSelector();
-                        const lbl = myDepts.length ? myDepts.join(' + ') : 'own equipment';
-                        showStatus('✅ ' + p.name + ' — ' + REF_INVENTORY.length + ' unit(s) in ' + lbl, true);
-                        setTimeout(() => checkTechnicianRejections(p.name), 900);
-                    } catch (e) {
-                        REF_INVENTORY = loadCachedInventory(p.name) || [];
-                        renderRefSelector();
-                        showStatus('📥 Offline — ' + REF_INVENTORY.length + ' from cache.', false);
-                        setTimeout(() => checkTechnicianRejections(p.name), 900);
+                    } catch (e) { console.warn('[unlockApp] sessionStorage PFX restore failed:', e); }
+                    
+                    if (p.name === SUPERVISOR_NAME) currentRole = 'supervisor';
+                    else if (p.name === INFRA_MANAGER_NAME) currentRole = 'infra_manager';
+                    else currentRole = p.role || 'technician';
+                    currentLoggedInName = p.name;
+
+                    if (currentRole === 'incharge') {
+                        currentInchargeDept = p.dept || '';
                     }
-                    setTimeout(() => Promise.resolve(refreshTechnicianCurative()).catch(() => { }), 1200);
+
+                    if (currentRole === 'technician') {
+                        let found = false;
+                        for (let i = 0; i < technicianSelect.options.length; i++) {
+                            if (technicianSelect.options[i].value === p.name) { found = true; break; }
+                        }
+                        if (!found) {
+                            const o = document.createElement('option');
+                            o.value = p.name; o.textContent = p.name;
+                            technicianSelect.appendChild(o);
+                        }
+                        technicianSelect.value = p.name;
+                    } else {
+                        technicianSelect.value = '';
+                    }
+                    const sfx = currentRole === 'incharge'
+                        ? ' (In-Charge)'
+                        : (currentRole === 'supervisor' ? ' (Manager)' : (currentRole === 'assetsmanager' ? ' (Assets Mgr)' : ''));
+                    loggedInUserName.textContent = p.name + sfx;
+                    lockedTechName.textContent = p.name;
+                    const _ugBtn = document.getElementById('userGuideBtn');
+                    if (_ugBtn) _ugBtn.style.display = 'inline-flex';
+                    updateTechnicianDisplay();
+                    applyRoleVisibility();
+
+                    loginModal.classList.remove('show');
+                    showStatus('👋 Welcome ' + p.name, true);
+
+                    ensureDepartmentsLoaded().catch(() => { });
+                    if (currentRole === 'incharge' && !currentInchargeDept) {
+                        currentInchargeDept = inferDepartmentFromIncharge(p.name);
+                    }
+                    fetchTechnicianAssetsFromCloud(p.name).catch(() => { });
+                    populateInchargeSuggestions().catch(() => { });
+                    populateTechnicianLoginSelect().catch(() => { });
+                    refreshHeaderAvatar().catch(() => { });
+                    renderNotificationBell().catch(() => { });
+
+                    initNotificationPoller();
+
+                    if (currentRole === 'incharge') {
+                        currentInchargeDept = p.dept || inferDepartmentFromIncharge(p.name);
+                        fetchInchargeSignatureFromCloud(p.name).then(s => { if (s) currentInchargeSignature = s; });
+                        setTimeout(() => Promise.resolve(refreshPendingApprovals()).catch(() => { }), 300);
+                        setTimeout(() => Promise.resolve(loadDepartmentInventory()).catch(() => { }), 400);
+                    } else if (currentRole === 'supervisor') {
+                        REF_INVENTORY = [];
+                        populateSupervisorDeptFilter();
+                        populateSupervisorOwnerFilter();
+                        populateDashDeptSelect();
+                        populateCurativeDeptSelect();
+                        populateCurativeTechSelect();
+                        populateCurativeQuarterSelect();
+                        setTimeout(() => Promise.resolve(refreshSupervisorInventory()).catch(() => { }), 300);
+                        setTimeout(() => Promise.resolve(renderInchargeEditor()).catch(() => { }), 200);
+                        setTimeout(() => Promise.resolve(renderTechnicianEditor()).catch(() => { }), 200);
+                        setTimeout(() => Promise.resolve(renderSupervisorDashboard()).catch(() => { }), 500);
+                        setTimeout(() => Promise.resolve(refreshEscalatedCurative()).catch(() => { }), 700);
+                        showStatus('👑 Welcome ' + p.name, true);
+                    } else if (currentRole === 'assetsmanager') {
+                        REF_INVENTORY = [];
+                        setTimeout(() => Promise.resolve(refreshAssetsDisposals()).catch(() => { }), 400);
+                        setTimeout(() => Promise.resolve(refreshAssetsInventory()).catch(() => { }), 500);
+                        showStatus('🗑️ Welcome ' + p.name, true);
+                    } else if (currentRole === 'infra_manager') {
+                        REF_INVENTORY = [];
+                        setTimeout(() => Promise.resolve(refreshInfraManagerTasks()).catch(() => { }), 400);
+                        showStatus('🏗️ Welcome ' + p.name, true);
+                    } else {
+                        REF_INVENTORY = [];
+                        renderRefSelector();
+                        showStatus('⏳ Loading equipment…', true);
+                        let myDepts = [];
+                        try {
+                            const users = await loadUsersFromFirestore();
+                            const rec = users[p.name];
+                            if (rec) {
+                                if (Array.isArray(rec.depts) && rec.depts.length > 0) myDepts = rec.depts.map(d => String(d).trim()).filter(Boolean);
+                                else if (rec.dept) myDepts = [String(rec.dept).trim()].filter(Boolean);
+                            }
+                        } catch (e) { }
+                        try {
+                            const all = await fetchAllInventory();
+                            REF_INVENTORY = all.filter(a => {
+                                if (myDepts.length > 0) return myDepts.some(d => normalizeText(d) === normalizeText(a.dept));
+                                return sameOwner(a.owner, p.name) || sameOwner(a.technician, p.name);
+                            });
+                            cacheInventoryLocally(p.name, REF_INVENTORY);
+                            try { sessionStorage.setItem('tech_depts_' + p.name, JSON.stringify(myDepts)); } catch (e) { }
+                            renderRefSelector();
+                            const lbl = myDepts.length ? myDepts.join(' + ') : 'own equipment';
+                            showStatus('✅ ' + p.name + ' — ' + REF_INVENTORY.length + ' unit(s) in ' + lbl, true);
+                            setTimeout(() => checkTechnicianRejections(p.name), 900);
+                        } catch (e) {
+                            REF_INVENTORY = loadCachedInventory(p.name) || [];
+                            renderRefSelector();
+                            showStatus('📥 Offline — ' + REF_INVENTORY.length + ' from cache.', false);
+                            setTimeout(() => checkTechnicianRejections(p.name), 900);
+                        }
+                        setTimeout(() => Promise.resolve(refreshTechnicianCurative()).catch(() => { }), 1200);
+                    }
+                } catch (err) {
+                    console.error('[unlockApp] Error:', err);
+                } finally {
+                    // Always reset the button in case it was left in a loading state
+                    const loginBtn = document.getElementById('loginBtn');
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = '🔓 Unlock &amp; Continue';
+                    }
                 }
             }
             function lockApp() {
@@ -13689,6 +14058,13 @@ if (_ugBtn) _ugBtn.style.display = 'inline-flex';
                 loginInchargeName.value = '';
                 populateTechnicianLoginSelect();
                 loginTechSelect.focus();
+
+                // Reset the login button state
+                const loginBtn = document.getElementById('loginBtn');
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '🔓 Unlock &amp; Continue';
+                }
                 CURRENT_NOTIFICATIONS = [];
                 CURRENT_INCHARGE_CURATIVE = [];
                 CURRENT_TECH_CURATIVE = [];
@@ -13720,15 +14096,14 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 const o = loginBtn.innerHTML;
                 loginBtn.innerHTML = '⏳ …';
 
-                if (USERS_CACHE && Object.keys(USERS_CACHE).length) {
-                    LIVE_USERS = USERS_CACHE;
-                } else {
-                    try { LIVE_USERS = await loadUsersFromFirestore(); } catch (e) { }
-                }
+                        if (USERS_CACHE && Object.keys(USERS_CACHE).length) {
+            LIVE_USERS = USERS_CACHE;
+        } else {
+            try { LIVE_USERS = await loadUsersFromFirestore(); } catch (e) { }
+        }
 
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = o;
-                if (role === 'technician' || role === 'assetsmanager') {
+        // Do not reset the button yet. Keep it disabled while checking 2FA.
+        if (role === 'technician' || role === 'assetsmanager') {
                     const n = loginTechSelect.value;
                     if (!n) { loginError.textContent = 'Select your name.'; return; }
                     const r = LIVE_USERS[n];
@@ -13745,8 +14120,7 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                     let ar = r.role;
                     if (n === SUPERVISOR_NAME) ar = 'supervisor';
                     if (n === INFRA_MANAGER_NAME) ar = 'infra_manager';
-                    saveSession({ name: n, role: ar });
-                    unlockApp({ name: n, role: ar });
+                    await maybeGateWith2FA(n, { name: n, role: ar });
                     return;
                 }
                 const dept = document.getElementById('loginInchargeDept').value;
@@ -13764,8 +14138,7 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 }
 
                 if (String(r.pin) !== pin) { loginError.textContent = 'Wrong PIN for ' + iname; loginPinInput.value = ''; loginPinInput.focus(); return; }
-                saveSession({ name: iname, dept, role: 'incharge' });
-                unlockApp({ name: iname, dept, role: 'incharge' });
+                await maybeGateWith2FA(iname, { name: iname, dept, role: 'incharge' });
             });
             loginPinInput.addEventListener('keydown', e => {
                 if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); }
@@ -13954,6 +14327,139 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 btn.disabled = false;
                 btn.innerHTML = o;
             });
+                        /* ============================================================
+               2FA · SETUP + LOGIN GATE
+               ============================================================ */
+            let __pendingTotpSecret = '';
+
+            document.getElementById('twoFactorBtn')?.addEventListener('click', openTwoFactorSetup);
+
+            async function openTwoFactorSetup() {
+                if (!currentLoggedInName) { alert('Login first.'); return; }
+                const existing = await fetchUserTotpSecret(currentLoggedInName);
+                if (existing) {
+                    if (!confirm('2FA is already enabled. Do you want to DISABLE it?')) return;
+                    await saveUserTotpSecret(currentLoggedInName, '');
+                    showStatus('🔓 2FA disabled.', true);
+                    USERS_CACHE = null;
+                    return;
+                }
+                __pendingTotpSecret = generateTotpSecret();
+                const wrap = document.getElementById('twoFactorQr');
+                wrap.innerHTML = '';
+                new QRCode(wrap, {
+                    text: otpauthUri(__pendingTotpSecret, currentLoggedInName),
+                    width: 200, height: 200,
+                    colorDark: '#0b3d91', colorLight: '#ffffff'
+                });
+                document.getElementById('twoFactorSecretText').textContent =
+                    'Manual entry key: ' + __pendingTotpSecret.match(/.{1,4}/g).join(' ');
+                document.getElementById('twoFactorConfirmCode').value = '';
+                document.getElementById('twoFactorSetupError').textContent = '';
+                document.getElementById('twoFactorSetupModal').classList.add('show');
+            }
+
+            document.getElementById('twoFactorSetupCancel')?.addEventListener('click', () => {
+                document.getElementById('twoFactorSetupModal').classList.remove('show');
+                __pendingTotpSecret = '';
+            });
+
+            document.getElementById('twoFactorSetupSave')?.addEventListener('click', async () => {
+                const code = document.getElementById('twoFactorConfirmCode').value.trim();
+                const err  = document.getElementById('twoFactorSetupError');
+                if (!verifyTotp(__pendingTotpSecret, code)) {
+                    err.textContent = '⚠️ Wrong code — try again.';
+                    return;
+                }
+                try {
+                    await saveUserTotpSecret(currentLoggedInName, __pendingTotpSecret);
+                    document.getElementById('twoFactorSetupModal').classList.remove('show');
+                    __pendingTotpSecret = '';
+                    showStatus('✅ 2FA enabled.', true);
+                    USERS_CACHE = null;
+                } catch (e) {
+                    err.textContent = '⚠️ ' + e.message;
+                }
+            });
+
+            /* Gate the login flow behind a 6-digit TOTP check when enabled */
+            async function completeLoginAfter2FA(sessionPayload) {
+                saveSession(sessionPayload);
+                await unlockApp(sessionPayload);
+            }
+
+            async function maybeGateWith2FA(name, sessionPayload) {
+                // Show visual feedback on the login button
+                const loginBtn = document.getElementById('loginBtn');
+                const origHtml = '🔓 Unlock &amp; Continue';
+                loginBtn.innerHTML = '⏳ Verifying...';
+
+                let secret;
+                try {
+                    secret = await fetchUserTotpSecret(name);
+                } catch (e) {
+                    // 🛑 FAIL CLOSED: If we can't check 2FA, DO NOT let them in.
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = origHtml;
+                    loginError.textContent = '⚠️ ' + e.message;
+                    return; 
+                }
+
+                // If 2FA is not enabled, let them in.
+                if (!secret) { 
+                    await completeLoginAfter2FA(sessionPayload); 
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = origHtml;
+                    return; 
+                }
+
+                const modal   = document.getElementById('twoFactorVerifyModal');
+                const input   = document.getElementById('twoFactorLoginCode');
+                const errEl   = document.getElementById('twoFactorVerifyError');
+                const btnOk   = document.getElementById('twoFactorVerifySubmit');
+                const btnNo   = document.getElementById('twoFactorVerifyCancel');
+                // Hide the main login modal so it doesn't overlap
+                document.getElementById('loginModal').classList.remove('show');
+                
+                document.getElementById('tfUserLabel').textContent = name;
+                input.value = '';
+                errEl.textContent = '';
+                modal.classList.add('show');
+                setTimeout(() => input.focus(), 150);
+
+                const cleanup = () => {
+                    modal.classList.remove('show');
+                    btnOk.onclick = null;
+                    btnNo.onclick = null;
+                    input.onkeydown = null;
+                };
+                const onSubmit = async () => {
+                    const code = input.value.trim();
+                    if (!verifyTotp(secret, code)) {
+                        errEl.textContent = '⚠️ Invalid code.';
+                        input.value = '';
+                        input.focus();
+                        return;
+                    }
+                    cleanup();
+                    await completeLoginAfter2FA(sessionPayload);
+                };
+                const onCancel = () => {
+                    cleanup();
+                    document.getElementById('loginModal').classList.add('show'); // Show login again
+                    
+                    // Restore the login button
+                    const loginBtn = document.getElementById('loginBtn');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '🔓 Unlock &amp; Continue';
+                    
+                    loginError.textContent = '2FA cancelled.';
+                };
+                btnOk.onclick = onSubmit;
+                btnNo.onclick = onCancel;
+                input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(); } };
+            }
+
             async function refreshHeaderAvatar() {
                 const el = document.getElementById('headerAvatar');
                 if (!el) return;
@@ -14042,6 +14548,10 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 () => document.getElementById('viewCurativeModal').classList.remove('show'));
             document.getElementById('viewCurativeDownloadPdf')?.addEventListener('click', async function () {
                 if (!CURRENT_VIEW_CURATIVE) { showStatus('⚠️ No curative selected.', false); return; }
+                
+                // Close the modal so the PFX prompt can be seen clearly
+                document.getElementById('viewCurativeModal').classList.remove('show');
+
                 const o = this.innerHTML;
                 this.disabled = true;
                 this.innerHTML = '⏳ Generating…';
@@ -14096,44 +14606,8 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                         saveSignatureFor(techName, vs);
                         updateTechnicianDisplay();
                     }
-                    const pfxB64 = cfg['TechPFX_' + techName];
-                    if (!pfxB64) return;
-                    const pw = await askPfxPassword();
-                    if (!pw) return;
-                    try {
-                        let cb = pfxB64;
-                        if (cb.startsWith('data:')) cb = cb.split(',')[1];
-                        const bin = forge.util.decode64(cb);
-                        const p12 = forge.pkcs12.pkcs12FromAsn1(forge.asn1.fromDer(bin), pw);
-                        const cB = p12.getBags({ bagType: forge.pki.oids.certBag });
-                        const c = cB[forge.pki.oids.certBag] && cB[forge.pki.oids.certBag][0];
-                        const kB = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
-                        let kb = kB[forge.pki.oids.pkcs8ShroudedKeyBag] && kB[forge.pki.oids.pkcs8ShroudedKeyBag][0];
-                        if (!kb) {
-                            const pb = p12.getBags({ bagType: forge.pki.oids.keyBag });
-                            kb = pb[forge.pki.oids.keyBag] && pb[forge.pki.oids.keyBag][0];
-                        }
-                        if (c && c.cert && kb && kb.key) {
-                            CERT_STATE.certificate = c.cert;
-                            CERT_STATE.privateKey = kb.key;
-                            const gf = (obj, nm) => {
-                                try { const f = obj.getField(nm); return f ? f.value : ''; } catch (e) { return ''; }
-                            };
-                            CERT_STATE.subject = pdfSanitize(gf(c.cert.subject, 'CN') || '(unknown)');
-                            CERT_STATE.issuer = pdfSanitize(gf(c.cert.issuer, 'CN') || '(unknown)');
-                            CERT_STATE.serial = c.cert.serialNumber || '';
-                            CERT_STATE.validFrom = c.cert.validity.notBefore;
-                            CERT_STATE.validTo = c.cert.validity.notAfter;
-                            const der = forge.asn1.toDer(forge.pki.certificateToAsn1(c.cert)).getBytes();
-                            const md = forge.md.sha256.create();
-                            md.update(der);
-                            CERT_STATE.fingerprint = md.digest().toHex().match(/.{1,2}/g).join(':').toUpperCase();
-                            window.__cachedPfxBinary = bin;
-                            window.__cachedPfxPassword = pw;
-                            updateTechnicianDisplay();
-                            showStatus('🔐 Digital signature auto-loaded!', true);
-                        }
-                    } catch (e) { alert('❌ Wrong PFX password.'); }
+                    // 🛑 PFX prompt removed from login. 
+                    // The PFX will be requested securely only when the user clicks a "Download PDF" button.
                 } catch (e) { console.error(e); }
             }
             function askPfxPassword() {
@@ -14166,9 +14640,26 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                     input.addEventListener('keydown', onKey);
                 });
             }
-            async function ensurePfxLoadedFor(techName) {
-                if (isCertLoaded() && window.__cachedPfxBinary && window.__cachedPfxPassword) return true;
-                if (!techName) return false;
+            async function ensurePfxLoadedFor(techName, opts) {
+    opts = opts || {};
+    const want = normalizeText(techName);
+
+    // ── If a cert is already in memory, only reuse it when it matches
+    //    the requested signer (unless caller explicitly says "reuse").
+    if (isCertLoaded() && !opts.forceReload) {
+        const loaded = normalizeText(CERT_STATE.subject || '');
+        if (!want || loaded.indexOf(want) !== -1 || want.indexOf(loaded) !== -1) {
+            return true;   // ✅ same person — safe to reuse
+        }
+        // ⚠️ Different person — drop the stale cert
+        console.warn('[ensurePfxLoadedFor] clearing stale cert for', loaded, '-> requesting', want);
+        clearCert();
+        window.__cachedPfxBinary = null;
+        window.__cachedPfxPassword = null;
+    }
+    
+    if (!techName) return false;
+
                 try {
                     const cfg = await firestoreConfigGetAll();
                     const pfxB64 = cfg['TechPFX_' + techName];
@@ -14316,9 +14807,47 @@ if (_ugBtn) _ugBtn.style.display = 'none';
             }
 
             let __focusListenerBound = false;
-
+                       /* ============================================================
+               AUTO-CLEANUP: Delete old read notifications (Storage Management)
+               ============================================================ */
+            async function autoCleanupOldNotifications() {
+                try {
+                    const DAYS_OLD = 30; // Change to 7, 60, etc., based on your needs
+                    const cutoffDate = new Date(Date.now() - DAYS_OLD * 24 * 60 * 60 * 1000);
+                    
+                    // Find notifications older than X days
+                    const q = window.FB.query(
+                        window.FB.collection(window.FB.db, 'notifications'),
+                        window.FB.where('createdAt', '<', cutoffDate),
+                        window.FB.limit(100) // Delete max 100 per login to prevent freezing
+                    );
+                    
+                    const snap = await window.FB.getDocs(q);
+                    if (snap.empty) return;
+                    
+                    const toDelete = [];
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        // Only delete if the user has already seen it
+                        if (data.read === true) {
+                            toDelete.push(doc.ref);
+                        }
+                    });
+                    
+                    if (toDelete.length > 0) {
+                        await Promise.all(toDelete.map(ref => window.FB.deleteDoc(ref)));
+                        console.log(`🧹 [Storage] Auto-deleted ${toDelete.length} old read notifications.`);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ [Storage] Could not auto-delete notifications:', e);
+                }
+            }
             async function initNotificationPoller() {
                 if (__notifPollTimer) clearInterval(__notifPollTimer);
+                
+                // 🧹 Run the background cleanup silently
+                autoCleanupOldNotifications();
+
                 try {
                     const existing = await fetchMyNotifications();
                     __seenNotifIds = new Set(existing.map(n => n._docId));
