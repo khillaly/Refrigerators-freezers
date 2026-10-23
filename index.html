@@ -3258,6 +3258,7 @@ signInAnonymously(auth)
                 </div>
                 <button id="profileBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;">🖼️
                     Profile</button>
+                <button id="changePinBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;background:#e8f1fb;color:#0b3d91;border-color:#0b3d91;">🔑 Change PIN</button>
                                     <button id="twoFactorBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;background:#e8f1fb;color:#0b3d91;border-color:#0b3d91;">🔐 Security</button>
                 <button id="signatureBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;">🖊️ Signature
                     &amp; Cert</button>
@@ -4380,8 +4381,40 @@ signInAnonymously(auth)
             </div>
         </div>
     </div>
+        <!-- ============ CHANGE PIN MODAL ============ -->
+    <div class="modal-overlay" id="changePinModal">
+        <div class="modal-box" style="max-width:420px;text-align:center;">
+            <div style="font-size:3rem;margin-bottom:12px;">🔑</div>
+            <h2 style="justify-content:center;">Change Your PIN</h2>
+            <p style="margin-bottom:18px;">Update the PIN for <strong id="changePinUserName">—</strong>. The manager will see the new PIN in her dashboard.</p>
+            <div class="field-group" style="text-align:left;">
+                <label for="changePinCurrent">Current PIN</label>
+                <input type="password" id="changePinCurrent" inputmode="numeric" maxlength="8" placeholder="••••"
+                    style="text-align:center;font-size:1.5rem;letter-spacing:8px;">
+            </div>
+            <div class="field-group" style="text-align:left;">
+                <label for="changePinNew">New PIN (4–8 digits)</label>
+                <input type="password" id="changePinNew" inputmode="numeric" maxlength="8" placeholder="••••"
+                    style="text-align:center;font-size:1.5rem;letter-spacing:8px;">
+            </div>
+            <div class="field-group" style="text-align:left;">
+                <label for="changePinConfirm">Confirm new PIN</label>
+                <input type="password" id="changePinConfirm" inputmode="numeric" maxlength="8" placeholder="••••"
+                    style="text-align:center;font-size:1.5rem;letter-spacing:8px;">
+            </div>
+            <div style="background:#fff9ec;border:1px solid #f4d97a;border-radius:12px;padding:10px 14px;margin-top:8px;text-align:left;font-size:.82rem;color:#7a5300;">
+                ℹ️ The <strong>System Manager (GATANGANWA Raissa)</strong> will be able to see this new PIN in the manager dashboard for auditing.
+            </div>
+            <div id="changePinError" style="color:#b33a3a;font-size:.9rem;margin-top:10px;min-height:20px;"></div>
+            <div class="modal-actions" style="justify-content:center;margin-top:14px;">
+                <button class="btn-cancel" id="changePinCancel">Cancel</button>
+                <button class="btn-go" id="changePinSave">💾 Save New PIN</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ============ PFX PASSWORD MODAL ============ -->
+
     <div class="modal-overlay" id="pfxPasswordModal">
         <div class="modal-box" style="max-width:400px;text-align:center;">
             <div style="font-size:2.5rem;margin-bottom:12px;">🔐</div>
@@ -5268,6 +5301,90 @@ signInAnonymously(auth)
             const REF_QUARTER_DAY = 15;
             const DEFAULT_LIST_OWNER = 'Hillaly KUBWIMANA';
             const SUPERVISOR_NAME = 'GATANGANWA Raissa';
+
+            /* ============================================================
+               PIN-ATTEMPT TRACKING  (3-strike lock + manager contact)
+               ============================================================ */
+            const PIN_ATTEMPTS_KEY = 'chub_pin_attempts_v1';
+            const MAX_PIN_ATTEMPTS = 3;
+            const PIN_ATTEMPTS_RESET_MS = 30 * 60 * 1000; // auto-reset after 30 min of silence
+
+            function _readPinAttemptsMap() {
+                try { return JSON.parse(localStorage.getItem(PIN_ATTEMPTS_KEY) || '{}'); }
+                catch (e) { return {}; }
+            }
+            function _writePinAttemptsMap(m) {
+                try { localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(m)); } catch (e) { }
+            }
+            function getPinAttempts(name) {
+                if (!name) return { count: 0, lastAt: 0 };
+                const m = _readPinAttemptsMap();
+                const rec = m[normalizeText(name)];
+                if (!rec) return { count: 0, lastAt: 0 };
+                if (rec.lastAt && Date.now() - rec.lastAt > PIN_ATTEMPTS_RESET_MS) {
+                    delete m[normalizeText(name)];
+                    _writePinAttemptsMap(m);
+                    return { count: 0, lastAt: 0 };
+                }
+                return rec;
+            }
+            function incrementPinAttempt(name) {
+                if (!name) return 0;
+                const m = _readPinAttemptsMap();
+                const key = normalizeText(name);
+                const cur = m[key] || { count: 0, lastAt: 0 };
+                if (cur.lastAt && Date.now() - cur.lastAt > PIN_ATTEMPTS_RESET_MS) cur.count = 0;
+                cur.count = (cur.count || 0) + 1;
+                cur.lastAt = Date.now();
+                m[key] = cur;
+                _writePinAttemptsMap(m);
+                return cur.count;
+            }
+            function clearPinAttempts(name) {
+                if (!name) return;
+                const m = _readPinAttemptsMap();
+                delete m[normalizeText(name)];
+                _writePinAttemptsMap(m);
+            }
+
+            /* Fetch the System Manager's phone + email so the login lockout
+               message can show "call GATANGANWA Raissa · phone · email" */
+            async function fetchManagerContact() {
+                let phone = '', email = '';
+                try {
+                    const rec = LIVE_USERS[SUPERVISOR_NAME];
+                    if (rec && (rec.phone || rec.email)) {
+                        phone = rec.phone || '';
+                        email = rec.email || '';
+                    } else if (window.FB && window.FB.ready) {
+                        const snap = await window.FB.getDoc(
+                            window.FB.doc(window.FB.db, 'users', userDocId(SUPERVISOR_NAME))
+                        );
+                        if (snap.exists()) {
+                            const d = snap.data() || {};
+                            phone = d.phone || '';
+                            email = d.email || '';
+                        }
+                    }
+                } catch (e) { /* offline — fall through */ }
+                return { phone, email };
+            }
+
+            async function buildManagerContactErrorHtml(attemptCount) {
+                const c = await fetchManagerContact();
+                const phoneLine = c.phone
+                    ? `📞 <a href="tel:${escapeHtml(c.phone)}" style="color:#0b3d91;font-weight:800;text-decoration:underline;">${escapeHtml(c.phone)}</a>`
+                    : '📞 <span style="color:#b33a3a;font-weight:700;">phone not set — ask in person</span>';
+                const emailLine = c.email
+                    ? `✉️ <a href="mailto:${escapeHtml(c.email)}" style="color:#0b3d91;font-weight:800;text-decoration:underline;">${escapeHtml(c.email)}</a>`
+                    : '✉️ <span style="color:#b33a3a;font-weight:700;">email not set — ask in person</span>';
+                return `<div style="background:#fff3cd;border:2px solid #f4d97a;border-radius:12px;padding:12px 14px;text-align:left;margin-top:8px;">
+                    <div style="font-weight:800;color:#7a5300;font-size:.95rem;margin-bottom:6px;">🔒 ${attemptCount} wrong attempts</div>
+                    <div style="color:#7a5300;font-size:.88rem;margin-bottom:8px;">Please contact the System Manager:</div>
+                    <div style="color:#7a5300;font-size:.95rem;font-weight:800;margin-bottom:6px;">👤 GATANGANWA Raissa</div>
+                    <div style="font-size:.88rem;line-height:1.9;">${phoneLine}<br>${emailLine}</div>
+                </div>`;
+            }
 
             const ASSETS_MANAGER_NAME = 'Assets Manager';
             const INFRA_MANAGER_NAME = 'MUNYANEZA Joseph';
@@ -6221,7 +6338,11 @@ signInAnonymously(auth)
                                 phone: d.phone || '',
                                 email: d.email || '',
                                 photo: d.photo || '',
-                                totpEnabled: d.totpEnabled === true // <--- ADD THIS
+                                totpEnabled: d.totpEnabled === true,
+                                pinChangedAt: d.pinChangedAt && d.pinChangedAt.toDate
+                                    ? d.pinChangedAt.toDate().toISOString()
+                                    : (d.pinChangedAt || ''),
+                                pinChangedBy: d.pinChangedBy || ''
                             };
                         }
                     });
@@ -8415,11 +8536,15 @@ signInAnonymously(auth)
                     const r = ic[name] || { pin: '', dept: '' };
                     const row = document.createElement('div');
                     row.className = 'dept-editor-row';
+                    const _pinChanged = r.pinChangedAt
+                        ? `<div style="font-size:.7rem;color:#7a5300;margin-top:3px;">🔑 Last changed: ${escapeHtml(formatDateOnly(r.pinChangedAt))}${r.pinChangedBy ? ' · ' + escapeHtml(r.pinChangedBy) : ''}</div>`
+                        : '';
                     row.innerHTML = `<div>
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;">FULL NAME</label>
             <input type="text" class="incharge-name-input" value="${escapeHtml(name)}" style="width:100%;font-weight:700;">
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;margin-top:8px;display:block;">PIN</label>
             <input type="text" inputmode="numeric" class="incharge-pin-input" value="${escapeHtml(r.pin || '')}" style="width:100%;">
+            ${_pinChanged}
         </div><div>
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;">DEPARTMENT</label>
             <select class="incharge-dept-input" style="width:100%;"><option value="">— choose —</option></select>
@@ -8493,9 +8618,25 @@ signInAnonymously(auth)
                 this.innerHTML = '⏳ …';
                 try {
                     for (const [n, r] of Object.entries(next)) {
+                        // Only stamp pinChangedAt if the PIN actually changed
+                        const prevUsers = await loadUsersFromFirestore();
+                        const prevPin = (prevUsers[n] && prevUsers[n].pin) || '';
+                        const newPin = String(r.pin || '');
+                        const pinChanged = prevPin !== newPin;
+                        const update = {
+                            name: n,
+                            role: 'incharge',
+                            pin: newPin,
+                            dept: String(r.dept || ''),
+                            updatedAt: window.FB.serverTimestamp()
+                        };
+                        if (pinChanged) {
+                            update.pinChangedAt = window.FB.serverTimestamp();
+                            update.pinChangedBy = currentLoggedInName || 'manager';
+                        }
                         await window.FB.setDoc(
                             window.FB.doc(window.FB.db, 'users', userDocId(n)),
-                            { name: n, role: 'incharge', pin: String(r.pin || ''), dept: String(r.dept || ''), updatedAt: window.FB.serverTimestamp() },
+                            update,
                             { merge: true }
                         );
                     }
@@ -8515,7 +8656,14 @@ signInAnonymously(auth)
                 const techs = {};
                 Object.keys(users).forEach(n => {
                     if (users[n].role === 'technician' || users[n].role === 'supervisor' || users[n].role === 'assetsmanager' || users[n].role === 'infra_manager') {
-                        techs[n] = { role: users[n].role, pin: users[n].pin || '', phone: users[n].phone || '', email: users[n].email || '' };
+                        techs[n] = {
+                            role: users[n].role,
+                            pin: users[n].pin || '',
+                            phone: users[n].phone || '',
+                            email: users[n].email || '',
+                            pinChangedAt: users[n].pinChangedAt || '',
+                            pinChangedBy: users[n].pinChangedBy || ''
+                        };
                     }
                 });
                 wrap.innerHTML = '';
@@ -8532,11 +8680,15 @@ signInAnonymously(auth)
                                 : '';
                     const row = document.createElement('div');
                     row.className = 'dept-editor-row';
+                    const _pinChanged = r.pinChangedAt
+                        ? `<div style="font-size:.7rem;color:#7a5300;margin-top:3px;">🔑 Last changed: ${escapeHtml(formatDateOnly(r.pinChangedAt))}${r.pinChangedBy ? ' · ' + escapeHtml(r.pinChangedBy) : ''}</div>`
+                        : '';
                     row.innerHTML = `<div>
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;">FULL NAME${roleTag}</label>
             <input type="text" class="tech-name-input" value="${escapeHtml(name)}" style="width:100%;font-weight:700;">
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;margin-top:8px;display:block;">PIN</label>
             <input type="text" inputmode="numeric" class="tech-pin-input" value="${escapeHtml(r.pin)}" style="width:100%;">
+            ${_pinChanged}
         </div><div>
             <label style="font-size:.75rem;color:#5b7b96;font-weight:700;">📞 PHONE</label>
             <input type="tel" class="tech-phone-input" value="${escapeHtml(r.phone)}" style="width:100%;">
@@ -8618,10 +8770,24 @@ signInAnonymously(auth)
                 const o = this.innerHTML;
                 this.innerHTML = '⏳ …';
                 try {
+                    const prevUsers = await loadUsersFromFirestore();
                     for (const u of upd) {
+                        const prevPin = (prevUsers[u.name] && prevUsers[u.name].pin) || '';
+                        const pinChanged = prevPin !== String(u.pin || '');
+                        const update = {
+                            name: u.name,
+                            pin: u.pin,
+                            phone: u.phone,
+                            email: u.email,
+                            updatedAt: window.FB.serverTimestamp()
+                        };
+                        if (pinChanged) {
+                            update.pinChangedAt = window.FB.serverTimestamp();
+                            update.pinChangedBy = currentLoggedInName || 'manager';
+                        }
                         await window.FB.setDoc(
                             window.FB.doc(window.FB.db, 'users', userDocId(u.name)),
-                            { name: u.name, pin: u.pin, phone: u.phone, email: u.email, updatedAt: window.FB.serverTimestamp() },
+                            update,
                             { merge: true }
                         );
                     }
@@ -14084,6 +14250,7 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 const role = loginRoleSelect.value;
                 const pin = loginPinInput.value.trim();
                 loginError.textContent = '';
+                loginError.style.color = '#b33a3a';
 
                 primeAudioContext();
 
@@ -14096,53 +14263,154 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 const o = loginBtn.innerHTML;
                 loginBtn.innerHTML = '⏳ …';
 
-                        if (USERS_CACHE && Object.keys(USERS_CACHE).length) {
-            LIVE_USERS = USERS_CACHE;
-        } else {
-            try { LIVE_USERS = await loadUsersFromFirestore(); } catch (e) { }
-        }
+                try {
+                    if (USERS_CACHE && Object.keys(USERS_CACHE).length) {
+                        LIVE_USERS = USERS_CACHE;
+                    } else {
+                        try { LIVE_USERS = await loadUsersFromFirestore(); } catch (e) { }
+                    }
 
-        // Do not reset the button yet. Keep it disabled while checking 2FA.
-        if (role === 'technician' || role === 'assetsmanager') {
-                    const n = loginTechSelect.value;
-                    if (!n) { loginError.textContent = 'Select your name.'; return; }
-                    const r = LIVE_USERS[n];
-                    if (!r) { loginError.textContent = 'User not found. Contact manager.'; loginPinInput.value = ''; loginPinInput.focus(); return; }
+                    if (role === 'technician' || role === 'assetsmanager') {
+                        const n = loginTechSelect.value;
+                        if (!n) { loginError.textContent = 'Select your name.'; return; }
+                        const r = LIVE_USERS[n];
+                        if (!r) { loginError.textContent = 'User not found. Contact manager.'; loginPinInput.value = ''; loginPinInput.focus(); return; }
+
+                        if (!r.pin || String(r.pin).trim() === '') {
+                            loginBtn.disabled = false;
+                            loginBtn.innerHTML = o;
+                            openSetPinModal(n, r.role);
+                            return;
+                        }
+
+                        if (String(r.pin) !== pin) {
+                            const newCount = incrementPinAttempt(n);
+                            if (newCount >= MAX_PIN_ATTEMPTS) {
+                                loginError.innerHTML = await buildManagerContactErrorHtml(newCount);
+                            } else {
+                                loginError.textContent = '❌ Wrong PIN for ' + n + '. Attempt ' + newCount + '/' + MAX_PIN_ATTEMPTS + '.';
+                            }
+                            loginPinInput.value = '';
+                            loginPinInput.focus();
+                            return;
+                        }
+                        clearPinAttempts(n);
+                        let ar = r.role;
+                        if (n === SUPERVISOR_NAME) ar = 'supervisor';
+                        if (n === INFRA_MANAGER_NAME) ar = 'infra_manager';
+                        await maybeGateWith2FA(n, { name: n, role: ar });
+                        return;
+                    }
+
+                    const dept = document.getElementById('loginInchargeDept').value;
+                    const iname = loginInchargeName.value.trim();
+                    if (!dept) { loginError.textContent = 'Choose department.'; return; }
+                    if (!iname) { loginError.textContent = 'Enter your name.'; return; }
+                    const r = LIVE_USERS[iname];
+                    if (!r || r.role !== 'incharge') { loginError.textContent = 'Not registered as In-Charge.'; loginPinInput.value = ''; loginPinInput.focus(); return; }
 
                     if (!r.pin || String(r.pin).trim() === '') {
                         loginBtn.disabled = false;
                         loginBtn.innerHTML = o;
-                        openSetPinModal(n, r.role);
+                        openSetPinModal(iname, 'incharge');
                         return;
                     }
 
-                    if (String(r.pin) !== pin) { loginError.textContent = 'Wrong PIN for ' + n; loginPinInput.value = ''; loginPinInput.focus(); return; }
-                    let ar = r.role;
-                    if (n === SUPERVISOR_NAME) ar = 'supervisor';
-                    if (n === INFRA_MANAGER_NAME) ar = 'infra_manager';
-                    await maybeGateWith2FA(n, { name: n, role: ar });
-                    return;
+                    if (String(r.pin) !== pin) {
+                        const newCount = incrementPinAttempt(iname);
+                        if (newCount >= MAX_PIN_ATTEMPTS) {
+                            loginError.innerHTML = await buildManagerContactErrorHtml(newCount);
+                        } else {
+                            loginError.textContent = '❌ Wrong PIN for ' + iname + '. Attempt ' + newCount + '/' + MAX_PIN_ATTEMPTS + '.';
+                        }
+                        loginPinInput.value = '';
+                        loginPinInput.focus();
+                        return;
+                    }
+                    clearPinAttempts(iname);
+                    await maybeGateWith2FA(iname, { name: iname, dept, role: 'incharge' });
+                } finally {
+                    // 🔧 FIXES the pre-existing bug where the button stayed disabled
+                    // after a wrong PIN. Do NOT reset it if the 2FA modal is showing
+                    // (that modal has its own Reset logic).
+                    const gatingModal = document.getElementById('twoFactorVerifyModal');
+                    const isGating = gatingModal && gatingModal.classList.contains('show');
+                    if (!isGating) {
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = o;
+                    }
                 }
-                const dept = document.getElementById('loginInchargeDept').value;
-                const iname = loginInchargeName.value.trim();
-                if (!dept) { loginError.textContent = 'Choose department.'; return; }
-                if (!iname) { loginError.textContent = 'Enter your name.'; return; }
-                const r = LIVE_USERS[iname];
-                if (!r || r.role !== 'incharge') { loginError.textContent = 'Not registered as In-Charge.'; loginPinInput.value = ''; loginPinInput.focus(); return; }
-
-                if (!r.pin || String(r.pin).trim() === '') {
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = o;
-                    openSetPinModal(iname, 'incharge');
-                    return;
-                }
-
-                if (String(r.pin) !== pin) { loginError.textContent = 'Wrong PIN for ' + iname; loginPinInput.value = ''; loginPinInput.focus(); return; }
-                await maybeGateWith2FA(iname, { name: iname, dept, role: 'incharge' });
             });
             loginPinInput.addEventListener('keydown', e => {
                 if (e.key === 'Enter') { e.preventDefault(); loginBtn.click(); }
             });
+            /* ============================================================
+               CHANGE OWN PIN  (visible to all roles; manager sees the result)
+               ============================================================ */
+            document.getElementById('changePinBtn')?.addEventListener('click', () => {
+                if (!currentLoggedInName) { alert('Please log in first.'); return; }
+                document.getElementById('changePinUserName').textContent = currentLoggedInName;
+                document.getElementById('changePinCurrent').value = '';
+                document.getElementById('changePinNew').value = '';
+                document.getElementById('changePinConfirm').value = '';
+                document.getElementById('changePinError').textContent = '';
+                document.getElementById('changePinModal').classList.add('show');
+                setTimeout(() => document.getElementById('changePinCurrent').focus(), 150);
+            });
+
+            document.getElementById('changePinCancel')?.addEventListener('click',
+                () => document.getElementById('changePinModal').classList.remove('show'));
+
+            document.getElementById('changePinSave')?.addEventListener('click', async function () {
+                const cur = (document.getElementById('changePinCurrent').value || '').trim();
+                const nw = (document.getElementById('changePinNew').value || '').trim();
+                const cf = (document.getElementById('changePinConfirm').value || '').trim();
+                const errEl = document.getElementById('changePinError');
+                const btn = this;
+                const orig = btn.innerHTML;
+
+                errEl.textContent = '';
+                if (!cur) { errEl.textContent = '⚠️ Enter your current PIN.'; return; }
+                if (!/^\d{4,8}$/.test(nw)) { errEl.textContent = '⚠️ New PIN must be 4–8 digits.'; return; }
+                if (nw !== cf) { errEl.textContent = '⚠️ New PIN and confirmation do not match.'; return; }
+                if (cur === nw) { errEl.textContent = '⚠️ New PIN must be different from current.'; return; }
+
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Saving…';
+                try {
+                    const snap = await window.FB.getDoc(
+                        window.FB.doc(window.FB.db, 'users', userDocId(currentLoggedInName))
+                    );
+                    if (!snap.exists()) throw new Error('User record not found.');
+                    const d = snap.data();
+                    if (String(d.pin) !== cur) {
+                        errEl.textContent = '⚠️ Current PIN is incorrect.';
+                        btn.disabled = false;
+                        btn.innerHTML = orig;
+                        return;
+                    }
+                    await window.FB.setDoc(
+                        window.FB.doc(window.FB.db, 'users', userDocId(currentLoggedInName)),
+                        {
+                            pin: nw,
+                            pinChangedAt: window.FB.serverTimestamp(),
+                            pinChangedBy: 'self'
+                        },
+                        { merge: true }
+                    );
+                    // Refresh in-memory caches so the next login uses the new PIN
+                    if (LIVE_USERS && LIVE_USERS[currentLoggedInName]) LIVE_USERS[currentLoggedInName].pin = nw;
+                    USERS_CACHE = null;
+                    clearPinAttempts(currentLoggedInName);
+                    document.getElementById('changePinModal').classList.remove('show');
+                    showStatus('✅ PIN updated. The manager will see the new PIN.', true);
+                } catch (e) {
+                    errEl.textContent = '⚠️ ' + (e.message || 'Could not update PIN.');
+                }
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            });
+
             logoutBtn.addEventListener('click', () => {
                 if (confirm('Log out?')) { lockApp(); showStatus('Logged out.', true); }
             });
