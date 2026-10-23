@@ -1,12 +1,12 @@
 {
-  "name": "Generator Fleet Inspection",
-  "short_name": "Gen Fleet",
-  "description": "CHUB Site 400V/50Hz generator testing and monitoring procedures",
-  "start_url": "/chub-generator/",
-  "scope": "/chub-generator/",
+  "name": "CHUB Maint Fleet",
+  "short_name": "CHUB Maint",
+  "description": "CHUB Site & Infrastructure Preventive and Curative Maintenance System",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
+  "background_color": "#eef4fa",
   "theme_color": "#0b3d91",
   "icons": [
     {
