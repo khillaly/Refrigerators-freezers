@@ -1,7 +1,67 @@
-// sw.js — CHUB Equipment Fleet PM (merged + fixed)
-// v6 — Adds Firebase + Firestore protection and keeps Google Sheets protection.
+// sw.js — CHUB Equipment Fleet PM (merged + FCM push notifications)
+// v8 — Adds Firebase Cloud Messaging for background notifications.
 
-const CACHE_NAME = 'chub-ref-cache-v7'; // 🔼 bumped to v7 to force update
+// ─── 1. FIREBASE MESSAGING IMPORTS (Must be at the top) ───
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+
+// Initialize Firebase inside the Service Worker
+const firebaseConfig = {
+    apiKey: "AIzaSyAK-hbd1QQbREBdI3sFHexX14TcyFalRyA",
+    authDomain: "chub-equipment-maintenance.firebaseapp.com",
+    projectId: "chub-equipment-maintenance",
+    storageBucket: "chub-equipment-maintenance.firebasestorage.app",
+    messagingSenderId: "680949913078",
+    appId: "1:680949913078:web:f354a5b8ce2e6db4de23d7"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+// Handle background messages (when the app is closed or in another tab)
+messaging.onBackgroundMessage(function(payload) {
+    console.log('📩 Received background message ', payload);
+    
+    const notificationTitle = payload.notification?.title || 'CHUB Maintenance';
+    const notificationOptions = {
+        body: payload.notification?.body || 'You have a new update.',
+        icon: './icon-192.png',
+        badge: './icon-192.png',
+        data: { url: payload.data?.click_action || './' },
+        actions: [
+            { action: 'open', title: 'Open App' },
+            { action: 'close', title: 'Dismiss' }
+        ]
+    };
+
+    self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    if (event.action === 'close') return;
+
+    const urlToOpen = new URL(event.notification.data.url, self.location.origin).href;
+    
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
+            for (var i = 0; i < windowClients.length; i++) {
+                var client = windowClients[i];
+                if (client.url === urlToOpen && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
+        })
+    );
+});
+
+// ─── 2. YOUR EXISTING CACHING LOGIC ───
+
+const CACHE_NAME = 'chub-ref-cache-v8'; // 🔼 bumped to v8
 
 const ASSETS_TO_CACHE = [
     './',
@@ -19,22 +79,19 @@ const ASSETS_TO_CACHE = [
     'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
 ];
 
-// 1. Install — cache the app files
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('✅ Service Worker v6: caching assets');
+                console.log('✅ Service Worker v8: caching assets');
                 return cache.addAll(ASSETS_TO_CACHE).catch(err => {
-                    // Some CDN assets might fail (offline first run) — do not block install
                     console.warn('⚠️ Some assets failed to cache:', err);
                 });
             })
     );
-    self.skipWaiting(); // take over immediately
+    self.skipWaiting();
 });
 
-// 2. Activate — delete old caches (this clears v5 and earlier)
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -51,54 +108,42 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
-// 3. Fetch — cache-first for assets, NEVER cache live API calls
 self.addEventListener('fetch', event => {
     const url = event.request.url;
 
-    // ⛔ Do NOT cache live Google Sheets calls (old protection — kept)
-    if (url.includes('script.google.com')) {
-        return;
-    }
-
-    // ⛔ Do NOT cache Firebase / Firestore / Auth / Storage calls (NEW — important)
+    // ⛔ Do NOT cache live API calls
     if (
+        url.includes('script.google.com') ||
         url.includes('firebaseio.com') ||
         url.includes('firestore.googleapis.com') ||
         url.includes('firebaseapp.com') ||
         url.includes('identitytoolkit.googleapis.com') ||
         url.includes('securetoken.googleapis.com') ||
         url.includes('gstatic.com/firebasejs') ||
-        url.includes('googleapis.com')
+        url.includes('googleapis.com') ||
+        url.includes('fcm.googleapis.com') // Added FCM
     ) {
-        return; // Let the network handle it directly
-    }
-
-    // Only handle GET requests
-    if (event.request.method !== 'GET') return;
-
-    // 🌟 FIX: Ignore chrome-extension:// and other weird protocols
-    if (!url.startsWith('http')) {
         return; 
     }
+
+    if (event.request.method !== 'GET') return;
+    if (!url.startsWith('http')) return; 
 
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                if (response) return response; // cache hit
+                if (response) return response; 
 
-                // Network fallback
                 return fetch(event.request).then(networkResponse => {
                     if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
                         return networkResponse;
                     }
-                    // Dynamically cache new same-origin assets
                     const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then(cache => {
                         cache.put(event.request, responseToCache);
                     });
                     return networkResponse;
                 }).catch(() => {
-                    // Offline fallback: only for HTML navigation
                     if (event.request.mode === 'navigate') {
                         return caches.match('./index.html');
                     }
