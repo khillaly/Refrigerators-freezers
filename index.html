@@ -5692,6 +5692,44 @@ signInAnonymously(auth)
                     img.src = dataUrl;
                 });
             }
+
+            /* ===== SIGNATURE IMAGE HELPERS ===== */
+            function getImageFormat(dataUrl) {
+                if (!dataUrl) return 'PNG';
+                if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) return 'JPEG';
+                if (dataUrl.startsWith('data:image/webp')) return 'WEBP';
+                if (dataUrl.startsWith('data:image/gif')) return 'GIF';
+                return 'PNG';
+            }
+
+            // Convert ANY image (JPEG, WEBP, etc.) into a transparent PNG data URL via canvas.
+            // This is what guarantees `addImage(…, 'PNG', …)` never silently fails.
+            function ensurePngDataUrl(dataUrl) {
+                return new Promise(resolve => {
+                    if (!dataUrl) return resolve('');
+                    if (dataUrl.startsWith('data:image/png')) return resolve(dataUrl); // already PNG
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width  = img.naturalWidth  || img.width;
+                            canvas.height = img.naturalHeight || img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            resolve(canvas.toDataURL('image/png'));
+                        } catch (e) {
+                            console.warn('[ensurePngDataUrl] canvas conversion failed:', e);
+                            resolve(dataUrl); // fall back to original
+                        }
+                    };
+                    img.onerror = () => {
+                        console.warn('[ensurePngDataUrl] image failed to load');
+                        resolve(dataUrl);
+                    };
+                    img.src = dataUrl;
+                });
+            }
             function safeStr(val) {
                 if (val == null) return '';
                 if (Array.isArray(val)) return val.join(' ').trim();
@@ -10652,9 +10690,11 @@ function smartConfirm(message, opts) {
                         if (cfg) techSig = cfg.startsWith('data:') ? cfg : 'data:image/png;base64,' + cfg;
                     } catch (e) { }
                 }
+                if (techSig) techSig = await ensurePngDataUrl(techSig);          // ← forces PNG
                 const techDims = techSig ? await loadImageDimensions(techSig) : null;
                 let ichSig = ichName ? getInchargeSignatureCached(ichName) : '';
                 if (!ichSig && ichName) ichSig = await fetchInchargeSignatureFromCloud(ichName);
+                if (ichSig) ichSig = await ensurePngDataUrl(ichSig);             // ← forces PNG
                 const ichDims = ichSig ? await loadImageDimensions(ichSig) : null;
                 let y = drawChubHeader(doc, {
                     title: 'CURATIVE MAINTENANCE JOB CARD',
@@ -10781,8 +10821,8 @@ function smartConfirm(message, opts) {
                             h = w / aspect;
                             if (h > saH) { h = saH; w = h * aspect; }
                         }
-                        doc.addImage(techSig, 'PNG', saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
-                    } catch (e) { }
+                        doc.addImage(techSig, getImageFormat(techSig), saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
+                    } catch (e) { console.error('[Curative PDF] Tech signature embed failed:', e); }
                 }
                 doc.setDrawColor(150, 180, 200);
                 doc.setLineWidth(0.3);
@@ -10814,8 +10854,8 @@ function smartConfirm(message, opts) {
                             h = w / aspect;
                             if (h > saH) { h = saH; w = h * aspect; }
                         }
-                        doc.addImage(ichSig, 'PNG', saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
-                    } catch (e) { }
+                        doc.addImage(ichSig, getImageFormat(ichSig), saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
+                    } catch (e) { console.error('[Curative PDF] In-charge signature embed failed:', e); }
                 }
                 doc.setDrawColor(180, 140, 60);
                 doc.line(m + halfW + gap + 3, y + 43, m + halfW + gap + halfW - 3, y + 43);
@@ -11251,18 +11291,21 @@ function smartConfirm(message, opts) {
                 for (const t of techs) {
                     if (!sigs[t]) {
                         try {
-                            const cfg = await firestoreConfigGet('TechSig_' + t);
-                            if (cfg) {
-                                const f = cfg.startsWith('data:') ? cfg : 'data:image/png;base64,' + cfg;
-                                saveSignatureFor(t, f);
-                                sigs[t] = f;
-                            }
+                                               const cfg = await firestoreConfigGet('TechSig_' + t);
+                    if (cfg) {
+                        let f = cfg.startsWith('data:') ? cfg : 'data:image/png;base64,' + cfg;
+                        // Auto-heal: convert whatever we got into a real PNG
+                        f = await ensurePngDataUrl(f);
+                        saveSignatureFor(t, f);           // cache corrected PNG in localStorage
+                        sigs[t] = f;
+                    }
                         } catch (e) { }
                     }
                 }
                 for (const [n, d] of Object.entries(sigs)) {
                     if (d) {
-                        const dim = await loadImageDimensions(d);
+                        sigs[n] = await ensurePngDataUrl(d);        // ← guarantees PNG format
+                        const dim = await loadImageDimensions(sigs[n]);
                         if (dim) sigDims[n] = dim;
                     }
                 }
@@ -11450,7 +11493,14 @@ function smartConfirm(message, opts) {
                     const saX = lbx + (halfW / 2) + 2, saW = (halfW / 2) - 5, saY = y + 7, saH = 16;
                     doc.setDrawColor(200, 215, 230);
                     doc.roundedRect(saX, saY, saW, saH, 1, 1, 'S');
-                    const tSig = sigs[data.technician] || '';
+                    // Fallback: find by normalized name if exact match fails
+                    let _techKey = data.technician;
+                    if (!sigs[_techKey]) {
+                        const _want = normalizeText(_techKey);
+                        const _found = Object.keys(sigs).find(k => normalizeText(k) === _want);
+                        if (_found) _techKey = _found;
+                    }
+                    const tSig = sigs[_techKey] || '';
                     if (tSig) {
                         try {
                             const dim = sigDims[data.technician];
@@ -11460,8 +11510,8 @@ function smartConfirm(message, opts) {
                                 h = w / aspect;
                                 if (h > saH - 3) { h = saH - 3; w = h * aspect; }
                             }
-                            doc.addImage(tSig, 'PNG', saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
-                        } catch (e) { }
+                            doc.addImage(tSig, getImageFormat(tSig), saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
+                        } catch (e) { console.error('[PDF] Technician signature embed failed for', data.technician, e); }
                     }
                     doc.setDrawColor(150, 180, 200);
                     doc.setLineWidth(0.3);
@@ -11508,8 +11558,8 @@ function smartConfirm(message, opts) {
                                     h = w / aspect;
                                     if (h > isaH - 2) { h = isaH - 2; w = h * aspect; }
                                 }
-                                doc.addImage(iSig, 'PNG', isaX + (isaW - w) / 2, isaY + (isaH - h) / 2, w, h);
-                            } catch (e) { }
+                                doc.addImage(iSig, getImageFormat(iSig), isaX + (isaW - w) / 2, isaY + (isaH - h) / 2, w, h);
+                            } catch (e) { console.error('[PDF] In-charge signature embed failed for', iName, e); }
                         }
                         doc.setDrawColor(180, 140, 60);
                         doc.setLineWidth(0.3);
@@ -12230,6 +12280,7 @@ function smartConfirm(message, opts) {
                         if (cfg) techSig = cfg.startsWith('data:') ? cfg : 'data:image/png;base64,' + cfg;
                     } catch (e) { }
                 }
+                if (techSig) techSig = await ensurePngDataUrl(techSig);           // ← force PNG
                 const techDims = techSig ? await loadImageDimensions(techSig) : null;
 
                 const totalPages = doc.internal.getNumberOfPages();
@@ -12253,17 +12304,19 @@ function smartConfirm(message, opts) {
                 doc.setTextColor(10, 42, 63);
                 doc.text(pdfSanitize(who || '—'), mL + 3, sigBoxY + 11);
 
-                               if (techSig) {
+                if (techSig) {
                     try {
-                        const saX = m + (halfW / 2) + 2, saY = y + 7, saW = (halfW / 2) - 5, saH = 16;
+                        // Draw inside the sigBox drawn earlier (uses correct vars: mL, sigBoxW, sigBoxY)
+                        const saX = mL + 3, saY = sigBoxY + 13;
+                        const saW = sigBoxW - 6, saH = sigBoxH - 17;
                         let w = saW, h = w, aspect = 1;
                         if (techDims && techDims.width && techDims.height) {
                             aspect = techDims.width / techDims.height;
                             h = w / aspect;
                             if (h > saH) { h = saH; w = h * aspect; }
                         }
-                        doc.addImage(techSig, 'PNG', saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
-                    } catch (e) { }
+                        doc.addImage(techSig, getImageFormat(techSig), saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
+                    } catch (e) { console.error('[Analytics PDF] Signature embed failed:', e); }
                 }
 
                 doc.setDrawColor(150, 180, 200);
@@ -14172,24 +14225,25 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
                 updateTechnicianDisplay();
                 showStatus('Cleared.', true);
             });
-            sigFileInput.addEventListener('change', function () {
+            sigFileInput.addEventListener('change', async function () {
                 const f = this.files && this.files[0];
                 if (!f) return;
                 if (f.size > 500 * 1024) { alert('Too large.'); this.value = ''; return; }
                 const r = new FileReader();
-                r.onload = e => {
-                    pendingVisualSig = e.target.result;
+                r.onload = async e => {
+                    // Convert to PNG at upload time so the PDF embed always works
+                    pendingVisualSig = await ensurePngDataUrl(e.target.result);
                     renderVisualPreview();
                 };
                 r.readAsDataURL(f);
             });
-            inchargeSigInput.addEventListener('change', function () {
+            inchargeSigInput.addEventListener('change', async function () {
                 const f = this.files && this.files[0];
                 if (!f) return;
                 if (f.size > 500 * 1024) { alert('Too large.'); this.value = ''; return; }
                 const r = new FileReader();
-                r.onload = e => {
-                    pendingInchargeSig = e.target.result;
+                r.onload = async e => {
+                    pendingInchargeSig = await ensurePngDataUrl(e.target.result);
                     renderInchargeSigPreview();
                 };
                 r.readAsDataURL(f);
