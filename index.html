@@ -4,10 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CHUB Maint_ Fleet — Infrastructure & Maintenance</title>
+   <title>CHUB Maint Fleet — Equipment & Maintenance</title>
     <meta name="theme-color" content="#0b3d91">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Web Icon & Apple Icon -->
     <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- Android / PWA App Manifest -->
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
@@ -2481,6 +2486,17 @@ signInAnonymously(auth)
             background: #ffe6e6;
             color: #b33a3a
         }
+        .curative-status-badge.paused,
+        .status-badge.paused {
+            background: #fff3cd;
+            color: #7a5300;
+            border: 1px solid #f4d97a
+        }
+        .task-card.status-paused,
+        .curative-card.status-paused {
+            border-left-color: #f4a300;
+            background: #fffdf5;
+        }
 
         .quality-rating {
             display: flex;
@@ -3403,7 +3419,7 @@ signInAnonymously(auth)
             </h1>
             <div class="title-sub">
                 <span>CHUB Site</span><span class="dot-sep"></span>
-                <span>Cold Chain Units</span><span class="dot-sep"></span>
+                <span>All Equipment</span><span class="dot-sep"></span>
                 <span>Planned PM Schedule</span>
             </div>
             <div class="recording-notice">📅 Data recording started on <strong>03 Jul 2026</strong> — all reports &amp;
@@ -3458,17 +3474,25 @@ signInAnonymously(auth)
                     <label for="workDate">📅 Work date (auto-selected)</label>
                     <input type="date" id="workDate">
                 </div>
-                <label for="refFilterSelect" style="margin-left:10px;">🔎 Status filter:</label>
-                <select id="refFilterSelect" title="Filter the refrigerator list">
-                    <option value="all">🔽 All Refrigerators</option>
-                    <option value="working">✅ Working (Maintained)</option>
-                    <option value="not-working">⛔ Not Working (Not Maintained)</option>
+                <label for="refCategoryFilter" style="margin-left:10px;">🗂️ Category:</label>
+                <select id="refCategoryFilter" style="min-width:140px;">
+                    <option value="all">All Categories</option>
+                    <option value="fridge">🧊 Fridge / Freezer</option>
+                    <option value="ac">❄️ Air Conditioner</option>
+                    <option value="electrical">⚡ Electrical</option>
+                    <option value="equipment">📦 Other</option>
                 </select>
-                <label for="refSelect" style="margin-left:10px;">🔽 Select Refrigerator:</label>
+                <label for="refFilterSelect" style="margin-left:10px;">🔎 Status:</label>
+                <select id="refFilterSelect" title="Filter the equipment list">
+                    <option value="all">All Statuses</option>
+                    <option value="working">✅ Working</option>
+                    <option value="not-working">⛔ Not Working</option>
+                </select>
+                <label for="refSelect" style="margin-left:10px;">🔽 Select Equipment:</label>
                 <select id="refSelect"></select>
-                <button id="addRefBtn" class="btn-add">➕ Add New Refrigerator</button>
-                <button id="editRefBtn" class="btn-editCurrent">✏️ Edit This Fridge</button>
-                <button id="removeRefBtn" class="btn-remove">➖ Remove Refrigerator</button>
+                <button id="addRefBtn" class="btn-add">➕ Add New Equipment</button>
+                <button id="editRefBtn" class="btn-editCurrent">✏️ Edit This Equipment</button>
+                <button id="removeRefBtn" class="btn-remove">➖ Remove Equipment</button>
                 <button id="qrRefBtn" class="btn-qr">🔳 QR Sticker</button>
                 <button id="qrAllBtn" class="btn-qr">📄 Print All QR Stickers</button>
                 <img src="chub-logo.png" alt="CHUB Logo" class="chub-logo" onerror="this.style.display='none'">
@@ -3478,7 +3502,7 @@ signInAnonymously(auth)
                 <div class="gen-icon">🧊</div>
                 <div class="equip-photo-banner" id="refPhotoBanner"><span>🧊</span></div>
                 <div class="gen-text">
-                    <div class="gen-title" id="refTitle">Select a Refrigerator</div>
+                    <div class="gen-title" id="refTitle">Select Equipment</div>
                     <div class="gen-sub" id="refSub">Location · Brand · Model · Serial</div>
                     <div class="gen-nextpm" id="refNextPm">📅 Next PM due: —</div>
                     <div class="gen-incharge" id="refInchargeTag" style="display:none;">👤 In-Charge: —</div>
@@ -3540,9 +3564,11 @@ signInAnonymously(auth)
                                 🙈 Hide checklist
                             </button>
                         </div>
-                        <div class="grid-3" style="margin-bottom:0;">
-                            <div class="card">
-                                <div class="card-header"><span>🧼</span> Cleaning &amp; Hygiene</div>
+                        <!-- FRIDGE CHECKLIST BLOCK -->
+                        <div id="fridgeChecklistBlock">
+                            <div class="grid-3" style="margin-bottom:0;">
+                                <div class="card">
+                                    <div class="card-header"><span>🧼</span> Cleaning &amp; Hygiene</div>
                     <div class="card-body">
                         <div class="check-item"><input type="checkbox" id="check1" class="check-ref"><label
                                 for="check1">Clean interior shelves, walls and drawers</label></div>
@@ -3648,8 +3674,91 @@ signInAnonymously(auth)
                     </div>
                 </div>
             </div>
+            </div> <!-- END OF FRIDGE CHECKLIST BLOCK -->
+
+            <!-- AC CHECKLIST BLOCK (Hidden by default) -->
+            <div id="acChecklistBlock" style="display:none;">
+                <div class="grid-3" style="margin-bottom:0;">
+                    <div class="card">
+                        <div class="card-header"><span>🌬️</span> Filters, Coils &amp; Airflow</div>
+                        <div class="card-body">
+                            <div class="check-item"><input type="checkbox" id="ac_check1" class="check-ac"><label for="ac_check1">Inspect, clean, or replace filters</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check2" class="check-ac"><label for="ac_check2">Clean indoor evaporator coil</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check3" class="check-ac"><label for="ac_check3">Clean outdoor condenser coil</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check4" class="check-ac"><label for="ac_check4">Check blower motor and wheel</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check5" class="check-ac"><label for="ac_check5">Verify proper airflow across unit</label></div>
+                            <div style="margin-top:18px;">
+                                <label style="font-weight:500;color:#1f3c54;">📝 Remarks</label>
+                                <input type="text" class="remark-input" id="remarkAirflow" placeholder="e.g. filters heavily soiled...">
+                            </div>
+                            <div style="margin-top:16px;">
+                                <span style="font-weight:500;color:#1f3c54;display:block;margin-bottom:8px;">Condition:</span>
+                                <div class="rating-block">
+                                    <div class="rating-option"><input type="radio" name="ratingAirflow" value="good" checked> <label>Good</label></div>
+                                    <div class="rating-option"><input type="radio" name="ratingAirflow" value="fair"> <label>Fair</label></div>
+                                    <div class="rating-option"><input type="radio" name="ratingAirflow" value="attention"> <label>Needs attention</label></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="card">
+                        <div class="card-header"><span>⚡</span> Electrical &amp; Refrigerant</div>
+                        <div class="card-body">
+                            <div class="check-item"><input type="checkbox" id="ac_check6" class="check-ac"><label for="ac_check6">Verify correct refrigerant charge (superheat/subcooling)</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check7" class="check-ac"><label for="ac_check7">Tighten and inspect electrical connections</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check8" class="check-ac"><label for="ac_check8">Test relays, contactors, and capacitors</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check9" class="check-ac"><label for="ac_check9">Measure compressor and fan motor amps</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check10" class="check-ac"><label for="ac_check10">Inspect wiring for frays or heat damage</label></div>
+                            <div style="margin-top:18px;">
+                                <label style="font-weight:500;color:#1f3c54;">📝 Remarks</label>
+                                <input type="text" class="remark-input" id="remarkElectrical" placeholder="e.g. contactor pitted...">
+                            </div>
+                            <div style="margin-top:16px;">
+                                <span style="font-weight:500;color:#1f3c54;display:block;margin-bottom:8px;">Status:</span>
+                                <div class="rating-block">
+                                    <div class="rating-option"><input type="radio" name="ratingElectrical" value="good" checked> <label>All functional</label></div>
+                                    <div class="rating-option"><input type="radio" name="ratingElectrical" value="partial"> <label>Partially tested</label></div>
+                                    <div class="rating-option"><input type="radio" name="ratingElectrical" value="fault"> <label>Fault found</label></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><span>💧</span> Drainage &amp; Performance</div>
+                        <div class="card-body">
+                            <div class="check-item"><input type="checkbox" id="ac_check11" class="check-ac"><label for="ac_check11">Clear condensate drain line and pan</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check12" class="check-ac"><label for="ac_check12">Check thermostat calibration and controls</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check13" class="check-ac"><label for="ac_check13">Measure supply/return air temperatures (Delta T)</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check14" class="check-ac"><label for="ac_check14">Verify overall system efficiency</label></div>
+                            <div class="check-item"><input type="checkbox" id="ac_check15" class="check-ac"><label for="ac_check15">Inspect ductwork for leaks (visible)</label></div>
+                            <div style="margin-top:18px;">
+                                <label style="font-weight:500;color:#1f3c54;">📝 Remarks</label>
+                                <input type="text" class="remark-input" id="remarkDrainage" placeholder="e.g. drain trap cleaned...">
+                            </div>
+                            <div style="margin-top:16px;">
+                                <span style="font-weight:500;color:#1f3c54;display:block;margin-bottom:8px;">Performance:</span>
+                                <div class="rating-block">
+                                    <div class="rating-option"><input type="radio" name="ratingDrainage" value="good" checked> <label>Smooth</label></div>
+                                    <div class="rating-option"><input type="radio" name="ratingDrainage" value="delayed"> <label>Delayed</label></div>
+                                    <div class="rating-option"><input type="radio" name="ratingDrainage" value="issue"> <label>Issue</label></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- END OF AC CHECKLIST BLOCK -->
+
+            <!-- NO CHECKLIST BLOCK -->
+            <div id="noChecklistBlock" style="display:none; text-align:center; padding: 40px 20px; background:#fbfdff; border-radius:16px; border:1px dashed #cfdfeb;">
+                <div style="font-size:3rem; margin-bottom:10px;">⚡</div>
+                <h3 style="color:#12405e; margin-bottom:8px;">No Checklist Required</h3>
+                <p style="color:#5b7b96; font-size:.9rem;">This equipment category (Lamp / Switch / Socket / Other) does not require a routine PM checklist.</p>
+            </div>
+
+            </div> <!-- closing checklistFull -->
+            </div>
             </div>
 
             <div class="signoff-section">
@@ -3677,7 +3786,8 @@ signInAnonymously(auth)
                 </div>
                 <div class="card-body">
                     <div class="filter-selector" id="techTaskFilterBar" style="margin-bottom:12px;">
-                        <div class="filter-chip active" data-status="open">🔧 Open (pending + in progress)</div>
+                        <div class="filter-chip active" data-status="open">🔧 Open (pending + in progress + paused)</div>
+                        <div class="filter-chip" data-status="paused">⏸️ Paused</div>
                         <div class="filter-chip" data-status="completed">📸 Awaiting Verification</div>
                         <div class="filter-chip" data-status="verified">✅ Verified</div>
                         <div class="filter-chip" data-status="rejected">❌ Rejected</div>
@@ -3700,7 +3810,8 @@ signInAnonymously(auth)
                     <p style="font-size:.88rem;color:#8f2929;margin-bottom:14px;">Curative requests raised by the
                         in-charge for your department. Fix the unit and submit for verification.</p>
                     <div class="filter-selector" id="techCurativeFilterBar" style="margin-bottom:12px;">
-                        <div class="filter-chip active" data-status="open">🔧 Open (pending + in progress)</div>
+                        <div class="filter-chip active" data-status="open">🔧 Open (pending + in progress + paused)</div>
+                        <div class="filter-chip" data-status="paused">⏸️ Paused</div>
                         <div class="filter-chip" data-status="completed">📸 Awaiting Verification</div>
                         <div class="filter-chip" data-status="verified">✅ Verified</div>
                         <div class="filter-chip" data-status="rejected">❌ Rejected</div>
@@ -4128,6 +4239,14 @@ signInAnonymously(auth)
                             <div class="lbl">TOTAL PMs</div>
                             <div class="val" id="dashKpiTotal">—</div>
                         </div>
+                        <div class="kpi-mini" style="background:#e8f1fb;">
+                            <div class="lbl">🧊 FRIDGE PMs</div>
+                            <div class="val" id="dashKpiFridgePms" style="color:#1e4a6d;">—</div>
+                        </div>
+                        <div class="kpi-mini" style="background:#eef6fc;">
+                            <div class="lbl">❄️ AC PMs</div>
+                            <div class="val" id="dashKpiAcPms" style="color:#0b3d91;">—</div>
+                        </div>
                         <div class="kpi-mini good">
                             <div class="lbl">CO-SIGNED</div>
                             <div class="val" id="dashKpiSigned">—</div>
@@ -4163,7 +4282,7 @@ signInAnonymously(auth)
                             <div class="chart-wrap tall"><canvas id="chartOverdueLine"></canvas></div>
                         </div>
                         <div class="dash-card" style="grid-column:1/-1;">
-                            <h3>🔥 Fridge Failure Heatmap <span
+                            <h3>🔥 Equipment Failure Heatmap <span
                                     style="margin-left:auto;font-size:.72rem;color:#5b7b96;font-weight:600;">Top 20
                                     most-problematic units</span></h3>
                             <div id="heatmapContainer" class="heatmap">
@@ -4463,6 +4582,17 @@ signInAnonymously(auth)
         </div>
         <!-- ============ ACTION BUTTONS ============ -->
         <div class="action-buttons" id="technicianActionButtons">
+            
+            <!-- NEW: Global Filter for PDF Downloads -->
+            <div style="display:flex; align-items:center; gap:8px; background:#eef6fc; padding:8px 16px; border-radius:40px; border:1.5px solid #bdd3e6; box-shadow: 0 4px 10px -4px rgba(0,0,0,.1);">
+                <label for="actionCategoryFilter" style="font-weight:700; color:#12405e; font-size:.85rem; white-space:nowrap;">🔍 Filter Type:</label>
+                <select id="actionCategoryFilter" style="padding:6px 12px; border-radius:20px; border:1px solid #bdd3e6; font-weight:700; color:#0b3d91; background:white; outline:none; cursor:pointer;">
+                    <option value="all">All Equipment</option>
+                    <option value="fridge">🧊 Fridge / Freezer</option>
+                    <option value="ac">❄️ Air Conditioner</option>
+                </select>
+            </div>
+
             <button class="btn-pdf" id="pdfBtn"><span>📄</span> Export Current as PDF</button>
             <button class="btn-pdf-all" id="historyPdfBtn"><span>📚</span> Download My PMs (Cloud)</button>
             <button class="btn-pdf-all" id="eqPmDownloadBtn" style="background:#0b3d91;"><span>📥</span> Download PM
@@ -4691,8 +4821,8 @@ signInAnonymously(auth)
     <!-- ============ ADD REF MODAL ============ -->
     <div class="modal-overlay" id="addRefModal">
         <div class="modal-box">
-            <h2>➕ Add New Refrigerator</h2>
-            <p>This refrigerator will be saved to the cloud under your name: <strong id="addRefOwnerName">—</strong></p>
+            <h2>➕ Add New Equipment</h2>
+            <p>This equipment will be saved to the cloud under your name: <strong id="addRefOwnerName">—</strong></p>
             <div id="dupWarning" class="dup-warning">
                 <div class="dup-title">⚠️ This tag already exists in the fleet!</div>
                 <div id="dupWarningBody"></div>
@@ -4737,22 +4867,19 @@ signInAnonymously(auth)
                         placeholder="e.g. GN-B422"></div>
             </div>
             <div class="grid-3-wide" style="grid-template-columns:1fr 1fr;gap:16px;">
-                <div class="field-group"><label for="newRefType">Equipment Type</label>
-                    <select id="newRefType">
-                        <option value="Fridge">Fridge (Refrigerator)</option>
-                        <option value="Fridge-Freezer">Fridge-Freezer Combo</option>
-                        <option value="Upright Freezer">Upright Freezer</option>
-                        <option value="Chest Freezer">Chest Freezer</option>
-                        <option value="Lab Fridge">Laboratory Refrigerator</option>
-                        <option value="Vaccine Fridge">Vaccine / Pharma Fridge</option>
-                        <option value="Lamp">Lamp / Light Fixture</option>
-                        <option value="Switch">Switch</option>
-                        <option value="Socket">Socket</option>
-                        <option value="Electrical Panel">Electrical Panel</option>
-                        <option value="Other Electrical">Other Electrical</option>
-                        <option value="Other">Other</option>
+                <div class="field-group"><label for="newRefCategory">Equipment Category *</label>
+                    <select id="newRefCategory">
+                        <option value="fridge">🧊 Fridge / Freezer</option>
+                        <option value="ac">❄️ Air Conditioner</option>
+                        <option value="electrical">⚡ Electrical</option>
+                        <option value="equipment">📦 Other</option>
                     </select>
                 </div>
+                <div class="field-group"><label for="newRefType">Equipment Type *</label>
+                    <select id="newRefType"></select>
+                </div>
+            </div>
+            <div class="grid-3-wide" style="grid-template-columns:1fr 1fr;gap:16px;">
                 <div class="field-group"><label for="newRefSerial">Serial Number</label><input type="text"
                         id="newRefSerial"></div>
             </div>
@@ -4777,7 +4904,7 @@ signInAnonymously(auth)
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" id="addRefCancel">Cancel</button>
-                <button class="btn-go" id="addRefSave">💾 Save Refrigerator to Cloud</button>
+                <button class="btn-go" id="addRefSave">💾 Save Equipment to Cloud</button>
             </div>
         </div>
     </div>
@@ -4785,7 +4912,7 @@ signInAnonymously(auth)
     <!-- ============ EDIT REF MODAL ============ -->
     <div class="modal-overlay" id="editRefModal">
         <div class="modal-box">
-            <h2>✏️ Edit Refrigerator</h2>
+            <h2>✏️ Edit Equipment</h2>
             <input type="hidden" id="editRefIndex">
             <div class="photo-upload-row">
                 <div class="equip-photo-frame" id="editRefPhotoPreview"><span>📷</span></div>
@@ -4818,22 +4945,19 @@ signInAnonymously(auth)
                 </div>
             </div>
             <div class="grid-3-wide" style="grid-template-columns:1fr 1fr;gap:16px;">
-                <div class="field-group"><label for="editRefType">Type</label>
-                    <select id="editRefType">
-                        <option value="Fridge">Fridge (Refrigerator)</option>
-                        <option value="Fridge-Freezer">Fridge-Freezer Combo</option>
-                        <option value="Upright Freezer">Upright Freezer</option>
-                        <option value="Chest Freezer">Chest Freezer</option>
-                        <option value="Lab Fridge">Laboratory Refrigerator</option>
-                        <option value="Vaccine Fridge">Vaccine / Pharma Fridge</option>
-                        <option value="Lamp">Lamp / Light Fixture</option>
-                        <option value="Switch">Switch</option>
-                        <option value="Socket">Socket</option>
-                        <option value="Electrical Panel">Electrical Panel</option>
-                        <option value="Other Electrical">Other Electrical</option>
-                        <option value="Other">Other</option>
+                <div class="field-group"><label for="editRefCategory">Category</label>
+                    <select id="editRefCategory">
+                        <option value="fridge">🧊 Fridge / Freezer</option>
+                        <option value="ac">❄️ Air Conditioner</option>
+                        <option value="electrical">⚡ Electrical</option>
+                        <option value="equipment">📦 Other</option>
                     </select>
                 </div>
+                <div class="field-group"><label for="editRefType">Type</label>
+                    <select id="editRefType"></select>
+                </div>
+            </div>
+            <div class="grid-3-wide" style="grid-template-columns:1fr 1fr;gap:16px;">
                 <div class="field-group"><label for="editRefSerial">Serial Number</label><input type="text"
                         id="editRefSerial"></div>
             </div>
@@ -5098,6 +5222,14 @@ signInAnonymously(auth)
                 <label for="analysisDept">Department</label>
                 <select id="analysisDept">
                     <option value="all">🏢 All Departments</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label for="analysisCategory">Equipment Type</label>
+                <select id="analysisCategory">
+                    <option value="all">All Equipment</option>
+                    <option value="fridge">🧊 Fridge / Freezer</option>
+                    <option value="ac">❄️ Air Conditioner</option>
                 </select>
             </div>
             <div class="field-group">
@@ -5501,6 +5633,40 @@ signInAnonymously(auth)
         </div>
     </div>
 
+    <!-- ============ PAUSE CURATIVE MODAL ============ -->
+    <div class="modal-overlay" id="pauseCurativeModal">
+        <div class="modal-box" style="max-width:500px;">
+            <h2>⏸️ Pause Curative Job</h2>
+            <p id="pauseCurativeSubtitle">Pause this job and resume it later.</p>
+            <div class="field-group">
+                <label for="pauseCurativeReason">Reason for pausing *</label>
+                <textarea id="pauseCurativeReason" class="remark-input" rows="4" placeholder="e.g. Waiting for spare parts / Shift ended / Need assistance"></textarea>
+            </div>
+            <div id="pauseCurativeError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="pauseCurativeCancel">Cancel</button>
+                <button class="btn-go" id="pauseCurativeSaveBtn" style="background:#f4a300;">⏸️ Confirm Pause</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ PAUSE TASK MODAL ============ -->
+    <div class="modal-overlay" id="pauseTaskModal">
+        <div class="modal-box" style="max-width:500px;">
+            <h2>⏸️ Pause Task</h2>
+            <p id="pauseTaskSubtitle">Pause this task and resume it later.</p>
+            <div class="field-group">
+                <label for="pauseTaskReason">Reason for pausing *</label>
+                <textarea id="pauseTaskReason" class="remark-input" rows="4" placeholder="e.g. Waiting for materials / End of shift"></textarea>
+            </div>
+            <div id="pauseTaskError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="pauseTaskCancel">Cancel</button>
+                <button class="btn-go" id="pauseTaskSaveBtn" style="background:#f4a300;">⏸️ Confirm Pause</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ============ SMART CONFIRM DIALOG ============ -->
     <div class="modal-overlay" id="smartConfirmModal">
         <div class="modal-box" style="max-width:420px;text-align:center;">
@@ -5531,8 +5697,10 @@ signInAnonymously(auth)
                ============================================================ */
 
             const RECORDING_START = '03 Jul 2026';
-            const REF_QUARTER_MONTHS = [2, 5, 8, 11];
-            const REF_QUARTER_DAY = 15;
+const REF_QUARTER_MONTHS = [2, 5, 8, 11]; // 0-indexed: March, June, Sept, Dec
+const REF_QUARTER_DAY = 15;
+const REF_QUARTER_DAY_OVERRIDES = { 2: 14 }; // March = 14, others 15 (per spec)
+const AC_PM_INTERVAL_MONTHS = 6;
             const DEFAULT_LIST_OWNER = 'Hillaly KUBWIMANA';
             const SUPERVISOR_NAME = 'GATANGANWA Raissa';
 
@@ -5649,6 +5817,73 @@ signInAnonymously(auth)
             const JC_TEMP_RATINGS = { good: '✅ Within range', partial: '🟡 Fluctuating', fault: '🔴 Out of range' };
             const JC_DOOR_RATINGS = { good: '✅ Sealed & functional', delayed: '🟡 Minor issue', issue: '🔴 Needs repair' };
 
+            /* ========== AC CHECKLIST TEXTS ========== */
+            const AC_AIRFLOW_TEXTS = [
+                'Inspect, clean, or replace filters',
+                'Clean indoor evaporator coil',
+                'Clean outdoor condenser coil',
+                'Check blower motor and wheel',
+                'Verify proper airflow across unit'
+            ];
+            const AC_ELECTRICAL_TEXTS = [
+                'Verify correct refrigerant charge (superheat/subcooling)',
+                'Tighten and inspect electrical connections',
+                'Test relays, contactors, and capacitors',
+                'Measure compressor and fan motor amps',
+                'Inspect wiring for frays or heat damage'
+            ];
+            const AC_DRAINAGE_TEXTS = [
+                'Clear condensate drain line and pan',
+                'Check thermostat calibration and controls',
+                'Measure supply/return air temperatures (Delta T)',
+                'Verify overall system efficiency',
+                'Inspect ductwork for leaks (visible)'
+            ];
+            const AC_AIRFLOW_RATINGS = { good: '✅ Good', fair: '🟡 Fair', attention: '🔴 Needs attention' };
+            const AC_ELECTRICAL_RATINGS = { good: '✅ All functional', partial: '🟡 Partially tested', fault: '🔴 Fault found' };
+            const AC_DRAINAGE_RATINGS = { good: '✅ Smooth', delayed: '🟡 Delayed', issue: '🔴 Issue' };
+
+            /* ========== EQUIPMENT CATEGORY MAPPING ========== */
+            const TYPES_BY_CATEGORY = {
+                fridge: ['Fridge', 'Fridge-Freezer', 'Upright Freezer', 'Chest Freezer', 'Lab Fridge', 'Vaccine Fridge'],
+                ac: ['Split AC', 'Cassette AC', 'Portable AC'],
+                electrical: ['Lamp', 'Switch', 'Socket', 'Electrical Panel', 'Other Electrical'],
+                equipment: ['Other']
+            };
+            const TYPE_TO_CATEGORY = (() => {
+                const out = {};
+                Object.entries(TYPES_BY_CATEGORY).forEach(([cat, list]) => {
+                    list.forEach(t => { out[t] = cat; });
+                });
+                return out;
+            })();
+
+            function getCategoryForType(type) {
+                if (!type) return 'equipment';
+                return TYPE_TO_CATEGORY[type] || 'equipment';
+            }
+            function isFreezerType(type) {
+                const t = String(type || '').toLowerCase();
+                return t.includes('freezer') && !t.includes('fridge-freezer') && !t.includes('combo');
+            }
+            function isFridgeOnlyType(type) {
+                const t = String(type || '').toLowerCase();
+                return t === 'fridge' || t.includes('lab fridge') || t.includes('vaccine fridge');
+            }
+            function isComboType(type) {
+                const t = String(type || '').toLowerCase();
+                return t.includes('fridge-freezer') || t.includes('combo');
+            }
+            function populateTypeSelect(select, category) {
+                if (!select) return;
+                const types = TYPES_BY_CATEGORY[category] || TYPES_BY_CATEGORY.equipment;
+                select.innerHTML = '';
+                types.forEach(t => {
+                    const o = document.createElement('option');
+                    o.value = t; o.textContent = t;
+                    select.appendChild(o);
+                });
+            }
             const DEFAULT_DEPARTMENTS = {
                 'Laboratory': { defaultIncharge: 'Laboratory In-Charge', services: ['Genetics', 'Hematology', 'Biochemistry', 'Parasitology', 'TB', 'TB-service', 'Sterilization', 'Lab sterilization', 'Molecular Pre-PCR', 'PRE-PCR', 'Molecular Post-PCR', 'Molecular clean room', 'Immunology', 'Immunoserology', 'Culture Media', 'Direct Examination', 'Microbiology', 'Bacteriology', 'Anatomical', 'Pathology', 'Grossing Room', 'Embedding Room', 'Staining Room', 'Refrigerators Room', 'Fridge room', 'Stock Consumables', 'store service', "Doctor's Office – Pathology", 'Lab UPS Room', 'Old lab server-room', 'Cold chain fridge room', 'Sample Storage Room 1', 'Vaccine Room', 'Reagent Room', 'Freezer Bay'] },
                 'Operating Theatre': { defaultIncharge: 'Operating Theatre In-Charge', services: ['Theatre 1', 'Theatre 2', 'Theatre 3', 'Recovery Room', 'Scrub Room', 'Anesthesia Room', 'CSSD', 'Blood Bank Fridge'] },
@@ -5780,17 +6015,35 @@ signInAnonymously(auth)
                 if (!d) return null;
                 const y = d.getFullYear();
                 for (let i = 0; i < REF_QUARTER_MONTHS.length; i++) {
-                    const c = new Date(y, REF_QUARTER_MONTHS[i], REF_QUARTER_DAY);
+                    const m = REF_QUARTER_MONTHS[i];
+                    const day = REF_QUARTER_DAY_OVERRIDES[m] != null ? REF_QUARTER_DAY_OVERRIDES[m] : REF_QUARTER_DAY;
+                    const c = new Date(y, m, day);
                     if (c.getTime() > d.getTime()) return c;
                 }
-                return new Date(y + 1, REF_QUARTER_MONTHS[0], REF_QUARTER_DAY);
+                const firstMonth = REF_QUARTER_MONTHS[0];
+                const firstDay = REF_QUARTER_DAY_OVERRIDES[firstMonth] != null ? REF_QUARTER_DAY_OVERRIDES[firstMonth] : REF_QUARTER_DAY;
+                return new Date(y + 1, firstMonth, firstDay);
             }
             function toIsoDate_(d) {
                 if (!d) return '';
                 return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             }
-            function nextPmForPDF(dateVal) {
-                const d = getNextRefPmDate_(dateVal);
+                        function addMonths(dateVal, months) {
+                const d = parseToDate(dateVal);
+                if (!d) return null;
+                const day = d.getDate();
+                const nd = new Date(d);
+                nd.setMonth(nd.getMonth() + months);
+                if (nd.getDate() !== day) nd.setDate(0); // handle month-end overflow
+                return nd;
+            }
+            function getNextPmDateByType_(type, dateVal) {
+                const cat = getCategoryForType(type);
+                if (cat === 'ac') return addMonths(dateVal, AC_PM_INTERVAL_MONTHS);
+                return getNextRefPmDate_(dateVal);
+            }
+            function nextPmForPDF(dateVal, type) {
+                const d = getNextPmDateByType_(type || 'Fridge', dateVal);
                 return d ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
             }
             function recordTime(rec) {
@@ -6177,12 +6430,50 @@ signInAnonymously(auth)
                 { key: 'other', label: '📝 Other / unspecified', kw: [] }
             ];
 
-            function classifyCurativeRootCause(issueText) {
+            function classifyCurativeRootCause(issueText, equipType, equipName) {
                 const t = String(issueText || '').toLowerCase();
+                const typeStr = String(equipType || '').toLowerCase();
+                const nameStr = String(equipName || '').toLowerCase();
+
+                // AI Context: Detect what kind of equipment we are dealing with
+                const isElectricalEquip = ['lamp', 'switch', 'socket', 'panel', 'bulb', 'light', 'wire', 'electrical'].some(k => typeStr.includes(k) || nameStr.includes(k));
+                const isFridgeEquip = ['fridge', 'freezer', 'cold room', 'refrigerator', 'ac', 'air conditioner'].some(k => typeStr.includes(k) || nameStr.includes(k));
+
+                let bestCause = CURATIVE_ROOT_CAUSES[CURATIVE_ROOT_CAUSES.length - 1]; // Default to 'Other'
+                let maxScore = 0;
+
                 for (const c of CURATIVE_ROOT_CAUSES) {
-                    if (c.kw.some(k => t.includes(k))) return c;
+                    let score = 0;
+
+                    // 1. Keyword Scoring
+                    c.kw.forEach(k => {
+                        if (t.includes(k)) score += 2; 
+                    });
+
+                    // 2. Contextual Boost (AI Logic)
+                    if (isElectricalEquip) {
+                        if (c.key === 'electrical') score += 3; // Strong bias for electrical faults
+                    }
+                    if (isFridgeEquip) {
+                        if (['not_cooling', 'leak', 'ice_defrost', 'fan_motor', 'thermostat'].includes(c.key)) {
+                            if (score > 0) score += 1; // Slight boost if it's a fridge-related issue
+                        }
+                    }
+
+                    // Track the highest scoring category
+                    if (score > maxScore) {
+                        maxScore = score;
+                        bestCause = c;
+                    }
                 }
-                return CURATIVE_ROOT_CAUSES[CURATIVE_ROOT_CAUSES.length - 1];
+
+                // 3. Smart Fallback (If the tech typed something vague like "is dead")
+                if (maxScore === 0) {
+                    if (isElectricalEquip) return CURATIVE_ROOT_CAUSES.find(c => c.key === 'electrical');
+                    if (isFridgeEquip) return CURATIVE_ROOT_CAUSES.find(c => c.key === 'not_cooling');
+                }
+
+                return bestCause;
             }
 
             function computeCurativeAnalytics(records) {
@@ -6194,7 +6485,8 @@ signInAnonymously(auth)
                     const respMs = (reported && started) ? (started - reported) : null;
                     const resMs = (started && completed) ? (completed - started) : null;
                     const totMs = (reported && verified) ? (verified - reported) : ((reported && completed) ? (completed - reported) : null);
-                    const cat = classifyCurativeRootCause(r.issue);
+                    // Pass issue, type, and equipment name into the AI
+                    const cat = classifyCurativeRootCause(r.issue, r.type || r.equipType, r.equipName || r.tag);
                     return { ...r, _reported: reported, _started: started, _completed: completed, _verified: verified, _respMs: respMs, _resMs: resMs, _totMs: totMs, _rootCause: cat };
                 });
                 const verifiedJ = jobs.filter(j => j.status === 'verified');
@@ -6300,8 +6592,11 @@ signInAnonymously(auth)
                     d.technician || '', d.workDate || '',
                     d.refTag || '', d.refLocation || '', d.refDept || '',
                     d.refSerial || '', d.refModel || '',
+                    d.checklistType || '',
                     d.cleanItems || '', d.tempItems || '', d.doorItems || '',
                     d.cleanRating || '', d.tempRating || '', d.doorRating || '',
+                    d.airflowItems || '', d.electricalItems || '', d.drainageItems || '',
+                    d.airflowRating || '', d.electricalRating || '', d.drainageRating || '',
                     d.inchargeName || '', d.generatedAt || ''
                 ].join('|');
             }
@@ -6457,7 +6752,7 @@ signInAnonymously(auth)
             function mapFirestoreEquipment(docId, data) {
                 if (!data) return null;
                 const cat = String(data.type || 'fridge').toLowerCase().trim();
-                if (cat !== 'fridge' && cat !== 'equipment' && cat !== 'electrical') return null;
+                if (cat !== 'fridge' && cat !== 'equipment' && cat !== 'electrical' && cat !== 'ac') return null;
                 return {
                     _docId: docId,
                     tag: data.tag || '',
@@ -6533,11 +6828,7 @@ signInAnonymously(auth)
                     if (!m) throw new Error('Equipment not found.');
                     docId = m.id;
                 }
-                const _fridgeTypes = ['Fridge', 'Fridge-Freezer', 'Upright Freezer', 'Chest Freezer', 'Lab Fridge', 'Vaccine Fridge'];
-                const _elecTypes = ['Lamp', 'Switch', 'Socket', 'Electrical Panel', 'Other Electrical'];
-                let _cat = 'fridge';
-                if (_elecTypes.includes(updated.type)) _cat = 'electrical';
-                else if (!_fridgeTypes.includes(updated.type)) _cat = 'equipment';
+                const _cat = updated.equipCategory || getCategoryForType(updated.type) || 'fridge';
 
                 await window.FB.updateDoc(window.FB.doc(window.FB.db, 'equipment', docId), {
                     type: _cat,
@@ -6595,7 +6886,7 @@ signInAnonymously(auth)
                     }
                     if (!window.FB || !window.FB.ready) {
                         console.warn('loadUsersFromFirestore: Firebase still not ready');
-                        return {};
+                        return USERS_CACHE || {};
                     }
                     const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'users'));
                     const out = {};
@@ -6619,9 +6910,17 @@ signInAnonymously(auth)
                         }
                     });
                     console.log('loadUsersFromFirestore: loaded', Object.keys(out).length, 'users');
+                    
+                    // ✅ SAVE TO CACHE SO WE NEVER LOSE IT
+                    USERS_CACHE = out;
                     return out;
                 } catch (e) {
                     console.error('loadUsersFromFirestore failed:', e);
+                    // ✅ IF FETCH FAILS, FALLBACK TO CACHE
+                    if (USERS_CACHE && Object.keys(USERS_CACHE).length) {
+                        console.warn('Using cached users instead.');
+                        return USERS_CACHE;
+                    }
                     return {};
                 }
             }
@@ -6683,6 +6982,9 @@ signInAnonymously(auth)
                     refModel: data.refModel || '',
                     refSerial: data.refSerial || '',
                     refWorkingStatus: data.refWorkingStatus || 'Working',
+                    checklistType: data.checklistType || 'fridge',
+                    
+                    // Fridge Fields
                     cleanItems: data.cleanItems || '',
                     cleanRemarks: data.cleanRemarks || '',
                     cleanRating: data.cleanRating || '',
@@ -6692,6 +6994,18 @@ signInAnonymously(auth)
                     doorItems: data.doorItems || '',
                     doorRemarks: data.doorRemarks || '',
                     doorRating: data.doorRating || '',
+                    
+                    // AC Fields
+                    airflowItems: data.airflowItems || '',
+                    airflowRemarks: data.airflowRemarks || '',
+                    airflowRating: data.airflowRating || '',
+                    electricalItems: data.electricalItems || '',
+                    electricalRemarks: data.electricalRemarks || '',
+                    electricalRating: data.electricalRating || '',
+                    drainageItems: data.drainageItems || '',
+                    drainageRemarks: data.drainageRemarks || '',
+                    drainageRating: data.drainageRating || '',
+
                     reportHash: data.reportHash || '',
                     pkcs7Signature: data.pkcs7Signature || '',
                     signatureSubject: data.signatureSubject || '',
@@ -6710,6 +7024,8 @@ signInAnonymously(auth)
                     inchargePkcs7Signature: data.inchargePkcs7Signature || '',
                     inchargeSignatureSerial: data.inchargeSignatureSerial || '',
                     technicianAcknowledgedRejection: data.technicianAcknowledgedRejection === true,
+                    
+                    // HTML Aliases
                     'Ref Tag': data.refTag || '',
                     'Location': data.refLocation || '',
                     'Department': data.refDept || '',
@@ -6731,6 +7047,15 @@ signInAnonymously(auth)
                     'Door Items': data.doorItems || '',
                     'Door Remarks': data.doorRemarks || '',
                     'Door Rating': data.doorRating || '',
+                    'Airflow Items': data.airflowItems || '',
+                    'Airflow Remarks': data.airflowRemarks || '',
+                    'Airflow Rating': data.airflowRating || '',
+                    'Electrical Items': data.electricalItems || '',
+                    'Electrical Remarks': data.electricalRemarks || '',
+                    'Electrical Rating': data.electricalRating || '',
+                    'Drainage Items': data.drainageItems || '',
+                    'Drainage Remarks': data.drainageRemarks || '',
+                    'Drainage Rating': data.drainageRating || '',
                     'In-Charge Name': data.inchargeName || '',
                     'In-Charge Signed At': data.inchargeSignedAt || '',
                     'In-Charge Signer': data.inchargeSigner || '',
@@ -6808,6 +7133,7 @@ signInAnonymously(auth)
             let REF_FILTERED = [];
             let ALL_INVENTORY = [];
             let refFilterMode = 'all';
+                        let refCategoryMode = 'all';
             let currentInchargeSignature = '';
             let currentRole = 'technician';
             let inchargeFilterScope = 'mine';
@@ -7014,6 +7340,9 @@ function smartConfirm(message, opts) {
                         refModel: data.refModel || '',
                         refSerial: data.refSerial || '',
                         refWorkingStatus: data.refWorkingStatus || 'Working',
+                        checklistType: data.checklistType || 'fridge', // <-- NEW
+                        
+                        // Fridge Fields
                         cleanItems: data.cleanItems || '',
                         cleanRemarks: data.cleanRemarks || '',
                         cleanRating: data.cleanRating || '',
@@ -7023,6 +7352,18 @@ function smartConfirm(message, opts) {
                         doorItems: data.doorItems || '',
                         doorRemarks: data.doorRemarks || '',
                         doorRating: data.doorRating || '',
+                        
+                        // AC Fields (NEW)
+                        airflowItems: data.airflowItems || '',
+                        airflowRemarks: data.airflowRemarks || '',
+                        airflowRating: data.airflowRating || '',
+                        electricalItems: data.electricalItems || '',
+                        electricalRemarks: data.electricalRemarks || '',
+                        electricalRating: data.electricalRating || '',
+                        drainageItems: data.drainageItems || '',
+                        drainageRemarks: data.drainageRemarks || '',
+                        drainageRating: data.drainageRating || '',
+                        
                         pkcs7Signature: data.pkcs7Signature || '',
                         signatureSubject: data.signatureSubject || '',
                         signatureIssuer: data.signatureIssuer || '',
@@ -7114,24 +7455,71 @@ function smartConfirm(message, opts) {
                 signoffWorkDate.textContent = f;
                 updateNextPmDisplay();
             }
-            function updateNextPmDisplay() {
-                const w = workDateInput.value;
-                const l = nextPmForPDF(w);
-                if (refNextPm) refNextPm.textContent = '📅 Next PM due: ' + l + ' (quarterly)';
-                if (signoffNextPm) signoffNextPm.textContent = l;
+            async function updateNextPmDisplay() {
+                const idx = refSelect.value;
+                const ref = (idx !== '' && REF_FILTERED[idx]) ? REF_FILTERED[idx] : null;
+                if (!ref) {
+                    if (refNextPm) refNextPm.textContent = '📅 Next PM due: —';
+                    if (signoffNextPm) signoffNextPm.textContent = '—';
+                    return;
+                }
+                const type = ref.type;
+                const cat = getCategoryForType(type);
+                const intervalLabel = cat === 'ac' ? '(' + AC_PM_INTERVAL_MONTHS + ' months)' : '(quarterly)';
+
+                // Compute next PM DUE date from last service (or fallback for never-serviced)
+                let nextDue = null;
+                try {
+                    const logs = await fetchAllLogs();
+                    const targetId = buildRefIdentity(ref);
+                    const myLogs = logs.filter(r => {
+                        const rid = buildRefIdentity({
+                            refTag: r.refTag || r['Ref Tag'],
+                            refLocation: r.refLocation || r['Location'],
+                            refSerial: r.refSerial || r['Serial Number'],
+                            refModel: r.refModel || r['Model']
+                        });
+                        return rid === targetId;
+                    }).sort((a, b) => recordTime(b) - recordTime(a));
+
+                    if (myLogs.length > 0) {
+                        const lastDate = safeStr(myLogs[0].workDate || myLogs[0]['Work Date']);
+                        nextDue = getNextPmDateByType_(type, lastDate);
+                    } else {
+                        if (cat === 'ac') nextDue = new Date(); // Due now
+                        else if (cat === 'fridge') nextDue = getNextRefPmDate_(toIsoDate_(new Date()));
+                    }
+                } catch (e) {
+                    nextDue = getNextPmDateByType_(type, workDateInput.value);
+                }
+
+                const label = nextDue ? formatDateOnly(toIsoDate_(nextDue)) : '—';
+                if (refNextPm) refNextPm.textContent = '📅 Next PM due: ' + label + ' ' + intervalLabel;
+
+                // Preview what next-PM date will be after signing off today
+                const afterSignoff = nextPmForPDF(workDateInput.value, type);
+                if (signoffNextPm) signoffNextPm.textContent = afterSignoff;
             }
 
             /* ============================================================
                REF SELECTOR / FILTER / BANNER
                ============================================================ */
             function applyRefFilter() {
-                if (refFilterMode === 'working') {
-                    REF_FILTERED = REF_INVENTORY.filter(a => (a.workingStatus || 'Working') === 'Working');
-                } else if (refFilterMode === 'not-working') {
-                    REF_FILTERED = REF_INVENTORY.filter(a => (a.workingStatus || 'Working') === 'Not Working');
-                } else {
-                    REF_FILTERED = REF_INVENTORY.slice();
+                let filtered = REF_INVENTORY.slice();
+
+                // 1. Filter by Category first
+                if (refCategoryMode !== 'all') {
+                    filtered = filtered.filter(a => (a.equipCategory || getCategoryForType(a.type)) === refCategoryMode);
                 }
+
+                // 2. Filter by Status
+                if (refFilterMode === 'working') {
+                    filtered = filtered.filter(a => (a.workingStatus || 'Working') === 'Working');
+                } else if (refFilterMode === 'not-working') {
+                    filtered = filtered.filter(a => (a.workingStatus || 'Working') === 'Not Working');
+                }
+
+                REF_FILTERED = filtered;
             }
             function renderRefSelector() {
                 refSelect.innerHTML = '';
@@ -7140,12 +7528,12 @@ function smartConfirm(message, opts) {
                     const o = document.createElement('option');
                     o.value = '';
                     o.textContent = REF_INVENTORY.length === 0
-                        ? '— No Refrigerators in your list —'
+                        ? '— No Equipment in your list —'
                         : '— No matches for this filter —';
                     refSelect.appendChild(o);
-                    refTitle.textContent = REF_INVENTORY.length === 0 ? 'No Refrigerators Yet' : 'No Matches';
+                    refTitle.textContent = REF_INVENTORY.length === 0 ? 'No Equipment Yet' : 'No Matches';
                     refSub.textContent = REF_INVENTORY.length === 0
-                        ? 'Tap "➕ Add New Refrigerator" to start.'
+                        ? 'Tap "➕ Add New Equipment" to start.'
                         : 'Try changing the status filter.';
                     refInchargeTag.style.display = 'none';
                     if (refWorkingStatus) refWorkingStatus.style.display = 'none';
@@ -7218,6 +7606,35 @@ function smartConfirm(message, opts) {
                 } catch (e) {}
                 
                 updateInchargeDisplay();
+                                const cat = ref.equipCategory || getCategoryForType(ref.type);
+                
+                // 1. Swap the checklist blocks
+                const fBlock = document.getElementById('fridgeChecklistBlock');
+                const aBlock = document.getElementById('acChecklistBlock');
+                const nBlock = document.getElementById('noChecklistBlock');
+                if (fBlock) fBlock.style.display = cat === 'fridge' ? 'block' : 'none';
+                if (aBlock) aBlock.style.display = cat === 'ac' ? 'block' : 'none';
+                if (nBlock) nBlock.style.display = (cat !== 'fridge' && cat !== 'ac') ? 'block' : 'none';
+
+                // 2. Handle Freezer vs Fridge Temp items
+                if (cat === 'fridge') {
+                    const cbFridgeTemp = document.getElementById('check6').closest('.check-item');
+                    const cbFreezerTemp = document.getElementById('check7').closest('.check-item');
+                    
+                    if (isFreezerType(ref.type)) {
+                        cbFridgeTemp.style.display = 'none';
+                        cbFreezerTemp.style.display = 'flex';
+                    } else if (isFridgeOnlyType(ref.type)) {
+                        cbFridgeTemp.style.display = 'flex';
+                        cbFreezerTemp.style.display = 'none';
+                    } else {
+                        cbFridgeTemp.style.display = 'flex';
+                        cbFreezerTemp.style.display = 'flex';
+                    }
+                }
+                
+                // 3. Update progress tracker
+                if (typeof updateChecklistProgress === 'function') updateChecklistProgress();
                 if (refWorkingStatus) {
                     const ws = ref.workingStatus || 'Working';
                     refWorkingStatus.textContent = ws === 'Not Working' ? '⛔ Not Working' : '✅ Working';
@@ -7259,6 +7676,19 @@ function smartConfirm(message, opts) {
             });
             refFilterSelect.addEventListener('change', function () {
                 refFilterMode = this.value || 'all';
+                renderRefSelector();
+            });
+
+            // NEW: Sync the bottom action filter with the top category filter
+            document.getElementById('actionCategoryFilter')?.addEventListener('change', function () {
+                const topFilter = document.getElementById('refCategoryFilter');
+                if (topFilter) {
+                    topFilter.value = this.value;
+                    topFilter.dispatchEvent(new Event('change'));
+                }
+            });
+                        document.getElementById('refCategoryFilter')?.addEventListener('change', function () {
+                refCategoryMode = this.value || 'all';
                 renderRefSelector();
             });
             inchargeNameInput.addEventListener('input', updateInchargeDisplay);
@@ -7390,6 +7820,9 @@ function smartConfirm(message, opts) {
                 }
                 document.getElementById('addRefOwnerName').textContent = currentLoggedInName || '—';
                 populateDepartmentSelect();
+                const _catSel = document.getElementById('newRefCategory');
+                if (_catSel) _catSel.value = 'fridge';
+                populateTypeSelect(document.getElementById('newRefType'), 'fridge');
                 document.getElementById('dupWarning').classList.remove('show');
                 const wg = document.querySelector('#newRefWorkingGroup input[value="Working"]');
                 if (wg) wg.checked = true;
@@ -7438,16 +7871,12 @@ function smartConfirm(message, opts) {
                 btn.disabled = true;
                 btn.innerHTML = '⏳ Saving...';
                 try {
-                    const _fridgeTypes = ['Fridge', 'Fridge-Freezer', 'Upright Freezer', 'Chest Freezer', 'Lab Fridge', 'Vaccine Fridge'];
-                    const _elecTypes = ['Lamp', 'Switch', 'Socket', 'Electrical Panel', 'Other Electrical'];
-                    let _cat = 'fridge';
-                    if (_elecTypes.includes(type)) _cat = 'electrical';
-                    else if (!_fridgeTypes.includes(type)) _cat = 'equipment';
+                    const category = document.getElementById('newRefCategory').value || 'fridge';
 
                     const newRef = {
                         owner, technician: owner, tag, dept, loc, equipName, type, brand, model, serial,
                         workingStatus: ws, lastPmDate, nextPmDate, photo: PENDING_NEW_REF_PHOTO || '',
-                        equipCategory: _cat
+                        equipCategory: category
                     };
                     await addInventoryItemToCloud(newRef, owner);
                     await rememberLocation(dept, loc);
@@ -7537,7 +7966,11 @@ function smartConfirm(message, opts) {
                 document.getElementById('editRefEquipName').value = ref.equipName || '';
                 document.getElementById('editRefBrand').value = ref.brand || '';
                 document.getElementById('editRefModel').value = ref.model || '';
-                document.getElementById('editRefType').value = ref.type || 'Fridge';
+                const _cat = ref.equipCategory || getCategoryForType(ref.type);
+                const catSel = document.getElementById('editRefCategory');
+                if (catSel) catSel.value = _cat;
+                populateTypeSelect(document.getElementById('editRefType'), _cat);
+                document.getElementById('editRefType').value = ref.type || (TYPES_BY_CATEGORY[_cat] || ['Fridge'])[0];
                 document.getElementById('editRefSerial').value = ref.serial || '';
                 document.getElementById('editRefLastPm').value = ref.lastPmDate || '';
                 document.getElementById('editRefNextPm').value = ref.nextPmDate || '';
@@ -7577,6 +8010,7 @@ function smartConfirm(message, opts) {
                     brand: document.getElementById('editRefBrand').value.trim(),
                     model: document.getElementById('editRefModel').value.trim(),
                     type: document.getElementById('editRefType').value,
+                    equipCategory: document.getElementById('editRefCategory').value || getCategoryForType(document.getElementById('editRefType').value),
                     serial: document.getElementById('editRefSerial').value.trim() || 'N/A',
                     workingStatus: (document.querySelector('#editRefWorkingGroup input:checked') || {}).value || 'Working',
                     lastPmDate: document.getElementById('editRefLastPm').value || '',
@@ -7630,6 +8064,15 @@ function smartConfirm(message, opts) {
                 }
                 return out;
             }
+            function getTickedACItems(start, end) {
+                const out = [];
+                for (let i = start; i <= end; i++) {
+                    const cb = document.getElementById('ac_check' + i);
+                    if (cb && cb.checked) out.push(String(i));
+                }
+                return out;
+            }
+            
             function collectFormData() {
                 const idx = refSelect.value;
                 const ref = REF_FILTERED[idx];
@@ -7641,7 +8084,12 @@ function smartConfirm(message, opts) {
                     hour12: false, day: '2-digit', month: 'short', year: 'numeric',
                     hour: '2-digit', minute: '2-digit'
                 });
-                return {
+                
+                const cat = ref.equipCategory || getCategoryForType(ref.type);
+                const isAC = cat === 'ac';
+                const isFridge = cat === 'fridge';
+
+                const data = {
                     refTag: ref.tag, refLocation: ref.loc, refDept: ref.dept, refType: ref.type,
                     refEquipName: ref.equipName || '',
                     refBrand: ref.brand, refModel: ref.model, refSerial: ref.serial,
@@ -7651,16 +8099,42 @@ function smartConfirm(message, opts) {
                     workDate: workDateInput.value, workDateISO: workDateInput.value,
                     generatedAt: ts,
                     inchargeName: iname,
-                    cleanItems: getTickedItems(1, 5).join('|'),
-                    cleanRemarks: document.getElementById('remarkClean').value.trim() || '—',
-                    cleanRating: (document.querySelector('input[name="ratingClean"]:checked') || {}).value || '—',
-                    tempItems: getTickedItems(6, 10).join('|'),
-                    tempRemarks: document.getElementById('remarkTemp').value.trim() || '—',
-                    tempRating: (document.querySelector('input[name="ratingTemp"]:checked') || {}).value || '—',
-                    doorItems: getTickedItems(11, 15).join('|'),
-                    doorRemarks: document.getElementById('remarkDoor').value.trim() || '—',
-                    doorRating: (document.querySelector('input[name="ratingDoor"]:checked') || {}).value || '—'
+                    checklistType: isAC ? 'ac' : (isFridge ? 'fridge' : 'none')
                 };
+
+                if (isAC) {
+                    data.airflowItems = getTickedACItems(1, 5).join('|');
+                    data.airflowRemarks = document.getElementById('remarkAirflow').value.trim() || '—';
+                    data.airflowRating = (document.querySelector('input[name="ratingAirflow"]:checked') || {}).value || '—';
+                    
+                    data.electricalItems = getTickedACItems(6, 10).join('|');
+                    data.electricalRemarks = document.getElementById('remarkElectrical').value.trim() || '—';
+                    data.electricalRating = (document.querySelector('input[name="ratingElectrical"]:checked') || {}).value || '—';
+                    
+                    data.drainageItems = getTickedACItems(11, 15).join('|');
+                    data.drainageRemarks = document.getElementById('remarkDrainage').value.trim() || '—';
+                    data.drainageRating = (document.querySelector('input[name="ratingDrainage"]:checked') || {}).value || '—';
+                } else if (isFridge) {
+                    // Only collect visible items (Freezer/Fridge split)
+                    const tItems = [];
+                    if (document.getElementById('check6').closest('.check-item').style.display !== 'none') tItems.push('6');
+                    if (document.getElementById('check7').closest('.check-item').style.display !== 'none') tItems.push('7');
+                    tItems.push('8', '9', '10'); // Always visible
+
+                    data.cleanItems = getTickedItems(1, 5).join('|');
+                    data.cleanRemarks = document.getElementById('remarkClean').value.trim() || '—';
+                    data.cleanRating = (document.querySelector('input[name="ratingClean"]:checked') || {}).value || '—';
+                    
+                    data.tempItems = tItems.filter(i => document.getElementById('check' + i).checked).join('|');
+                    data.tempRemarks = document.getElementById('remarkTemp').value.trim() || '—';
+                    data.tempRating = (document.querySelector('input[name="ratingTemp"]:checked') || {}).value || '—';
+                    
+                    data.doorItems = getTickedItems(11, 15).join('|');
+                    data.doorRemarks = document.getElementById('remarkDoor').value.trim() || '—';
+                    data.doorRating = (document.querySelector('input[name="ratingDoor"]:checked') || {}).value || '—';
+                }
+
+                return data;
             }
             signOffBtn.addEventListener('click', async function () {
                 const data = collectFormData();
@@ -7710,14 +8184,28 @@ function smartConfirm(message, opts) {
                 document.querySelectorAll('input[type="text"], input[type="number"]').forEach(i => i.value = '');
                 document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
                 document.querySelectorAll('input[type="radio"][value="good"]').forEach(r => r.checked = true);
+                
                 if (REF_FILTERED.length > 0) refSelect.selectedIndex = 0;
+                refCategoryMode = 'all';
+                const catF = document.getElementById('refCategoryFilter');
+                if (catF) catF.value = 'all';
+                refFilterMode = 'all';
+                if (refFilterSelect) refFilterSelect.value = 'all';
+                
                 inchargeNameInput.value = '';
                 updateInchargeDisplay();
                 updateRefBanner();
                 updateTechnicianDisplay();
                 setAutoWorkDate();
                 updateChecklistProgress();
-                setChecklistView('preview'); // 🆕 auto-hide checklist after reset
+                setChecklistView('preview');
+                
+                // Reset AC remarks and checkboxes explicitly
+                ['remarkAirflow', 'remarkElectrical', 'remarkDrainage'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+
                 if (msg) showStatus('Form has been reset.', true);
             }
             resetBtn.addEventListener('click', () => resetForm(true));
@@ -7727,20 +8215,29 @@ function smartConfirm(message, opts) {
             function saveRefDraft() {
                 if (currentRole !== 'technician') return;
                 try {
+                    const isAC = document.getElementById('acChecklistBlock').style.display === 'block';
                     const draft = {
                         refTag: (REF_FILTERED[refSelect.value] || {}).tag || '',
                         workDate: workDateInput.value,
                         incharge: inchargeNameInput.value,
-                        checks: Array.from(document.querySelectorAll('.check-ref')).map(c => c.checked),
+                        isAC: isAC,
+                        fridgeChecks: Array.from(document.querySelectorAll('.check-ref')).map(c => c.checked),
+                        acChecks: Array.from(document.querySelectorAll('.check-ac')).map(c => c.checked),
                         remarks: {
                             clean: (document.getElementById('remarkClean') || {}).value || '',
                             temp: (document.getElementById('remarkTemp') || {}).value || '',
-                            door: (document.getElementById('remarkDoor') || {}).value || ''
+                            door: (document.getElementById('remarkDoor') || {}).value || '',
+                            airflow: (document.getElementById('remarkAirflow') || {}).value || '',
+                            electrical: (document.getElementById('remarkElectrical') || {}).value || '',
+                            drainage: (document.getElementById('remarkDrainage') || {}).value || ''
                         },
                         ratings: {
                             clean: (document.querySelector('input[name="ratingClean"]:checked') || {}).value,
                             temp: (document.querySelector('input[name="ratingTemp"]:checked') || {}).value,
-                            door: (document.querySelector('input[name="ratingDoor"]:checked') || {}).value
+                            door: (document.querySelector('input[name="ratingDoor"]:checked') || {}).value,
+                            airflow: (document.querySelector('input[name="ratingAirflow"]:checked') || {}).value,
+                            electrical: (document.querySelector('input[name="ratingElectrical"]:checked') || {}).value,
+                            drainage: (document.querySelector('input[name="ratingDrainage"]:checked') || {}).value
                         },
                         savedAt: Date.now()
                     };
@@ -7757,20 +8254,24 @@ function smartConfirm(message, opts) {
                 } catch (e) { return null; }
             }
             function clearRefDraft() { try { localStorage.removeItem(REF_DRAFT_KEY); } catch (e) {} }
-            function restoreRefDraft(draft) {
+                       function restoreRefDraft(draft) {
                 if (!draft) return;
                 const idx = REF_FILTERED.findIndex(r => (r.tag || '') === draft.refTag);
                 if (idx >= 0) { refSelect.value = idx; updateRefBanner(); }
                 if (draft.workDate) { workDateInput.value = draft.workDate; updateWorkDateDisplay(); }
                 if (draft.incharge) { inchargeNameInput.value = draft.incharge; updateInchargeDisplay(); }
-                document.querySelectorAll('.check-ref').forEach((cb, i) => cb.checked = !!(draft.checks && draft.checks[i]));
+                
+                document.querySelectorAll('.check-ref').forEach((cb, i) => cb.checked = !!(draft.fridgeChecks && draft.fridgeChecks[i]));
+                document.querySelectorAll('.check-ac').forEach((cb, i) => cb.checked = !!(draft.acChecks && draft.acChecks[i]));
+                
                 if (draft.remarks) {
-                    const rc = document.getElementById('remarkClean'); if (rc) rc.value = draft.remarks.clean || '';
-                    const rt = document.getElementById('remarkTemp');  if (rt) rt.value = draft.remarks.temp  || '';
-                    const rd = document.getElementById('remarkDoor');  if (rd) rd.value = draft.remarks.door  || '';
+                    ['Clean','Temp','Door','Airflow','Electrical','Drainage'].forEach(k => {
+                        const el = document.getElementById('remark' + k);
+                        if (el) el.value = draft.remarks[k.toLowerCase()] || '';
+                    });
                 }
                 if (draft.ratings) {
-                    ['clean','temp','door'].forEach(k => {
+                    ['clean','temp','door','airflow','electrical','drainage'].forEach(k => {
                         const v = draft.ratings[k];
                         if (v) {
                             const key = 'rating' + k[0].toUpperCase() + k.slice(1);
@@ -7788,10 +8289,17 @@ function smartConfirm(message, opts) {
                 clearTimeout(__draftTimer);
                 __draftTimer = setTimeout(saveRefDraft, 1500);
             }
-            document.querySelectorAll('.check-ref, #remarkClean, #remarkTemp, #remarkDoor, #workDate, #inchargeNameInput')
+            document.querySelectorAll('.check-ref, .check-ac, #remarkClean, #remarkTemp, #remarkDoor, #remarkAirflow, #remarkElectrical, #remarkDrainage, #workDate, #inchargeNameInput')
                 .forEach(el => el.addEventListener('input', scheduleDraftSave));
             document.querySelectorAll('input[name^="rating"]').forEach(el => el.addEventListener('change', scheduleDraftSave));
             refSelect.addEventListener('change', scheduleDraftSave);
+                        // Category → Type cascade (Add + Edit modals)
+            document.getElementById('newRefCategory')?.addEventListener('change', function () {
+                populateTypeSelect(document.getElementById('newRefType'), this.value);
+            });
+            document.getElementById('editRefCategory')?.addEventListener('change', function () {
+                populateTypeSelect(document.getElementById('editRefType'), this.value);
+            });
 
             /* ============================================================
                TECHNICIAN DISPLAY & ROLE VISIBILITY
@@ -8057,7 +8565,8 @@ function smartConfirm(message, opts) {
                 const techName = latest['Technician'] || '';
                 const techContact = techName ? await fetchUserContact(techName) : { phone: '', email: '' };
                 const lw = latest['Work Date'] || latest['Timestamp'] || '';
-                const nd = getNextRefPmDate_(lw);
+const refTypeForPm = latest['Type'] || latest.refType || 'Fridge';
+const nd = getNextPmDateByType_(refTypeForPm, lw);
                 const now = new Date();
                 const du = nd ? Math.round((nd - now) / 86400000) : 9999;
                 let st = 'maintained';
@@ -8220,10 +8729,17 @@ function smartConfirm(message, opts) {
                 let h = '';
                 const _pmEquipName = safeStr(rec['Equipment Name'] || rec.refEquipName || '');
                 h += `<div class="info-card"><h2>🧊 Equipment</h2>${jcRow('Tag', escapeHtml(tag))}${jcRow('Equipment Name', escapeHtml(_pmEquipName || '—'))}${jcRow('Type', escapeHtml(type))}${jcRow('Brand', escapeHtml(brand))}${jcRow('Model', escapeHtml(model))}${jcRow('Serial Number', escapeHtml((serial && serial.toUpperCase() !== 'N/A') ? serial : '—'))}${jcRow('Department', escapeHtml(dept))}${jcRow('Location', escapeHtml(loc))}${jcRow('Working', wsBadge)}</div>`;
-                h += `<div class="info-card"><h2>📅 Summary</h2>${jcRow('Work date', formatDateOnly(wd))}${jcRow('Next PM', nextPmForPDF(wd))}${jcRow('Technician', escapeHtml(tech))}${jcRow('Recorded at', escapeHtml(ts))}${jcRow('Report ID', escapeHtml(reportId))}${jcRow('Report hash', `<span style="font-size:.72rem;font-family:monospace;">${escapeHtml(hash)}</span>`)}</div>`;
-                h += jcChecklistSection('🧼', 'Cleaning & Hygiene', JC_CLEAN_TEXTS, rec['Clean Items'] || rec.cleanItems, 1, rec['Clean Rating'] || rec.cleanRating, JC_CLEAN_RATINGS, rec['Clean Remarks'] || rec.cleanRemarks);
-                h += jcChecklistSection('🌡️', 'Temperature & Performance', JC_TEMP_TEXTS, rec['Temp Items'] || rec.tempItems, 6, rec['Temp Rating'] || rec.tempRating, JC_TEMP_RATINGS, rec['Temp Remarks'] || rec.tempRemarks);
-                h += jcChecklistSection('🚪', 'Door, Seals & Function', JC_DOOR_TEXTS, rec['Door Items'] || rec.doorItems, 11, rec['Door Rating'] || rec.doorRating, JC_DOOR_RATINGS, rec['Door Remarks'] || rec.doorRemarks);
+                h += `<div class="info-card"><h2>📅 Summary</h2>${jcRow('Work date', formatDateOnly(wd))}${jcRow('Next PM', nextPmForPDF(wd, type))}${jcRow('Technician', escapeHtml(tech))}${jcRow('Recorded at', escapeHtml(ts))}${jcRow('Report ID', escapeHtml(reportId))}${jcRow('Report hash', `<span style="font-size:.72rem;font-family:monospace;">${escapeHtml(hash)}</span>`)}</div>`;
+                const checklistType = rec.checklistType || 'fridge';
+                if (checklistType === 'ac') {
+                    h += jcChecklistSection('🌬️', 'Filters, Coils & Airflow', AC_AIRFLOW_TEXTS, rec.airflowItems || rec['Airflow Items'], 1, rec.airflowRating || rec['Airflow Rating'], AC_AIRFLOW_RATINGS, rec.airflowRemarks || rec['Airflow Remarks']);
+                    h += jcChecklistSection('⚡', 'Electrical & Refrigerant', AC_ELECTRICAL_TEXTS, rec.electricalItems || rec['Electrical Items'], 6, rec.electricalRating || rec['Electrical Rating'], AC_ELECTRICAL_RATINGS, rec.electricalRemarks || rec['Electrical Remarks']);
+                    h += jcChecklistSection('💧', 'Drainage & Performance', AC_DRAINAGE_TEXTS, rec.drainageItems || rec['Drainage Items'], 11, rec.drainageRating || rec['Drainage Rating'], AC_DRAINAGE_RATINGS, rec.drainageRemarks || rec['Drainage Remarks']);
+                } else if (checklistType === 'fridge') {
+                    h += jcChecklistSection('🧼', 'Cleaning & Hygiene', JC_CLEAN_TEXTS, rec['Clean Items'] || rec.cleanItems, 1, rec['Clean Rating'] || rec.cleanRating, JC_CLEAN_RATINGS, rec['Clean Remarks'] || rec.cleanRemarks);
+                    h += jcChecklistSection('🌡️', 'Temperature & Performance', JC_TEMP_TEXTS, rec['Temp Items'] || rec.tempItems, 6, rec['Temp Rating'] || rec.tempRating, JC_TEMP_RATINGS, rec['Temp Remarks'] || rec.tempRemarks);
+                    h += jcChecklistSection('🚪', 'Door, Seals & Function', JC_DOOR_TEXTS, rec['Door Items'] || rec.doorItems, 11, rec['Door Rating'] || rec.doorRating, JC_DOOR_RATINGS, rec['Door Remarks'] || rec.doorRemarks);
+                }
                 h += `<div class="info-card"><h2>👔 Approval</h2>`;
                 if (signedAt) {
                     h += jcRow('Co-signed by', escapeHtml(signer || inchargeName));
@@ -8530,7 +9046,7 @@ function smartConfirm(message, opts) {
                 ).sort((a, b) => recordTime(b) - recordTime(a));
                 if (recs.length) {
                     const last = safeStr(recs[0]['Work Date'] || recs[0].workDate);
-                    const nd = getNextRefPmDate_(last);
+                    const nd = getNextPmDateByType_(ref.type || 'Fridge', last);
                     const ds = nd ? nd.toISOString().slice(0, 10) : '';
                     const du = nd ? Math.round((nd - now) / 86400000) : 9999;
                     let st;
@@ -8666,10 +9182,17 @@ function smartConfirm(message, opts) {
 
             function populateEqPmEquipSelect() {
                 eqPmEquipSelect.innerHTML = '';
-                const list = REF_FILTERED.length ? REF_FILTERED : REF_INVENTORY;
+                let list = REF_FILTERED.length ? REF_FILTERED : REF_INVENTORY;
+                const catFilter = document.getElementById('actionCategoryFilter')?.value || 'all';
+                
+                if (catFilter !== 'all') {
+                    list = list.filter(a => (a.equipCategory || getCategoryForType(a.type)) === catFilter);
+                }
+                eqPmEquipSelect._list = list; // Save for the download function
+                
                 if (!list.length) {
                     const o = document.createElement('option');
-                    o.value = ''; o.textContent = '— No equipment —';
+                    o.value = ''; o.textContent = '— No equipment matching filter —';
                     eqPmEquipSelect.appendChild(o);
                     return;
                 }
@@ -8708,8 +9231,7 @@ function smartConfirm(message, opts) {
                 if (idx === '') { eqPmStatus.textContent = '⚠️ Pick equipment.'; return; }
                 const from = eqPmFrom.value, to = eqPmTo.value;
                 if (!from || !to) { eqPmStatus.textContent = '⚠️ Pick dates.'; return; }
-                const list = REF_FILTERED.length ? REF_FILTERED : REF_INVENTORY;
-                const ref = list[Number(idx)];
+                const ref = eqPmEquipSelect._list[Number(idx)];
                 if (!ref) return;
                 const btn = this; const o = btn.innerHTML;
                 btn.disabled = true;
@@ -9422,12 +9944,12 @@ function smartConfirm(message, opts) {
                             && new Date(r['Work Date'] || r.workDate || r['Timestamp']).getTime() <= me.getTime()
                         ).sort((a, b) => recordTime(b) - recordTime(a));
                         if (ml.length) {
-                            const n = getNextRefPmDate_(ml[0]['Work Date'] || ml[0].workDate);
-                            if (n && n.getTime() < me.getTime()) c++;
-                        } else if (ref.lastPmDate) {
-                            const n = getNextRefPmDate_(ref.lastPmDate);
-                            if (n && n.getTime() < me.getTime()) c++;
-                        }
+    const n = getNextPmDateByType_(ref.type || 'Fridge', ml[0]['Work Date'] || ml[0].workDate);
+    if (n && n.getTime() < me.getTime()) c++;
+} else if (ref.lastPmDate) {
+    const n = getNextPmDateByType_(ref.type || 'Fridge', ref.lastPmDate);
+    if (n && n.getTime() < me.getTime()) c++;
+}
                     });
                     return c;
                 });
@@ -9444,22 +9966,38 @@ function smartConfirm(message, opts) {
                     let sc = 0;
                     if ((ref.workingStatus || 'Working') === 'Not Working') sc += 3;
                     ml.forEach(r => {
-                        const tr = safeStr(r['Temp Rating'] || r.tempRating);
-                        const dr = safeStr(r['Door Rating'] || r.doorRating);
-                        const cr = safeStr(r['Clean Rating'] || r.cleanRating);
-                        if (tr === 'fault') sc += 2; else if (tr === 'partial') sc += 1;
-                        if (dr === 'issue') sc += 2; else if (dr === 'delayed') sc += 1;
-                        if (cr === 'attention') sc += 1; else if (cr === 'fair') sc += 0.5;
-                        const cs = new Set(safeSplit(r['Clean Items'] || r.cleanItems, '|'));
-                        const ts = new Set(safeSplit(r['Temp Items'] || r.tempItems, '|'));
-                        const ds = new Set(safeSplit(r['Door Items'] || r.doorItems, '|'));
-                        sc += ((5 - cs.size) + (5 - ts.size) + (5 - ds.size)) * 0.3;
-                        if (safeStr(r.inchargeReviewStatus) === 'rejected') sc += 2;
-                    });
+    const isACRec = r.checklistType === 'ac';
+    if (isACRec) {
+        const ar = safeStr(r.airflowRating || r['Airflow Rating']);
+        const er = safeStr(r.electricalRating || r['Electrical Rating']);
+        const dr = safeStr(r.drainageRating || r['Drainage Rating']);
+        if (ar === 'attention') sc += 2; else if (ar === 'fair') sc += 1;
+        if (er === 'fault')     sc += 2; else if (er === 'partial') sc += 1;
+        if (dr === 'issue')     sc += 2; else if (dr === 'delayed') sc += 1;
+        const s1 = new Set(safeSplit(r.airflowItems || r['Airflow Items'], '|'));
+        const s2 = new Set(safeSplit(r.electricalItems || r['Electrical Items'], '|'));
+        const s3 = new Set(safeSplit(r.drainageItems || r['Drainage Items'], '|'));
+        sc += ((5 - s1.size) + (5 - s2.size) + (5 - s3.size)) * 0.3;
+    } else {
+        const tr = safeStr(r['Temp Rating'] || r.tempRating);
+        const dr = safeStr(r['Door Rating'] || r.doorRating);
+        const cr = safeStr(r['Clean Rating'] || r.cleanRating);
+        if (tr === 'fault') sc += 2; else if (tr === 'partial') sc += 1;
+        if (dr === 'issue') sc += 2; else if (dr === 'delayed') sc += 1;
+        if (cr === 'attention') sc += 1; else if (cr === 'fair') sc += 0.5;
+        const cs = new Set(safeSplit(r['Clean Items'] || r.cleanItems, '|'));
+        const ts = new Set(safeSplit(r['Temp Items'] || r.tempItems, '|'));
+        const ds = new Set(safeSplit(r['Door Items'] || r.doorItems, '|'));
+        sc += ((5 - cs.size) + (5 - ts.size) + (5 - ds.size)) * 0.3;
+    }
+    if (safeStr(r.inchargeReviewStatus) === 'rejected') sc += 2;
+});
                     return { ref, score: Math.round(sc), pmCount: ml.length };
                 }).sort((a, b) => b.score - a.score).slice(0, 20);
                 const k = {
                     total: flogs.length,
+                    fridgePms: flogs.filter(r => r.checklistType === 'fridge').length,
+                    acPms: flogs.filter(r => r.checklistType === 'ac').length,
                     signed: flogs.filter(r => safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim()).length,
                     pending: flogs.filter(r => !safeStr(r['In-Charge Signed At'] || r.inchargeSignedAt).trim() && safeStr(r.inchargeReviewStatus) !== 'rejected').length,
                     rejected: flogs.filter(r => safeStr(r.inchargeReviewStatus) === 'rejected').length,
@@ -9474,6 +10012,8 @@ function smartConfirm(message, opts) {
             function renderDashKPIs(k) {
                 const s = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
                 s('dashKpiTotal', k.total);
+                s('dashKpiFridgePms', k.fridgePms);
+                s('dashKpiAcPms', k.acPms);
                 s('dashKpiSigned', k.signed);
                 s('dashKpiPending', k.pending);
                 s('dashKpiRejected', k.rejected);
@@ -9787,6 +10327,9 @@ function smartConfirm(message, opts) {
                             assignedTo: d.assignedTo || '',
                             status: d.status || 'pending',
                             startedAt: d.startedAt && d.startedAt.toDate ? d.startedAt.toDate().toISOString() : (d.startedAt || ''),
+                            pausedAt: d.pausedAt && d.pausedAt.toDate ? d.pausedAt.toDate().toISOString() : (d.pausedAt || ''),
+                            pauseReason: d.pauseReason || '',
+                            resumedAt: d.resumedAt && d.resumedAt.toDate ? d.resumedAt.toDate().toISOString() : (d.resumedAt || ''),
                             completedAt: d.completedAt && d.completedAt.toDate ? d.completedAt.toDate().toISOString() : (d.completedAt || ''),
                             technicianNotes: d.technicianNotes || '',
                             technicianPhoto: d.technicianPhoto || '',
@@ -9841,6 +10384,8 @@ function smartConfirm(message, opts) {
                 const f = Object.assign({}, u);
                 if (u.completedAt === 'NOW') f.completedAt = window.FB.serverTimestamp();
                 if (u.startedAt === 'NOW') f.startedAt = window.FB.serverTimestamp();
+                if (u.pausedAt === 'NOW') f.pausedAt = window.FB.serverTimestamp();
+                if (u.resumedAt === 'NOW') f.resumedAt = window.FB.serverTimestamp();
                 if (u.verifiedAt === 'NOW') f.verifiedAt = window.FB.serverTimestamp();
                 if (u.escalatedAt === 'NOW') f.escalatedAt = window.FB.serverTimestamp();
                 if (u.reassignedAt === 'NOW') f.reassignedAt = window.FB.serverTimestamp();
@@ -9862,7 +10407,7 @@ function smartConfirm(message, opts) {
             }
             function renderCurativeCard(c, opts) {
                 opts = opts || {};
-                const sl = ({ pending: '⏳ Pending', in_progress: '🔧 In Progress', completed: '📸 Awaiting Verification', verified: '✅ Verified', rejected: '❌ Rejected' })[c.status] || c.status;
+                const sl = ({ pending: '⏳ Pending', in_progress: '🔧 In Progress', paused: '⏸️ Paused', completed: '📸 Awaiting Verification', verified: '✅ Verified', rejected: '❌ Rejected' })[c.status] || c.status;
                 const pl = c.priority.charAt(0).toUpperCase() + c.priority.slice(1);
                 const _isEscalated = c.escalated === true && c.escalationResolved !== true;
                 const _canEscalate = opts.canEscalate === true
@@ -9902,6 +10447,8 @@ function smartConfirm(message, opts) {
                 <button class="btn-secondary" data-view-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">👁️ View</button>
                 ${opts.canStart && c.status === 'pending' && !c.escalated && (!c.assignedTo || normalizeText(c.assignedTo) === normalizeText(currentLoggedInName)) ? `<button class="btn-primary" data-start-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">🔧 Take Job</button>` : ''}
                 ${_canEscalate ? `<button class="btn-remove" data-escalate-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">⚠️ Escalate to Manager</button>` : ''}
+                ${opts.canComplete && c.status === 'in_progress' && normalizeText(c.assignedTo) === normalizeText(currentLoggedInName) ? `<button class="btn-secondary" data-pause-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;background:#fff3cd;color:#7a5300;border-color:#f4d97a;">⏸️ Pause</button>` : ''}
+                ${opts.canComplete && c.status === 'paused' && normalizeText(c.assignedTo) === normalizeText(currentLoggedInName) ? `<button class="btn-primary" data-resume-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;background:#1b6b3f;">▶️ Resume</button>` : ''}
                 ${opts.canComplete && c.status === 'in_progress' && normalizeText(c.assignedTo) === normalizeText(currentLoggedInName) ? `<button class="btn-approve" data-complete-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">✅ Complete</button>` : ''}
                 ${opts.canVerify && c.status === 'completed' ? `<button class="btn-approve" data-verify-curative="${escapeHtml(c._docId)}" style="padding:6px 14px;font-size:.82rem;">👔 Verify</button>` : ''}
             </div>
@@ -9915,6 +10462,15 @@ function smartConfirm(message, opts) {
                     if (c) openViewCurativeModal(c);
                 }));
                 container.querySelectorAll('[data-start-curative]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); startCurativeJob(b.getAttribute('data-start-curative')); }));
+                container.querySelectorAll('[data-pause-curative]').forEach(b => b.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const c = list.find(x => x._docId === b.getAttribute('data-pause-curative'));
+                    if (c) openPauseCurativeModal(c);
+                }));
+                container.querySelectorAll('[data-resume-curative]').forEach(b => b.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    resumeCurativeJob(b.getAttribute('data-resume-curative'));
+                }));
                 container.querySelectorAll('[data-complete-curative]').forEach(b => b.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const c = list.find(x => x._docId === b.getAttribute('data-complete-curative'));
@@ -10252,7 +10808,8 @@ function smartConfirm(message, opts) {
                     cnt.textContent = _openCount;
 
                     let f = mine;
-                    if (TECH_CURATIVE_FILTER === 'open') f = mine.filter(c => (c.status === 'pending' || c.status === 'in_progress') && !c.escalated);
+                    if (TECH_CURATIVE_FILTER === 'open') f = mine.filter(c => (c.status === 'pending' || c.status === 'in_progress' || c.status === 'paused') && !c.escalated);
+                    else if (TECH_CURATIVE_FILTER === 'paused') f = mine.filter(c => c.status === 'paused');
                     else if (TECH_CURATIVE_FILTER === 'escalated') f = mine.filter(c => c.escalated && !c.escalationResolved);
                     else if (TECH_CURATIVE_FILTER === 'completed') f = mine.filter(c => c.status === 'completed');
                     else if (TECH_CURATIVE_FILTER === 'verified') f = mine.filter(c => c.status === 'verified');
@@ -10507,6 +11064,40 @@ function smartConfirm(message, opts) {
                 }
                 btn.disabled = false;
                 btn.innerHTML = o;
+            }
+            function openPauseCurativeModal(c) {
+                const modal = document.getElementById('pauseCurativeModal');
+                document.getElementById('pauseCurativeSubtitle').textContent = c.tag + ' · ' + c.loc;
+                document.getElementById('pauseCurativeReason').value = '';
+                document.getElementById('pauseCurativeError').textContent = '';
+                modal._curative = c;
+                modal.classList.add('show');
+            }
+            async function savePauseCurative() {
+                const modal = document.getElementById('pauseCurativeModal');
+                const c = modal._curative;
+                if (!c) return;
+                const reason = (document.getElementById('pauseCurativeReason').value || '').trim();
+                if (!reason) { document.getElementById('pauseCurativeError').textContent = '⚠️ Reason is required.'; return; }
+                const btn = document.getElementById('pauseCurativeSaveBtn');
+                const o = btn.innerHTML;
+                btn.disabled = true; btn.innerHTML = '⏳ …';
+                try {
+                    const ok = await updateCurativeRequest(c._docId, { status: 'paused', pauseReason: reason, pausedAt: 'NOW' });
+                    if (!ok) throw new Error('Failed');
+                    if (c.reportedBy) await createNotification({ recipient: c.reportedBy, type: 'curative_paused', title: '⏸️ Job Paused — ' + c.tag, message: `${currentLoggedInName} paused the work at ${c.loc}. Reason: ${reason}`, relatedDocId: c._docId, relatedTag: c.tag, relatedDept: c.dept });
+                    showStatus('⏸️ Job paused.', true);
+                    modal.classList.remove('show');
+                    await refreshTechnicianCurative();
+                } catch (e) { document.getElementById('pauseCurativeError').textContent = '⚠️ ' + e.message; }
+                btn.disabled = false; btn.innerHTML = o;
+            }
+            async function resumeCurativeJob(id) {
+                if (!await smartConfirm('Resume this curative job?', { title: '▶️ Resume Job', icon: '▶️', okText: 'Resume', danger: false })) return;
+                const ok = await updateCurativeRequest(id, { status: 'in_progress', resumedAt: 'NOW', pauseReason: '' });
+                if (!ok) { showStatus('⚠️ Failed to resume.', false); return; }
+                showStatus('▶️ Job resumed.', true);
+                await refreshTechnicianCurative();
             }
             async function startCurativeJob(id) {
                 if (!id || !await smartConfirm('Start this curative job?', { title: '🔧 Take Curative Job', icon: '🔧', okText: 'Take Job', danger: false })) return;
@@ -10796,6 +11387,7 @@ function smartConfirm(message, opts) {
                     y += 27;
                 }
                 if (y + 55 > pH - 22) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'CURATIVE JOB CARD (cont.)', ref: 'CHUB/CUR' }); }
+                const sigBoxTopY = y; // 🆕 Save the exact Y position of the signature box
                 const boxH = 50, gap = 4, halfW = (cW - gap) / 2;
                 doc.setFillColor(240, 246, 252);
                 doc.setDrawColor(207, 224, 238);
@@ -10890,7 +11482,7 @@ function smartConfirm(message, opts) {
                     sb = await signPdfBytes(bytes, {
                         placements: [{
                             page: doc.getNumberOfPages() - 1,
-                            yFromTopMm: y + 24, // Right below the visual signature
+                            yFromTopMm: sigBoxTopY + 24, // 🆕 Use the saved Y position
                             xMm: m + (halfW / 2) + 2 // Right side of the box
                         }]
                     });
@@ -11320,21 +11912,22 @@ function smartConfirm(message, opts) {
                 let isFirstPage = true;
                 let sigPlacements = []; // <--- ADD THIS
 
-                function addHeader(data) {
-                    if (isFirstPage) {
-                        isFirstPage = false;
-                        return drawChubHeader(doc, {
-                            title: 'REFRIGERATOR PM REPORT',
+                                    function addHeader(data) {
+                        if (isFirstPage) {
+                            isFirstPage = false;
+                            const isAC = (data.checklistType === 'ac');
+                            return drawChubHeader(doc, {
+                                title: (isAC ? 'AIR CONDITIONER PM REPORT' : (data.checklistType === 'none' ? 'EQUIPMENT PM REPORT' : 'REFRIGERATOR PM REPORT')),
                             subtitle: 'Work Date: ' + formatDateOnly(data.workDate) +
                                 '   |   Technician: ' + stripEmojiForPdf(data.technician || ''),
                             ref: data.reportId || '',
                             date: new Date().toLocaleDateString('en-GB')
                         });
                     }
-                    return drawChubSlimHeader(doc, {
-                        title: 'REFRIGERATOR PM REPORT — ' + stripEmojiForPdf(data.refTag || ''),
-                        ref: data.reportId || ''
-                    });
+                                           return drawChubSlimHeader(doc, {
+                            title: (data.checklistType === 'ac' ? 'AC PM REPORT' : 'PM REPORT') + ' — ' + stripEmojiForPdf(data.refTag || ''),
+                            ref: data.reportId || ''
+                        });
                 }
 
                 for (let i = 0; i < records.length; i++) {
@@ -11454,16 +12047,30 @@ function smartConfirm(message, opts) {
                         y += 3;
                     };
 
-                    const cs = new Set(safeSplit(data.cleanItems, '|'));
-                    const ci = JC_CLEAN_TEXTS.map((t, idx) => ({ text: t, checked: cs.has(String(idx + 1)) }));
-                    const ts = new Set(safeSplit(data.tempItems, '|'));
-                    const ti = JC_TEMP_TEXTS.map((t, idx) => ({ text: t, checked: ts.has(String(idx + 6)) }));
-                    const ds = new Set(safeSplit(data.doorItems, '|'));
-                    const di = JC_DOOR_TEXTS.map((t, idx) => ({ text: t, checked: ds.has(String(idx + 11)) }));
+                    const checklistType = data.checklistType || 'fridge';
+                    if (checklistType === 'ac') {
+                        const as = new Set(safeSplit(data.airflowItems, '|'));
+                        const ai = AC_AIRFLOW_TEXTS.map((t, idx) => ({ text: t, checked: as.has(String(idx + 1)) }));
+                        const es = new Set(safeSplit(data.electricalItems, '|'));
+                        const ei = AC_ELECTRICAL_TEXTS.map((t, idx) => ({ text: t, checked: es.has(String(idx + 6)) }));
+                        const drs = new Set(safeSplit(data.drainageItems, '|'));
+                        const dri = AC_DRAINAGE_TEXTS.map((t, idx) => ({ text: t, checked: drs.has(String(idx + 11)) }));
 
-                    drawSection('Cleaning & Hygiene', 'Condition', data.cleanRating, ci, data.cleanRemarks);
-                    drawSection('Temperature & Performance', 'Status', data.tempRating, ti, data.tempRemarks);
-                    drawSection('Door, Seals & Function', 'Performance', data.doorRating, di, data.doorRemarks);
+                        drawSection('Filters, Coils & Airflow', 'Condition', data.airflowRating, ai, data.airflowRemarks);
+                        drawSection('Electrical & Refrigerant', 'Status', data.electricalRating, ei, data.electricalRemarks);
+                        drawSection('Drainage & Performance', 'Performance', data.drainageRating, dri, data.drainageRemarks);
+                    } else if (checklistType === 'fridge') {
+                        const cs = new Set(safeSplit(data.cleanItems, '|'));
+                        const ci = JC_CLEAN_TEXTS.map((t, idx) => ({ text: t, checked: cs.has(String(idx + 1)) }));
+                        const ts = new Set(safeSplit(data.tempItems, '|'));
+                        const ti = JC_TEMP_TEXTS.map((t, idx) => ({ text: t, checked: ts.has(String(idx + 6)) }));
+                        const ds = new Set(safeSplit(data.doorItems, '|'));
+                        const di = JC_DOOR_TEXTS.map((t, idx) => ({ text: t, checked: ds.has(String(idx + 11)) }));
+
+                        drawSection('Cleaning & Hygiene', 'Condition', data.cleanRating, ci, data.cleanRemarks);
+                        drawSection('Temperature & Performance', 'Status', data.tempRating, ti, data.tempRemarks);
+                        drawSection('Door, Seals & Function', 'Performance', data.doorRating, di, data.doorRemarks);
+                    }
 
                     const boxH = 50;
                     if (y + boxH + 20 > pageHeight - 22) {
@@ -11489,7 +12096,7 @@ function smartConfirm(message, opts) {
                     doc.setFont('helvetica', 'normal');
                     doc.setTextColor(58, 101, 131);
                     doc.text('Date: ' + formatDateOnly(data.workDate), lbx + 3, y + 15.5);
-                    doc.text('Next PM: ' + nextPmForPDF(data.workDate), lbx + 3, y + 19);
+                    doc.text('Next PM: ' + nextPmForPDF(data.workDate, data.refType), lbx + 3, y + 19);
                     const saX = lbx + (halfW / 2) + 2, saW = (halfW / 2) - 5, saY = y + 7, saH = 16;
                     doc.setDrawColor(200, 215, 230);
                     doc.roundedRect(saX, saY, saW, saH, 1, 1, 'S');
@@ -11503,7 +12110,8 @@ function smartConfirm(message, opts) {
                     const tSig = sigs[_techKey] || '';
                     if (tSig) {
                         try {
-                            const dim = sigDims[data.technician];
+                            // ✅ FIXED
+const dim = sigDims[_techKey];
                             let w = saW - 4, h = w, aspect = 1;
                             if (dim && dim.width && dim.height) {
                                 aspect = dim.width / dim.height;
@@ -11630,11 +12238,18 @@ function smartConfirm(message, opts) {
                 if (signedBytes) downloadBytes(signedBytes, fname);
                 else doc.save(fname);
             }
-            async function generateAnalysisPDF(records, dept) {
+            async function generateAnalysisPDF(records, dept, category = 'all') {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pW = 210, pH = 297, mL = 14, mR = 14;
                 const cW = pW - mL - mR;
+
+                // NEW: Dynamic titles based on the filter
+                const isAC = category === 'ac';
+                const reportTitle = isAC ? 'AIR CONDITIONER ANALYSIS REPORT' : (category === 'fridge' ? 'REFRIGERATOR ANALYSIS REPORT' : 'EQUIPMENT ANALYSIS REPORT');
+                const refPrefix = isAC ? 'CHUB/AC/ANA/' : (category === 'fridge' ? 'CHUB/FRG/ANA/' : 'CHUB/EQP/ANA/');
+                const breakdownTitle = isAC ? 'BREAKDOWN BY AC UNIT' : (category === 'fridge' ? 'BREAKDOWN BY REFRIGERATOR' : 'BREAKDOWN BY EQUIPMENT');
+                const kpiTitle = isAC ? 'AC UNITS SERVICED' : (category === 'fridge' ? 'REFRIGERATORS SERVICED' : 'EQUIPMENT SERVICED');
                 // The crypto seal must belong to the DOWNLOADER, not record[0].
                 if (currentLoggedInName) {
                     const loadedMatchesUser =
@@ -11645,9 +12260,9 @@ function smartConfirm(message, opts) {
                     }
                 }
                 let y = drawChubHeader(doc, {
-                    title: 'REFRIGERATOR ANALYSIS REPORT',
+                    title: reportTitle,
                     subtitle: 'Department: ' + stripEmojiForPdf(dept) + '   |   Records: ' + records.length,
-                    ref: 'CHUB/FRG/ANA/' + new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+                    ref: refPrefix + new Date().toISOString().slice(0, 10).replace(/-/g, ''),
                     date: new Date().toLocaleDateString('en-GB')
                 });
                 const total = records.length;
@@ -11661,7 +12276,7 @@ function smartConfirm(message, opts) {
                 y += 6;
                 const kpis = [
                     ['Total PMs', String(total)],
-                    ['Refrigerators Serviced', String(uniqueRefs)],
+                    [kpiTitle, String(uniqueRefs)],
                     ['Co-signed', String(signed)],
                     ['Pending co-signature', String(total - signed)],
                     ['Rejected work', String(rejected)]
@@ -11688,7 +12303,7 @@ function smartConfirm(message, opts) {
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(10);
                 doc.setTextColor(18, 64, 94);
-                doc.text('BREAKDOWN BY REFRIGERATOR', mL + 2, y);
+                doc.text(breakdownTitle, mL + 2, y);
                 y += 6;
                 const byRef = {};
                 records.forEach(r => {
@@ -11702,7 +12317,7 @@ function smartConfirm(message, opts) {
                     doc.setFontSize(8);
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(18, 64, 94);
-                    doc.text('Refrigerator', mL + 2, y + 4);
+                    doc.text(isAC ? 'AC Unit' : 'Refrigerator', mL + 2, y + 4);
                     doc.text('Count', mL + cW - 25, y + 4);
                     y += 6;
                     doc.setFont('helvetica', 'normal');
@@ -11764,19 +12379,196 @@ function smartConfirm(message, opts) {
                         y += 6;
                     });
                 }
+                                // ===== NEW: ANOMALIES SECTION =====
+                if (y > pH - 40) {
+                    doc.addPage();
+                    y = drawChubSlimHeader(doc, { title: 'EQUIPMENT ANALYSIS (cont.)', ref: 'CHUB/FRG/ANA' });
+                }
+
+                doc.setFillColor(255, 235, 235); doc.rect(mL, y - 4, cW, 6, 'F');
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(179, 58, 58);
+                doc.text('ANOMALIES FOUND DURING PMs', mL + 2, y); y += 6;
+
+                const FRIDGE_ITEMS = [
+                    { cat: 'Clean', text: 'Clean interior shelves, walls and drawers' },
+                    { cat: 'Clean', text: 'Clean door gaskets and seals' },
+                    { cat: 'Clean', text: 'Clean condenser coils and ventilation grills' },
+                    { cat: 'Clean', text: 'Clean/empty drain pan and clear drain line' },
+                    { cat: 'Clean', text: 'Clean exterior surfaces and control panel' },
+                    { cat: 'Temp', text: 'Check refrigerator temperature (2 – 8 °C)' },
+                    { cat: 'Temp', text: 'Check freezer temperature (≤ –18 °C)' },
+                    { cat: 'Temp', text: 'Verify thermostat calibration and stability' },
+                    { cat: 'Temp', text: 'Check evaporator fan and condenser fan operation' },
+                    { cat: 'Temp', text: 'Verify defrost cycle is functioning properly' },
+                    { cat: 'Door', text: 'Inspect door seal (gasket) for cracks, gaps or mould' },
+                    { cat: 'Door', text: 'Test door seal with dollar bill test' },
+                    { cat: 'Door', text: 'Check door hinge alignment and self-closing function' },
+                    { cat: 'Door', text: 'Verify door alarm and interior light function' },
+                    { cat: 'Door', text: 'Inspect shelving, drawers and door bins integrity' }
+                ];
+
+                const AC_ITEMS = [
+                    { cat: 'Airflow', text: 'Inspect, clean, or replace filters' },
+                    { cat: 'Airflow', text: 'Clean indoor evaporator coil' },
+                    { cat: 'Airflow', text: 'Clean outdoor condenser coil' },
+                    { cat: 'Airflow', text: 'Check blower motor and wheel' },
+                    { cat: 'Airflow', text: 'Verify proper airflow across unit' },
+                    { cat: 'Electrical', text: 'Verify correct refrigerant charge (superheat/subcooling)' },
+                    { cat: 'Electrical', text: 'Tighten and inspect electrical connections' },
+                    { cat: 'Electrical', text: 'Test relays, contactors, and capacitors' },
+                    { cat: 'Electrical', text: 'Measure compressor and fan motor amps' },
+                    { cat: 'Electrical', text: 'Inspect wiring for frays or heat damage' },
+                    { cat: 'Drainage', text: 'Clear condensate drain line and pan' },
+                    { cat: 'Drainage', text: 'Check thermostat calibration and controls' },
+                    { cat: 'Drainage', text: 'Measure supply/return air temperatures (Delta T)' },
+                    { cat: 'Drainage', text: 'Verify overall system efficiency' },
+                    { cat: 'Drainage', text: 'Inspect ductwork for leaks (visible)' }
+                ];
+                
+                const fridgeMap = {};
+                FRIDGE_ITEMS.forEach(it => { fridgeMap[it.text] = 0; });
+                const acMap = {};
+                AC_ITEMS.forEach(it => { acMap[it.text] = 0; });
+
+                records.forEach(r => {
+                    const isAC = r.checklistType === 'ac';
+                    const itemsToCheck = isAC ? AC_ITEMS : FRIDGE_ITEMS;
+                    const targetMap = isAC ? acMap : fridgeMap;
+                    
+                    const set1 = new Set(safeSplit(isAC ? (r['Airflow Items'] || r.airflowItems) : (r['Clean Items'] || r.cleanItems), '|'));
+                    const set2 = new Set(safeSplit(isAC ? (r['Electrical Items'] || r.electricalItems) : (r['Temp Items'] || r.tempItems), '|'));
+                    const set3 = new Set(safeSplit(isAC ? (r['Drainage Items'] || r.drainageItems) : (r['Door Items'] || r.doorItems), '|'));
+
+                    itemsToCheck.forEach((item, idx) => {
+                        // Skip Temp items that were hidden by the UI for this equipment type
+                        if (!isAC) {
+                            if (item.text.includes('refrigerator temperature') && isFreezerType(r.refType)) return;
+                            if (item.text.includes('freezer temperature')     && isFridgeOnlyType(r.refType)) return;
+                        }
+                        let checked = false;
+                        if (item.cat === 'Airflow' || item.cat === 'Clean') checked = set1.has(String((idx % 5) + 1));
+                        else if (item.cat === 'Electrical' || item.cat === 'Temp') checked = set2.has(String((idx % 5) + 6));
+                        else if (item.cat === 'Drainage' || item.cat === 'Door') checked = set3.has(String((idx % 5) + 11));
+                        if (!checked) targetMap[item.text]++;
+                    });
+                });
+
+                const drawAnomalyTable = (title, map) => {
+                    const rows = Object.keys(map).filter(k => map[k] > 0).map(k => [k, map[k]]);
+                    if (rows.length === 0) return;
+                    if (y > pH - 30) {
+                        doc.addPage();
+                        y = drawChubSlimHeader(doc, { title: 'EQUIPMENT ANALYSIS (cont.)', ref: 'CHUB/FRG/ANA' });
+                    }
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(179, 58, 58);
+                    doc.text(title, mL + 2, y); y += 4;
+                    
+                    doc.setFillColor(212, 227, 239); doc.rect(mL, y, cW, 6, 'F');
+                    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(18, 64, 94);
+                    doc.text('Checklist Item', mL + 2, y + 4);
+                    doc.text('Times Flagged', mL + cW - 25, y + 4);
+                    y += 6;
+                    doc.setFont('helvetica', 'normal'); doc.setTextColor(31, 60, 84);
+                    rows.forEach((row, i) => {
+                        if (y > pH - 22) {
+                            doc.addPage();
+                            y = drawChubSlimHeader(doc, { title: 'EQUIPMENT ANALYSIS (cont.)', ref: 'CHUB/FRG/ANA' });
+                        }
+                        if (i % 2 === 1) { doc.setFillColor(249, 252, 255); doc.rect(mL, y, cW, 6, 'F'); }
+                        doc.text(String(row[0]).substring(0, 70), mL + 2, y + 4);
+                        doc.text(String(row[1]), mL + cW - 25, y + 4);
+                        y += 6;
+                    });
+                    y += 6;
+                };
+
+                const hasFridgeAnomalies = Object.values(fridgeMap).some(v => v > 0);
+                const hasAcAnomalies = Object.values(acMap).some(v => v > 0);
+
+                if (!hasFridgeAnomalies && !hasAcAnomalies) {
+                    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(27, 107, 63);
+                    doc.text('No anomalies found — all field checks passed.', mL, y + 3);
+                } else {
+                    drawAnomalyTable('🧊 REFRIGERATOR ANOMALIES', fridgeMap);
+                    drawAnomalyTable('❄️ AIR CONDITIONER ANOMALIES', acMap);
+                }
+                // ===== END ANOMALIES SECTION =====
+
+                // ── Load Visual Signature for the report
+                const signerName = currentLoggedInName || 'Technician';
+                let techSig = getSignatureFor(signerName) || '';
+                if (!techSig) {
+                    try {
+                        const cfg = await firestoreConfigGet('TechSig_' + signerName);
+                        if (cfg) techSig = cfg.startsWith('data:') ? cfg : 'data:image/png;base64,' + cfg;
+                    } catch (e) { }
+                }
+                if (techSig) techSig = await ensurePngDataUrl(techSig);
+                const techDims = techSig ? await loadImageDimensions(techSig) : null;
+
                 const totalPages = doc.internal.getNumberOfPages();
+                doc.setPage(totalPages);
+                
+                // Draw the visual signature box
+                const sigBoxY = pH - 55; 
+                const sigBoxW = 80;
+                const sigBoxH = 35;
+
+                doc.setFillColor(240, 246, 252);
+                doc.setDrawColor(207, 224, 238);
+                doc.roundedRect(mL, sigBoxY, sigBoxW, sigBoxH, 2, 2, 'FD');
+
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(6.5);
+                doc.setTextColor(91, 123, 150);
+                doc.text('SIGNED BY (TECHNICIAN)', mL + 3, sigBoxY + 4.5);
+
+                doc.setFontSize(9.5);
+                doc.setTextColor(10, 42, 63);
+                doc.text(pdfSanitize(signerName), mL + 3, sigBoxY + 11);
+
+                if (techSig) {
+                    try {
+                        const saX = mL + 3, saY = sigBoxY + 13;
+                        const saW = sigBoxW - 6, saH = sigBoxH - 17;
+                        let w = saW, h = w, aspect = 1;
+                        if (techDims && techDims.width && techDims.height) {
+                            aspect = techDims.width / techDims.height;
+                            h = w / aspect;
+                            if (h > saH) { h = saH; w = h * aspect; }
+                        }
+                        doc.addImage(techSig, getImageFormat(techSig), saX + (saW - w) / 2, saY + (saH - h) / 2, w, h);
+                    } catch (e) { console.error('[Analytics PDF] Signature embed failed:', e); }
+                }
+
+                doc.setDrawColor(150, 180, 200);
+                doc.setLineWidth(0.3);
+                doc.line(mL + 3, sigBoxY + 30, mL + sigBoxW - 3, sigBoxY + 30);
+                doc.setFont('helvetica', 'italic');
+                doc.setFontSize(6);
+                doc.setTextColor(91, 123, 150);
+                doc.text('Signature', mL + 3, sigBoxY + 33);
+
+                // Apply footers to all pages AFTER adding signature
                 for (let p = 1; p <= totalPages; p++) {
                     doc.setPage(p);
                     drawChubFooter(doc, p, totalPages);
                 }
+
                 const fname = 'CHUB_Refrigerator_Dept_Analysis_' + dept.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
                 const bytes = doc.output('arraybuffer');
                 
-                // If a cert is loaded in memory, it belongs to the current user (enforced by ensurePfxLoadedFor)
+                // If a cert is loaded in memory, it belongs to the current user
                 const safeToSign = isCertLoaded();
                     
                 const signedBytes = safeToSign
-                    ? await signPdfBytes(bytes, { page: doc.getNumberOfPages() - 1, yFromTopMm: 250, xMm: 18 })
+                    ? await signPdfBytes(bytes, {
+                        placements: [{
+                            page: doc.getNumberOfPages() - 1,
+                            yFromTopMm: sigBoxY + 31, // Just below the visual signature box
+                            xMm: mL + 3
+                        }]
+                    })
                     : null;
                     
                 if (signedBytes) downloadBytes(signedBytes, fname);
@@ -11787,12 +12579,20 @@ function smartConfirm(message, opts) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pW = 210, pH = 297, m = 16, cW = pW - m * 2;
-                let y = drawChubHeader(doc, {
-                    title: 'REFRIGERATOR PM JOB CARD',
-                    subtitle: 'Refrigerator Fleet - Preventive Maintenance',
-                    ref: (rec.reportId || '').substring(0, 32),
-                    date: new Date().toLocaleDateString('en-GB')
-                });
+               // ✅ FIXED
+const _jcType = rec.checklistType || 'fridge';
+const _jcTitle    = _jcType === 'ac'   ? 'AIR CONDITIONER PM JOB CARD'
+                  : _jcType === 'none' ? 'EQUIPMENT PM JOB CARD'
+                                       : 'REFRIGERATOR PM JOB CARD';
+const _jcSubtitle = _jcType === 'ac'   ? 'Air Conditioner Fleet - Preventive Maintenance'
+                  : _jcType === 'none' ? 'Equipment Fleet - Preventive Maintenance'
+                                       : 'Refrigerator Fleet - Preventive Maintenance';
+let y = drawChubHeader(doc, {
+    title: _jcTitle,
+    subtitle: _jcSubtitle,
+    ref: (rec.reportId || '').substring(0, 32),
+    date: new Date().toLocaleDateString('en-GB')
+});
                 const _zEName = safeStr(rec.refEquipName || rec['Equipment Name'] || '');
                 const _zSerial = safeStr(rec.refSerial);
                 const rows = [
@@ -11807,7 +12607,7 @@ function smartConfirm(message, opts) {
                     ['Working', safeStr(rec.refWorkingStatus) || 'Working'],
                     ['Technician', safeStr(rec.technician)],
                     ['Work date', formatDateOnly(rec.workDate)],
-                    ['Next PM due', nextPmForPDF(rec.workDate)],
+                    ['Next PM due', nextPmForPDF(rec.workDate, rec.refType)],
                     ['Report hash', safeStr(rec.reportHash)]
                 ];
                 rows.forEach((r, i) => {
@@ -11862,9 +12662,15 @@ function smartConfirm(message, opts) {
                     }
                     y += 4;
                 };
-                sec('Cleaning & Hygiene', JC_CLEAN_TEXTS, rec.cleanItems, 1, rec.cleanRating, rec.cleanRemarks);
-                sec('Temperature & Performance', JC_TEMP_TEXTS, rec.tempItems, 6, rec.tempRating, rec.tempRemarks);
-                sec('Door, Seals & Function', JC_DOOR_TEXTS, rec.doorItems, 11, rec.doorRating, rec.doorRemarks);
+                if (_jcType === 'ac') {
+                    sec('Filters, Coils & Airflow', AC_AIRFLOW_TEXTS, rec.airflowItems, 1, rec.airflowRating, rec.airflowRemarks);
+                    sec('Electrical & Refrigerant', AC_ELECTRICAL_TEXTS, rec.electricalItems, 6, rec.electricalRating, rec.electricalRemarks);
+                    sec('Drainage & Performance', AC_DRAINAGE_TEXTS, rec.drainageItems, 11, rec.drainageRating, rec.drainageRemarks);
+                } else if (_jcType === 'fridge') {
+                    sec('Cleaning & Hygiene', JC_CLEAN_TEXTS, rec.cleanItems, 1, rec.cleanRating, rec.cleanRemarks);
+                    sec('Temperature & Performance', JC_TEMP_TEXTS, rec.tempItems, 6, rec.tempRating, rec.tempRemarks);
+                    sec('Door, Seals & Function', JC_DOOR_TEXTS, rec.doorItems, 11, rec.doorRating, rec.doorRemarks);
+                }
                 if (y > pH - 45) { doc.addPage(); y = drawChubSlimHeader(doc, { title: 'PM JOB CARD (cont.)', ref: rec.reportId || '' }); }
                 doc.setDrawColor(207, 224, 238);
                 doc.setFillColor(240, 246, 252);
@@ -12272,11 +13078,12 @@ function smartConfirm(message, opts) {
                         y += 6;
                     });
                 }
-                // ── Load Visual Signature for the report
-                let techSig = who ? (getSignatureFor(who) || '') : '';
-                if (!techSig && who) {
+                // ── Load Visual Signature for the report (Fixed: uses currentLoggedInName)
+                const signerName = currentLoggedInName || 'Technician';
+                let techSig = getSignatureFor(signerName) || '';
+                if (!techSig) {
                     try {
-                        const cfg = await firestoreConfigGet('TechSig_' + who);
+                        const cfg = await firestoreConfigGet('TechSig_' + signerName);
                         if (cfg) techSig = cfg.startsWith('data:') ? cfg : 'data:image/png;base64,' + cfg;
                     } catch (e) { }
                 }
@@ -12302,11 +13109,11 @@ function smartConfirm(message, opts) {
 
                 doc.setFontSize(9.5);
                 doc.setTextColor(10, 42, 63);
-                doc.text(pdfSanitize(who || '—'), mL + 3, sigBoxY + 11);
+                doc.text(pdfSanitize(signerName), mL + 3, sigBoxY + 11);
 
                 if (techSig) {
                     try {
-                        // Draw inside the sigBox drawn earlier (uses correct vars: mL, sigBoxW, sigBoxY)
+                        // Draw inside the sigBox
                         const saX = mL + 3, saY = sigBoxY + 13;
                         const saW = sigBoxW - 6, saH = sigBoxH - 17;
                         let w = saW, h = w, aspect = 1;
@@ -12549,8 +13356,12 @@ function smartConfirm(message, opts) {
                 const users = await loadUsersFromFirestore();
                 return Object.keys(users).filter(n => {
                     const u = users[n];
-                    const ds = Array.isArray(u.depts) ? u.depts : (u.dept ? [u.dept] : []);
-                    return ds.some(d => normalizeText(d) === normalizeText(INFRA_DEPT_NAME));
+                    if (!u) return false;
+                    // Include all technicians, the supervisor, the infra manager, and GATANGANWA
+                    return u.role === 'technician' || 
+                           u.role === 'supervisor' || 
+                           u.role === 'infra_manager' ||
+                           (u.role === 'incharge' && normalizeText(n) === normalizeText(SUPERVISOR_NAME));
                 }).sort();
             }
 
@@ -12997,6 +13808,7 @@ function smartConfirm(message, opts) {
             const TASK_STATUS_LABELS = {
                 pending: '⏳ Pending',
                 in_progress: '🔧 In Progress',
+                paused: '⏸️ Paused',
                 completed: '📸 Awaiting Verification',
                 verified: '✅ Verified',
                 rejected: '❌ Rejected',
@@ -13039,6 +13851,9 @@ function smartConfirm(message, opts) {
                             status: d.status || 'pending',
                             createdAt: taskTimeIso(d.createdAt),
                             startedAt: taskTimeIso(d.startedAt),
+                            pausedAt: taskTimeIso(d.pausedAt),
+                            pauseReason: d.pauseReason || '',
+                            resumedAt: taskTimeIso(d.resumedAt),
                             completedAt: taskTimeIso(d.completedAt),
                             verifiedAt: taskTimeIso(d.verifiedAt),
                             notes: d.notes || '',
@@ -13105,6 +13920,8 @@ function smartConfirm(message, opts) {
             async function updateTaskDoc(id, u) {
                 const f = Object.assign({}, u);
                 if (u.startedAt === 'NOW') f.startedAt = window.FB.serverTimestamp();
+                if (u.pausedAt === 'NOW') f.pausedAt = window.FB.serverTimestamp();
+                if (u.resumedAt === 'NOW') f.resumedAt = window.FB.serverTimestamp();
                 if (u.completedAt === 'NOW') f.completedAt = window.FB.serverTimestamp();
                 if (u.verifiedAt === 'NOW') f.verifiedAt = window.FB.serverTimestamp();
                 if (u.delegatedAt === 'NOW') f.delegatedAt = window.FB.serverTimestamp();
@@ -13182,6 +13999,8 @@ function smartConfirm(message, opts) {
             ${t.feedback ? `<div class="tc-desc" style="border-left-color:#f4a300;background:#fff9ec;">💬 ${escapeHtml(t.feedback)} ${t.feedbackQuality ? '<em>(' + escapeHtml(t.feedbackQuality) + ')</em>' : ''}</div>` : ''}
             <div class="tc-actions">
                 ${canStart ? `<button class="btn-primary" data-task-start="${escapeHtml(t._docId)}" style="padding:6px 14px;font-size:.82rem;">🔧 Start Task</button>` : ''}
+                ${opts.canComplete && t.status === 'in_progress' && normalizeText(t.assignedTo) === normalizeText(currentLoggedInName) ? `<button class="btn-secondary" data-task-pause="${escapeHtml(t._docId)}" style="padding:6px 14px;font-size:.82rem;background:#fff3cd;color:#7a5300;border-color:#f4d97a;">⏸️ Pause</button>` : ''}
+                ${opts.canComplete && t.status === 'paused' && normalizeText(t.assignedTo) === normalizeText(currentLoggedInName) ? `<button class="btn-primary" data-task-resume="${escapeHtml(t._docId)}" style="padding:6px 14px;font-size:.82rem;background:#1b6b3f;">▶️ Resume</button>` : ''}
                 ${canComplete ? `<button class="btn-approve" data-task-complete="${escapeHtml(t._docId)}" style="padding:6px 14px;font-size:.82rem;">✅ Mark Complete</button>` : ''}
                 ${canDelegate ? `<button class="btn-secondary" data-task-delegate="${escapeHtml(t._docId)}" style="padding:6px 14px;font-size:.82rem;background:#e8f1fb;color:#0b3d91;">🔁 Delegate to Tech</button>` : ''}
                 ${canVerify ? `<button class="btn-approve" data-task-verify="${escapeHtml(t._docId)}" style="padding:6px 14px;font-size:.82rem;">👔 Verify</button>` : ''}
@@ -13202,6 +14021,15 @@ function smartConfirm(message, opts) {
                 container.querySelectorAll('[data-task-start]').forEach(b => b.addEventListener('click', e => {
                     e.stopPropagation();
                     startTask(b.getAttribute('data-task-start'));
+                }));
+                container.querySelectorAll('[data-task-pause]').forEach(b => b.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const t = list.find(x => x._docId === b.getAttribute('data-task-pause'));
+                    if (t) openPauseTaskModal(t);
+                }));
+                container.querySelectorAll('[data-task-resume]').forEach(b => b.addEventListener('click', e => {
+                    e.stopPropagation();
+                    resumeTask(b.getAttribute('data-task-resume'));
                 }));
                 container.querySelectorAll('[data-task-complete]').forEach(b => b.addEventListener('click', e => {
                     e.stopPropagation();
@@ -13378,6 +14206,39 @@ function smartConfirm(message, opts) {
                 btn.innerHTML = orig;
             }
 
+            function openPauseTaskModal(t) {
+                const modal = document.getElementById('pauseTaskModal');
+                document.getElementById('pauseTaskSubtitle').textContent = t.title;
+                document.getElementById('pauseTaskReason').value = '';
+                document.getElementById('pauseTaskError').textContent = '';
+                modal._task = t;
+                modal.classList.add('show');
+            }
+            async function savePauseTask() {
+                const modal = document.getElementById('pauseTaskModal');
+                const t = modal._task;
+                if (!t) return;
+                const reason = (document.getElementById('pauseTaskReason').value || '').trim();
+                if (!reason) { document.getElementById('pauseTaskError').textContent = '⚠️ Reason is required.'; return; }
+                const btn = document.getElementById('pauseTaskSaveBtn');
+                const o = btn.innerHTML;
+                btn.disabled = true; btn.innerHTML = '⏳ …';
+                try {
+                    const ok = await updateTaskDoc(t._docId, { status: 'paused', pauseReason: reason, pausedAt: 'NOW' });
+                    if (!ok) throw new Error('Failed');
+                    showStatus('⏸️ Task paused.', true);
+                    modal.classList.remove('show');
+                    refreshAllTaskViews();
+                } catch (e) { document.getElementById('pauseTaskError').textContent = '⚠️ ' + e.message; }
+                btn.disabled = false; btn.innerHTML = o;
+            }
+            async function resumeTask(id) {
+                if (!await smartConfirm('Resume this task?', { title: '▶️ Resume Task', icon: '▶️', okText: 'Resume', danger: false })) return;
+                const ok = await updateTaskDoc(id, { status: 'in_progress', resumedAt: 'NOW', pauseReason: '' });
+                if (!ok) { showStatus('⚠️ Failed to resume.', false); return; }
+                showStatus('▶️ Task resumed.', true);
+                refreshAllTaskViews();
+            }
             async function startTask(id) {
                 if (!await smartConfirm('Start this task now?', { title: '🔧 Start Task', icon: '🔧', okText: 'Start', danger: false })) return;
                 const t = CURRENT_TASKS_CACHE.find(x => x._docId === id);
@@ -13658,7 +14519,8 @@ function smartConfirm(message, opts) {
                         : role === 'supervisor' ? SUP_TASK_FILTER : IC_TASK_FILTER;
 
                     let f = mine;
-                    if (filter === 'open') f = mine.filter(t => t.status === 'pending' || t.status === 'in_progress');
+                    if (filter === 'open') f = mine.filter(t => t.status === 'pending' || t.status === 'in_progress' || t.status === 'paused');
+                    else if (filter === 'paused') f = mine.filter(t => t.status === 'paused');
                     else if (filter === 'completed') f = mine.filter(t => t.status === 'completed');
                     else if (filter === 'verified') f = mine.filter(t => t.status === 'verified');
                     else if (filter === 'rejected') f = mine.filter(t => t.status === 'rejected');
@@ -14927,8 +15789,13 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 this.innerHTML = '⏳ …';
                 try {
                     const recs = await fetchAllLogs();
-                    const mine = recs.filter(r => normalizeText(r.technician) === normalizeText(currentLoggedInName));
-                    if (!mine.length) { showStatus('📭 No PMs yet.', false); this.disabled = false; this.innerHTML = o; return; }
+                    const catFilter = document.getElementById('actionCategoryFilter')?.value || 'all';
+                    const mine = recs.filter(r => {
+                        if (normalizeText(r.technician) !== normalizeText(currentLoggedInName)) return false;
+                        if (catFilter !== 'all' && r.checklistType !== catFilter) return false;
+                        return true;
+                    });
+                    if (!mine.length) { showStatus('📭 No PMs found for this filter.', false); this.disabled = false; this.innerHTML = o; return; }
                     await generatePDF(mine);
                     showStatus('📄 ' + mine.length + ' records exported.', true);
                 } catch (e) { showStatus('⚠️ ' + e.message, false); }
@@ -14967,19 +15834,25 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 analysisModal.classList.add('show');
             });
             document.getElementById('analysisCancel').addEventListener('click', () => analysisModal.classList.remove('show'));
+
             document.getElementById('analysisGenerate').addEventListener('click', async function () {
                 const from = analysisFrom.value;
                 const to = analysisTo.value;
                 const dept = analysisDept.value || 'all';
+                const catFilter = document.getElementById('analysisCategory').value || 'all';
+                
                 if (!from || !to) { analysisError.textContent = 'Pick both dates.'; return; }
                 if (from > to) { analysisError.textContent = 'From must be before To.'; return; }
+                
                 const o = this.innerHTML;
                 this.disabled = true;
                 this.innerHTML = '⏳ …';
+                
                 try {
                     const logs = await fetchAllLogs();
                     const fromTs = new Date(from + 'T00:00:00').getTime();
                     const toTs = new Date(to + 'T23:59:59').getTime();
+                    
                     const filtered = logs.filter(r => {
                         const d = safeStr(r['Work Date'] || r.workDate);
                         if (!d) return false;
@@ -14987,18 +15860,23 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                         if (isNaN(t) || t < fromTs || t > toTs) return false;
                         if (dept !== 'all' && normalizeText(r['Department'] || r.refDept) !== normalizeText(dept)) return false;
                         if (normalizeText(r.technician) !== normalizeText(currentLoggedInName)) return false;
+                        if (catFilter !== 'all' && r.checklistType !== catFilter) return false;
                         return true;
                     });
+                    
                     if (!filtered.length) {
                         analysisError.textContent = 'No records in this period.';
                         this.disabled = false;
                         this.innerHTML = o;
                         return;
                     }
-                    await generateAnalysisPDF(filtered, dept);
+                    
+                    await generateAnalysisPDF(filtered, dept, catFilter);
                     showStatus('📊 Analysis generated.', true);
                     analysisModal.classList.remove('show');
-                } catch (e) { analysisError.textContent = '⚠️ ' + e.message; }
+                } catch (e) { 
+                    analysisError.textContent = '⚠️ ' + e.message; 
+                }
                 this.disabled = false;
                 this.innerHTML = o;
             });
@@ -15673,24 +16551,41 @@ document.getElementById('userGuideBtn')?.addEventListener('click', function () {
 
             // ===== AUTO-HIDING INSPECTION CHECKLIST =====
             function updateChecklistProgress() {
-                const groups = [
-                    { start: 1, end: 5, chip: 'chipClean', label: '🧼' },
-                    { start: 6, end: 10, chip: 'chipTemp', label: '🌡️' },
-                    { start: 11, end: 15, chip: 'chipDoor', label: '🚪' }
-                ];
+                const isAC = document.getElementById('acChecklistBlock').style.display === 'block';
+                const isFridge = document.getElementById('fridgeChecklistBlock').style.display === 'block';
+                if (!isAC && !isFridge) {
+                    const badge = document.getElementById('checklistProgressBadge');
+                    if (badge) { badge.textContent = '0 / 0'; badge.style.background = '#9cb9d0'; }
+                    const text = document.getElementById('checklistProgressText');
+                    if (text) text.textContent = 'No checklist required';
+                    const bar = document.getElementById('checklistProgressBar');
+                    if (bar) bar.style.width = '0%';
+                    return;
+                }
+
+                const prefix = isAC ? 'ac_check' : 'check';
+               // ✅ FIXED
+const groups = [
+    { start: 1,  end: 5,  chip: 'chipClean', label: isAC ? '🌬️' : '🧼' },
+    { start: 6,  end: 10, chip: 'chipTemp',  label: isAC ? '⚡' : '🌡️' },
+    { start: 11, end: 15, chip: 'chipDoor',  label: isAC ? '💧' : '🚪' }
+];
+
                 let total = 0, done = 0;
                 groups.forEach(g => {
                     let gDone = 0, gTotal = 0;
                     for (let i = g.start; i <= g.end; i++) {
-                        const cb = document.getElementById('check' + i);
-                        if (cb) { gTotal++; if (cb.checked) { gDone++; done++; } }
+                        const cb = document.getElementById(prefix + i);
+                        if (cb && cb.closest('.check-item').style.display !== 'none') {
+                            gTotal++; if (cb.checked) { gDone++; done++; }
+                        }
                     }
                     total += gTotal;
                     const chip = document.getElementById(g.chip);
                     if (chip) {
                         chip.textContent = `${g.label} ${gDone} / ${gTotal}`;
                         chip.classList.remove('complete', 'partial');
-                        if (gDone === gTotal) chip.classList.add('complete');
+                        if (gDone === gTotal && gTotal > 0) chip.classList.add('complete');
                         else if (gDone > 0) chip.classList.add('partial');
                     }
                 });
@@ -15743,10 +16638,9 @@ document.getElementById('userGuideBtn')?.addEventListener('click', function () {
             });
 
             // Live progress updates
-            document.querySelectorAll('.check-ref').forEach(cb => {
-                cb.addEventListener('change', updateChecklistProgress);
-            });
-
+document.querySelectorAll('.check-ref, .check-ac').forEach(cb => {
+    cb.addEventListener('change', updateChecklistProgress);
+});
             // Initial render: preview by default, expand if any box is pre-checked (draft restore)
             setTimeout(() => {
                 updateChecklistProgress();
@@ -15854,7 +16748,10 @@ document.getElementById('userGuideBtn')?.addEventListener('click', function () {
                     }
                 }
             });
-
+                        document.getElementById('pauseCurativeCancel')?.addEventListener('click', () => document.getElementById('pauseCurativeModal').classList.remove('show'));
+            document.getElementById('pauseCurativeSaveBtn')?.addEventListener('click', savePauseCurative);
+            document.getElementById('pauseTaskCancel')?.addEventListener('click', () => document.getElementById('pauseTaskModal').classList.remove('show'));
+            document.getElementById('pauseTaskSaveBtn')?.addEventListener('click', savePauseTask);
             window.__DEV = {
                 fetchAllLogs,
                 fetchRefInfoFromCloud,
@@ -15867,6 +16764,21 @@ document.getElementById('userGuideBtn')?.addEventListener('click', function () {
             };
 
         })();
+    </script>
+
+    <!-- Register Service Worker for PWA and Push Notifications -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registered successfully!');
+                    })
+                    .catch(error => {
+                        console.log('❌ Service Worker registration failed:', error);
+                    });
+            });
+        }
     </script>
    
 </body>
