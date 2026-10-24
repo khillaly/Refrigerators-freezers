@@ -1211,6 +1211,15 @@ signInAnonymously(auth)
             background: #f9fcff
         }
 
+        .inv-table thead th {
+            position: sticky; top: 0; z-index: 2;
+            box-shadow: 0 2px 0 #d4e3ef;
+        }
+        .inv-table tbody tr { transition: background .15s; }
+        .inv-table tbody tr:hover td { background: #f4faff !important; }
+        body.dark .inv-table thead th { background: #0f172a; }
+        body.dark .inv-table tbody tr:hover td { background: #172033 !important; }
+
         .status-badge {
             display: inline-block;
             padding: 3px 12px;
@@ -1358,13 +1367,13 @@ signInAnonymously(auth)
         }
 
         .qr-sticker .sticker-brand {
-            font-size: .65rem;
+            font-size: .72rem;
             color: #5b7b96;
             margin-bottom: 4px
         }
 
         .qr-sticker .sticker-hint {
-            font-size: .6rem;
+            font-size: .7rem;
             color: #1e4a6d;
             font-weight: 700;
             letter-spacing: .4px
@@ -2705,8 +2714,15 @@ signInAnonymously(auth)
             transform: rotate(-90deg);
         }
 
-        .collapsible-card.collapsed>.card-body {
-            display: none;
+        .collapsible-card > .card-body {
+            max-height: 8000px;
+            overflow: hidden;
+            transition: max-height .35s ease, opacity .25s ease;
+            opacity: 1;
+        }
+        .collapsible-card.collapsed > .card-body {
+            max-height: 0;
+            opacity: 0;
         }
 
         .task-card {
@@ -3124,6 +3140,86 @@ signInAnonymously(auth)
             color: #5b7b96;
             border-color: #cfdfeb
         }
+        /* ===== SMART TOAST SYSTEM ===== */
+#toastContainer {
+    position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none; max-width: 380px;
+}
+.toast {
+    pointer-events: auto;
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 18px; border-radius: 14px;
+    background: #fff; color: #0a2a3f;
+    box-shadow: 0 12px 28px -8px rgba(11, 59, 92, .35),
+                0 0 0 1px rgba(0, 0, 0, .04);
+    font-size: .9rem; font-weight: 500; line-height: 1.4;
+    animation: toastSlide .35s cubic-bezier(.2, .9, .3, 1.2);
+    position: relative; overflow: hidden;
+}
+.toast.removing { animation: toastOut .25s ease forwards; }
+.toast .t-icon { font-size: 1.3rem; line-height: 1; }
+.toast.success { border-left: 4px solid #1b6b3f; }
+.toast.error   { border-left: 4px solid #b33a3a; }
+.toast.warn    { border-left: 4px solid #f4a300; }
+.toast.info    { border-left: 4px solid #0b3d91; }
+.toast .t-close {
+    margin-left: auto; background: none; border: none;
+    color: #9cb9d0; cursor: pointer; font-size: 1.1rem;
+    padding: 0 0 0 8px;
+}
+.toast::after {
+    content: ''; position: absolute; bottom: 0; left: 0; height: 3px;
+    background: currentColor; opacity: .25; animation: toastProgress 5s linear forwards;
+}
+@keyframes toastSlide { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toastOut   { to { transform: translateX(120%); opacity: 0; } }
+@keyframes toastProgress { from { width: 100%; } to { width: 0; } }
+/* ===== SKELETON LOADERS ===== */
+.skeleton {
+    background: linear-gradient(90deg, #e2eaf1 25%, #f3f8fc 50%, #e2eaf1 75%);
+    background-size: 200% 100%;
+    animation: skelShimmer 1.4s ease-in-out infinite;
+    border-radius: 8px;
+}
+.skeleton-row    { height: 46px; margin-bottom: 10px; }
+.skeleton-card   { height: 120px; margin-bottom: 14px; border-radius: 16px; }
+.skeleton-title  { height: 20px; width: 40%; margin-bottom: 12px; }
+.skeleton-tag    { height: 12px; width: 60%; margin-bottom: 8px; }
+@keyframes skelShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-stack { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+        *:focus-visible {
+            outline: 3px solid rgba(30, 74, 109, .35);
+            outline-offset: 2px;
+            border-radius: 8px;
+        }
+
+        /* ===== BUTTON SPINNERS ===== */
+        .btn-primary.is-loading, .btn-pdf.is-loading, .btn-pdf-all.is-loading,
+        .btn-approve.is-loading, .btn-remove.is-loading, .btn-secondary.is-loading,
+        .btn-go.is-loading, .btn-qr.is-loading, .btn-add.is-loading {
+            position: relative; color: transparent !important; pointer-events: none;
+        }
+        .btn-primary.is-loading::after, .btn-pdf.is-loading::after,
+        .btn-pdf-all.is-loading::after, .btn-approve.is-loading::after,
+        .btn-remove.is-loading::after, .btn-secondary.is-loading::after,
+        .btn-go.is-loading::after, .btn-qr.is-loading::after,
+        .btn-add.is-loading::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 18px; height: 18px; margin: -9px 0 0 -9px;
+            border: 2.5px solid rgba(255, 255, 255, .35);
+            border-top-color: #fff; border-radius: 50%;
+            animation: btnSpin .7s linear infinite;
+        }
+        .btn-secondary.is-loading::after { border-color: rgba(30, 74, 109, .25); border-top-color: #1e4a6d; }
+        @keyframes btnSpin { to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
 
         @media print {
             body::before {
@@ -3151,7 +3247,86 @@ signInAnonymously(auth)
                 border: 1px solid #1e4a6d
             }
         }
-                /* Force 2FA modal to sit above the Login modal */
+                /* ===== AUTO-HIDING CHECKLIST ===== */
+        .checklist-mini-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 20px; font-size: .78rem; font-weight: 700;
+            background: #eef6fc; color: #12405e; border: 1px solid #cfdfeb;
+            transition: all .2s;
+        }
+        .checklist-mini-chip.complete {
+            background: #e2f0e6; color: #1b6b3f; border-color: #b8dfc3;
+        }
+        .checklist-mini-chip.partial {
+            background: #fff3cd; color: #7a5300; border-color: #f4d97a;
+        }
+        #checklistProgressBadge.complete { background: #1b6b3f !important; }
+        #checklistProgressBadge.partial { background: #f4a300 !important; }
+        body.dark .checklist-mini-chip { background: #1e293b; color: #cbd5e1; border-color: #475569; }
+        body.dark .checklist-mini-chip.complete { background: #155231; color: #e2e8f0; }
+        body.dark .checklist-mini-chip.partial { background: #7a5300; color: #fff3cd; }
+
+        /* ===== COMMAND PALETTE ===== */
+        #commandPalette {
+            position: fixed; inset: 0; background: rgba(10, 30, 50, .55);
+            backdrop-filter: blur(6px); z-index: 8000;
+            display: none; align-items: flex-start; justify-content: center; padding-top: 12vh;
+        }
+        #commandPalette.show { display: flex; }
+        #cpBox {
+            width: min(640px, calc(100vw - 32px)); background: #fff;
+            border-radius: 20px; box-shadow: 0 30px 70px -20px rgba(0,0,0,.5);
+            overflow: hidden;
+        }
+        #cpInput {
+            width: 100%; padding: 18px 24px; border: none; outline: none;
+            font-size: 1.1rem; font-family: inherit;
+            border-bottom: 1px solid #e2eaf1;
+        }
+        #cpList { max-height: 400px; overflow-y: auto; padding: 8px; }
+        #cpList .cp-item {
+            padding: 12px 18px; border-radius: 12px; cursor: pointer;
+            display: flex; gap: 12px; align-items: center; font-weight: 500;
+        }
+        #cpList .cp-item:hover, #cpList .cp-item.active {
+            background: #eef6fc; color: #0b3d91;
+        }
+        #cpList .cp-item .cp-kbd {
+            margin-left: auto; font-size: .72rem; color: #5b7b96;
+            background: #eef6fc; padding: 3px 8px; border-radius: 6px; font-weight: 700;
+        }
+        body.dark #cpBox { background: #1e293b; color: #e2e8f0; }
+        body.dark #cpInput { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+
+        /* ===== DARK MODE ===== */
+        body.dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1a2332 100%);
+            color: #e2e8f0;
+        }
+        body.dark .app-container,
+        body.dark .card,
+        body.dark .dash-card,
+        body.dark .modal-box { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+        body.dark .card-header,
+        body.dark .subhead,
+        body.dark .generator-selector,
+        body.dark .dash-toolbar { background: #0f172a; color: #cbd5e1; border-color: #334155; }
+        body.dark .field-group input,
+        body.dark .field-group select,
+        body.dark .remark-input,
+        body.dark select,
+        body.dark input[type="date"] { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+        body.dark .inv-table th { background: #0f172a; color: #94a3b8; }
+        body.dark .inv-table td { color: #cbd5e1; border-color: #334155; }
+        body.dark .inv-table tr:nth-child(even) td { background: #172033; }
+        body.dark .notif-panel, body.dark .notif-item { background: #1e293b; color: #e2e8f0; }
+        body.dark .btn-secondary { background: #1e293b; color: #cbd5e1; border-color: #475569; }
+        body.dark .kpi-card, body.dark .kpi-mini, body.dark .tas-card, body.dark .cs-card { background: #0f172a; }
+        body.dark::before { color: rgba(203, 228, 247, .05); }
+        body.dark .toast { background: #1e293b; color: #e2e8f0; }
+        body.dark .skeleton { background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%); background-size: 200% 100%; }
+
+        /* Force 2FA modal to sit above the Login modal */
         #twoFactorVerifyModal {
             z-index: 5000 !important;
         }
@@ -3169,6 +3344,7 @@ signInAnonymously(auth)
 </head>
 
 <body>
+    <div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
     <!-- ============ PUBLIC INFO PAGE (QR target) ============ -->
     <div id="refInfoPage">
         <div class="info-wrap">
@@ -3256,6 +3432,7 @@ signInAnonymously(auth)
                         🔔<span class="notif-badge" id="notifBadge">0</span>
                     </button>
                 </div>
+                <button id="darkModeBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;" title="Toggle dark mode">🌙</button>
                 <button id="profileBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;">🖼️
                     Profile</button>
                 <button id="changePinBtn" class="btn-secondary" style="padding:8px 18px;font-size:.85rem;background:#e8f1fb;color:#0b3d91;border-color:#0b3d91;">🔑 Change PIN</button>
@@ -3320,10 +3497,52 @@ signInAnonymously(auth)
                     will review &amp; co-sign this PM.</div>
             </div>
 
-            <div class="section-title"><span>🔍</span> Inspection Checklist</div>
-            <div class="grid-3">
-                <div class="card">
-                    <div class="card-header"><span>🧼</span> Cleaning &amp; Hygiene</div>
+            <div class="card" id="inspectionChecklistCard" style="margin-bottom:32px;border:2px solid #1e4a6d;">
+                <div class="card-header" id="inspectionChecklistHeader" style="background:linear-gradient(135deg,#eef6fc 0%,#e8f1fb 100%);color:#12405e;cursor:pointer;user-select:none;">
+                    <span>🔍</span> Inspection Checklist
+                    <span id="checklistProgressBadge" style="margin-left:auto;background:#9cb9d0;color:white;padding:4px 14px;border-radius:20px;font-size:.82rem;font-weight:700;transition:background .2s;">0 / 15</span>
+                    <span class="collapse-caret" id="checklistCaret" style="margin-left:10px;display:inline-block;transition:transform .25s;">▼</span>
+                </div>
+                <div class="card-body" style="padding:22px;">
+
+                    <!-- Preview state (default) -->
+                    <div id="checklistPreview">
+                        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+                            <div style="flex:1;min-width:200px;">
+                                <div style="font-weight:700;color:#12405e;margin-bottom:6px;font-size:1.05rem;">Ready to inspect this refrigerator?</div>
+                                <div style="font-size:.88rem;color:#5b7b96;">15 items across 3 sections: Cleaning · Temperature · Doors</div>
+                            </div>
+                            <button type="button" class="btn-primary" id="startChecklistBtn" style="padding:14px 32px;">
+                                📝 Start / Continue Inspection
+                            </button>
+                        </div>
+                        <div style="background:#eef6fc;border-radius:12px;padding:14px 18px;">
+                            <div style="display:flex;justify-content:space-between;font-size:.85rem;color:#12405e;font-weight:700;margin-bottom:8px;">
+                                <span>Progress</span>
+                                <span id="checklistProgressText">0 / 15 completed</span>
+                            </div>
+                            <div style="height:10px;background:#d4e3ef;border-radius:6px;overflow:hidden;">
+                                <div id="checklistProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#1e4a6d,#2a6b96);transition:width .3s ease;border-radius:6px;"></div>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+                                <span class="checklist-mini-chip" id="chipClean">🧼 0 / 5</span>
+                                <span class="checklist-mini-chip" id="chipTemp">🌡️ 0 / 5</span>
+                                <span class="checklist-mini-chip" id="chipDoor">🚪 0 / 5</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Full checklist (hidden by default) -->
+                    <div id="checklistFull" style="display:none;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                            <div style="font-weight:700;color:#12405e;font-size:1.05rem;">📋 Complete all items below</div>
+                            <button type="button" class="btn-secondary" id="hideChecklistBtn" style="padding:8px 18px;font-size:.85rem;">
+                                🙈 Hide checklist
+                            </button>
+                        </div>
+                        <div class="grid-3" style="margin-bottom:0;">
+                            <div class="card">
+                                <div class="card-header"><span>🧼</span> Cleaning &amp; Hygiene</div>
                     <div class="card-body">
                         <div class="check-item"><input type="checkbox" id="check1" class="check-ref"><label
                                 for="check1">Clean interior shelves, walls and drawers</label></div>
@@ -3428,6 +3647,9 @@ signInAnonymously(auth)
                         </div>
                     </div>
                 </div>
+            </div>
+                        </div>
+                    </div>
             </div>
 
             <div class="signoff-section">
@@ -3865,39 +4087,27 @@ signInAnonymously(auth)
 
         <!-- ============ SUPERVISOR SECTION ============ -->
         <div id="supervisorSection" style="display:none;">
-                              <div class="card" style="margin-bottom:24px;">
-                <div class="card-header"><span>👥</span> Team Availability</div>
-                <div class="card-body">
-                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-                        <input type="date" id="supAvailDate"
-                            style="padding:10px 16px;border-radius:30px;border:1.5px solid #cfdfeb;font-weight:600;font-family:inherit;">
-                        <button class="btn-secondary" id="supAvailRefreshBtn"
-                            style="padding:10px 18px;font-size:.85rem;">🔄 Refresh</button>
-                    </div>
-                    <div class="team-avail-strip" id="supTeamAvailStrip"></div>
-                </div>
-            </div>
-            <div class="card collapsible-card collapsed" style="margin-bottom:24px;border:2px solid #0b3d91;">
-                            <div class="card" style="margin-bottom:24px;">
-                <div class="card-header"><span>👥</span> Team Availability</div>
-                <div class="card-body">
-                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-                        <input type="date" id="supAvailDate"
-                            style="padding:10px 16px;border-radius:30px;border:1.5px solid #cfdfeb;font-weight:600;font-family:inherit;">
-                        <button class="btn-secondary" id="supAvailRefreshBtn"
-                            style="padding:10px 18px;font-size:.85rem;">🔄 Refresh</button>
-                    </div>
-                    <div class="team-avail-strip" id="supTeamAvailStrip"></div>
-                </div>
-            </div>
-                <div class="card-header" style="background:#e8f1fb;color:#0b3d91;">
-                    <span>📊</span> Fleet Analytics Dashboard
-                    <span
-                        style="margin-left:auto;font-size:.78rem;background:#0b3d91;color:white;padding:3px 12px;border-radius:20px;font-weight:700;">Live
-                        Analytics</span>
-                    <span class="collapse-caret">▼</span>
-                </div>
-                <div class="card-body">
+                        
+        <div class="card" style="margin-bottom:24px;">
+    <div class="card-header"><span>👥</span> Team Availability</div>
+    <div class="card-body">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+            <input type="date" id="supAvailDate"
+                style="padding:10px 16px;border-radius:30px;border:1.5px solid #cfdfeb;font-weight:600;font-family:inherit;">
+            <button class="btn-secondary" id="supAvailRefreshBtn"
+                style="padding:10px 18px;font-size:.85rem;">🔄 Refresh</button>
+        </div>
+        <div class="team-avail-strip" id="supTeamAvailStrip"></div>
+    </div>
+</div>
+
+<div class="card collapsible-card collapsed" style="margin-bottom:24px;border:2px solid #0b3d91;">
+    <div class="card-header" style="background:#e8f1fb;color:#0b3d91;">
+        <span>📊</span> Fleet Analytics Dashboard
+        <span style="margin-left:auto;font-size:.78rem;background:#0b3d91;color:white;padding:3px 12px;border-radius:20px;font-weight:700;">Live Analytics</span>
+        <span class="collapse-caret">▼</span>
+    </div>
+    <div class="card-body">
                     <div class="dash-toolbar">
                         <label for="dashPeriodSelect">📅 Period:</label>
                         <select id="dashPeriodSelect">
@@ -4155,6 +4365,10 @@ signInAnonymously(auth)
                             <div class="filter-chip" data-status="overdue">🚨 Overdue</div>
                             <div class="filter-chip" data-status="never">⚪ Never serviced</div>
                         </div>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <input type="text" id="supInvSearch" placeholder="🔍 Search tag, location, brand, owner…"
+                            style="width:100%;padding:11px 18px;border-radius:30px;border:1.5px solid #cfdfeb;font-family:inherit;">
                     </div>
                     <div style="overflow-x:auto;">
                         <table class="inv-table" id="supervisorInventoryTable">
@@ -5284,6 +5498,26 @@ signInAnonymously(auth)
                 <button class="btn-go" id="disposalApprovalSaveBtn" style="background:#1b6b3f;">💾 Submit
                     Decision</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ============ SMART CONFIRM DIALOG ============ -->
+    <div class="modal-overlay" id="smartConfirmModal">
+        <div class="modal-box" style="max-width:420px;text-align:center;">
+            <div id="scIcon" style="font-size:2.4rem;margin-bottom:8px;">⚠️</div>
+            <h2 id="scTitle" style="justify-content:center;">Are you sure?</h2>
+            <p id="scMessage" style="margin-bottom:22px;">This action cannot be undone.</p>
+            <div class="modal-actions" style="justify-content:center;">
+                <button class="btn-cancel" id="scCancel">Cancel</button>
+                <button class="btn-go" id="scConfirm" style="background:#b33a3a;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="commandPalette">
+        <div id="cpBox">
+            <input id="cpInput" placeholder="Type a command or search… (Esc to close)">
+            <div id="cpList"></div>
         </div>
     </div>
 
@@ -6620,15 +6854,88 @@ signInAnonymously(auth)
             const eqPmDownloadBtn = document.getElementById('eqPmDownloadBtn');
 
             let __statusHideTimer = null;
-            function showStatus(msg, ok) {
-                ok = ok !== false;
-                statusText.textContent = msg;
-                statusMessage.style.background = ok ? '#e2f0e6' : '#ffe6e6';
-                statusMessage.style.color = ok ? '#1b6b3f' : '#b33a3a';
-                statusMessage.classList.add('show');
-                if (__statusHideTimer) clearTimeout(__statusHideTimer);
-                __statusHideTimer = setTimeout(() => statusMessage.classList.remove('show'), 7000);
-            }
+            function toast(msg, type) {
+    type = type || 'info';
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const icons = { success: '✅', error: '⛔', warn: '⚠️', info: '💡' };
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML = `
+        <span class="t-icon">${icons[type] || '💡'}</span>
+        <span style="flex:1;">${escapeHtml(msg)}</span>
+        <button class="t-close" aria-label="Close">✕</button>`;
+    el.querySelector('.t-close').onclick = () => {
+        el.classList.add('removing');
+        setTimeout(() => el.remove(), 250);
+    };
+    container.appendChild(el);
+    setTimeout(() => {
+        if (!el.isConnected) return;
+        el.classList.add('removing');
+        setTimeout(() => el.remove(), 250);
+    }, 5000);
+}
+           function showStatus(msg, ok) {
+    ok = ok !== false;
+    // keep old bar as fallback, but also surface as a smart toast
+    toast(msg.replace(/^[✅⛔⚠️📥📄📊🔐🔓🗑️🔁🚨👋\s]+/, '').trim() || msg,
+          ok ? 'success' : 'warn');
+    statusText.textContent = msg;
+    statusMessage.style.background = ok ? '#e2f0e6' : '#ffe6e6';
+    statusMessage.style.color = ok ? '#1b6b3f' : '#b33a3a';
+    statusMessage.classList.add('show');
+    if (__statusHideTimer) clearTimeout(__statusHideTimer);
+    __statusHideTimer = setTimeout(() => statusMessage.classList.remove('show'), 7000);
+}
+
+/* ===== SKELETON HELPERS ===== */
+function renderSkeletons(container, count, type) {
+    if (!container) return;
+    type = type || 'row';
+    let html = '';
+    for (let i = 0; i < (count || 4); i++) {
+        html += `<div class="skeleton skeleton-${type}"></div>`;
+    }
+    container.innerHTML = `<div class="skeleton-stack">${html}</div>`;
+}
+
+function setBtnLoading(btn, loading) {
+    if (!btn) return;
+    if (loading) {
+        btn._origText = btn.innerHTML;
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+    } else {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        if (btn._origText != null) btn.innerHTML = btn._origText;
+    }
+}
+
+function smartConfirm(message, opts) {
+    opts = opts || {};
+    return new Promise(resolve => {
+        const modal = document.getElementById('smartConfirmModal');
+        if (!modal) { resolve(window.confirm(message)); return; }
+        document.getElementById('scIcon').textContent = opts.icon || '⚠️';
+        document.getElementById('scTitle').textContent = opts.title || 'Are you sure?';
+        document.getElementById('scMessage').textContent = message;
+        const btnOk = document.getElementById('scConfirm');
+        const btnNo = document.getElementById('scCancel');
+        btnOk.textContent = opts.okText || 'Confirm';
+        btnOk.style.background = opts.danger === false ? '#1b6b3f' : '#b33a3a';
+        const cleanup = (val) => {
+            modal.classList.remove('show');
+            btnOk.onclick = null;
+            btnNo.onclick = null;
+            resolve(val);
+        };
+        btnOk.onclick = () => cleanup(true);
+        btnNo.onclick = () => cleanup(false);
+        modal.classList.add('show');
+    });
+}
 
             /* ============================================================
                OFFLINE QUEUE
@@ -6864,6 +7171,13 @@ signInAnonymously(auth)
                 if (di && di.defaultIncharge && isDefaultIncharge(inchargeNameInput.value)) {
                     inchargeNameInput.value = di.defaultIncharge;
                 }
+                try {
+                    const _key = 'chub_last_incharge_' + (ref.dept || '').replace(/\s+/g, '_');
+                    const _last = localStorage.getItem(_key);
+                    if (_last && (!inchargeNameInput.value || isDefaultIncharge(inchargeNameInput.value))) {
+                        inchargeNameInput.value = _last;
+                    }
+                } catch (e) {}
                 
                 updateInchargeDisplay();
                 if (refWorkingStatus) {
@@ -6897,7 +7211,14 @@ signInAnonymously(auth)
                     refInchargeTag.style.display = 'none';
                 }
             }
-            refSelect.addEventListener('change', updateRefBanner);
+            refSelect.addEventListener('change', () => {
+                updateRefBanner();
+                // If the checklist is empty, quietly return to preview so the tech gets a clean slate
+                const hasTicks = document.querySelectorAll('.check-ref:checked').length > 0;
+                if (!hasTicks && typeof setChecklistView === 'function') {
+                    setChecklistView('preview');
+                }
+            });
             refFilterSelect.addEventListener('change', function () {
                 refFilterMode = this.value || 'all';
                 renderRefSelector();
@@ -7048,7 +7369,7 @@ signInAnonymously(auth)
             document.getElementById('addRefSave').addEventListener('click', async () => {
                 const allowed = ['technician', 'assetsmanager', 'supervisor', 'incharge'];
                 if (!allowed.includes(currentRole)) {
-                    alert('⛔ You cannot add equipment.'); return;
+                    showStatus('⛔ You cannot add equipment.', false); return;
                 }
                 const tag = document.getElementById('newRefTag').value.trim();
                 const dept = newRefDeptSelect.value;
@@ -7118,7 +7439,7 @@ signInAnonymously(auth)
                 if (idx === '' || !REF_FILTERED[idx]) { showStatus('⚠️ Select equipment first.', false); return; }
                 const ref = REF_FILTERED[idx];
                 if (currentRole === 'assetsmanager' || currentRole === 'supervisor') {
-                    if (!confirm(`Delete immediately?\n\n${ref.tag} — ${ref.loc}`)) return;
+                    if (!await smartConfirm('Delete ' + ref.tag + ' — ' + ref.loc + '? This cannot be undone.', { danger: true, okText: '🗑️ Delete', title: '🗑️ Delete Equipment', icon: '🗑️' })) return;
                     try {
                         await removeInventoryItemInCloud(ref, currentLoggedInName);
                         const i = REF_INVENTORY.findIndex(x => x === ref);
@@ -7337,7 +7658,14 @@ signInAnonymously(auth)
                 const ok = await queueAndSend(data);
                 this.disabled = false;
                 this.innerHTML = orig;
-                if (ok) setTimeout(() => resetForm(false), 1500);
+                if (ok) {
+                    try {
+                        const key = 'chub_last_incharge_' + (data.refDept || '').replace(/\s+/g, '_');
+                        localStorage.setItem(key, data.inchargeName || '');
+                    } catch (e) {}
+                    clearRefDraft();
+                    setTimeout(() => resetForm(false), 1500);
+                }
             });
             function resetForm(msg) {
                 document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
@@ -7350,9 +7678,82 @@ signInAnonymously(auth)
                 updateRefBanner();
                 updateTechnicianDisplay();
                 setAutoWorkDate();
+                updateChecklistProgress();
+                setChecklistView('preview'); // 🆕 auto-hide checklist after reset
                 if (msg) showStatus('Form has been reset.', true);
             }
             resetBtn.addEventListener('click', () => resetForm(true));
+
+            /* ===== PM DRAFT AUTOSAVE ===== */
+            const REF_DRAFT_KEY = 'chub_ref_draft_v1';
+            function saveRefDraft() {
+                if (currentRole !== 'technician') return;
+                try {
+                    const draft = {
+                        refTag: (REF_FILTERED[refSelect.value] || {}).tag || '',
+                        workDate: workDateInput.value,
+                        incharge: inchargeNameInput.value,
+                        checks: Array.from(document.querySelectorAll('.check-ref')).map(c => c.checked),
+                        remarks: {
+                            clean: (document.getElementById('remarkClean') || {}).value || '',
+                            temp: (document.getElementById('remarkTemp') || {}).value || '',
+                            door: (document.getElementById('remarkDoor') || {}).value || ''
+                        },
+                        ratings: {
+                            clean: (document.querySelector('input[name="ratingClean"]:checked') || {}).value,
+                            temp: (document.querySelector('input[name="ratingTemp"]:checked') || {}).value,
+                            door: (document.querySelector('input[name="ratingDoor"]:checked') || {}).value
+                        },
+                        savedAt: Date.now()
+                    };
+                    localStorage.setItem(REF_DRAFT_KEY, JSON.stringify(draft));
+                } catch (e) {}
+            }
+            function loadRefDraft() {
+                try {
+                    const raw = localStorage.getItem(REF_DRAFT_KEY);
+                    if (!raw) return null;
+                    const d = JSON.parse(raw);
+                    if (!d || Date.now() - (d.savedAt || 0) > 24 * 3600 * 1000) return null;
+                    return d;
+                } catch (e) { return null; }
+            }
+            function clearRefDraft() { try { localStorage.removeItem(REF_DRAFT_KEY); } catch (e) {} }
+            function restoreRefDraft(draft) {
+                if (!draft) return;
+                const idx = REF_FILTERED.findIndex(r => (r.tag || '') === draft.refTag);
+                if (idx >= 0) { refSelect.value = idx; updateRefBanner(); }
+                if (draft.workDate) { workDateInput.value = draft.workDate; updateWorkDateDisplay(); }
+                if (draft.incharge) { inchargeNameInput.value = draft.incharge; updateInchargeDisplay(); }
+                document.querySelectorAll('.check-ref').forEach((cb, i) => cb.checked = !!(draft.checks && draft.checks[i]));
+                if (draft.remarks) {
+                    const rc = document.getElementById('remarkClean'); if (rc) rc.value = draft.remarks.clean || '';
+                    const rt = document.getElementById('remarkTemp');  if (rt) rt.value = draft.remarks.temp  || '';
+                    const rd = document.getElementById('remarkDoor');  if (rd) rd.value = draft.remarks.door  || '';
+                }
+                if (draft.ratings) {
+                    ['clean','temp','door'].forEach(k => {
+                        const v = draft.ratings[k];
+                        if (v) {
+                            const key = 'rating' + k[0].toUpperCase() + k.slice(1);
+                            const r = document.querySelector(`input[name="${key}"][value="${v}"]`);
+                            if (r) r.checked = true;
+                        }
+                    });
+                }
+                toast('Draft restored from your last session', 'info');
+                updateChecklistProgress();
+                setChecklistView('full');
+            }
+            let __draftTimer = null;
+            function scheduleDraftSave() {
+                clearTimeout(__draftTimer);
+                __draftTimer = setTimeout(saveRefDraft, 1500);
+            }
+            document.querySelectorAll('.check-ref, #remarkClean, #remarkTemp, #remarkDoor, #workDate, #inchargeNameInput')
+                .forEach(el => el.addEventListener('input', scheduleDraftSave));
+            document.querySelectorAll('input[name^="rating"]').forEach(el => el.addEventListener('change', scheduleDraftSave));
+            refSelect.addEventListener('change', scheduleDraftSave);
 
             /* ============================================================
                TECHNICIAN DISPLAY & ROLE VISIBILITY
@@ -7886,14 +8287,14 @@ signInAnonymously(auth)
             document.getElementById('jobCardApproveBtn')?.addEventListener('click', async () => {
                 if (!currentJobCardRecord) return;
                 const c = (document.getElementById('jobCardComment').value || '').trim();
-                if (!confirm('✅ Approve and co-sign?')) return;
+                if (!await smartConfirm('Approve and co-sign this PM record?', { title: '✅ Approve & Co-sign', icon: '✅', okText: 'Approve', danger: false })) return;
                 await reviewJobCard('approved', c);
             });
             document.getElementById('jobCardRejectBtn')?.addEventListener('click', async () => {
                 if (!currentJobCardRecord) return;
                 const c = (document.getElementById('jobCardComment').value || '').trim();
-                if (!c && !confirm('⚠️ Reject without comment?')) return;
-                if (c && !confirm('❌ Reject this work?')) return;
+                if (!c && !await smartConfirm('Reject without a comment? The technician will be notified.', { title: '⚠️ Reject Without Comment', icon: '⚠️', okText: 'Reject', danger: true })) return;
+                if (c && !await smartConfirm('Reject this work? The technician will be notified.', { title: '❌ Reject Work', icon: '❌', okText: 'Reject', danger: true })) return;
                 await reviewJobCard('rejected', c);
             });
             function openJobCard(rec) {
@@ -7930,7 +8331,7 @@ signInAnonymously(auth)
 
             async function refreshPendingApprovals() {
                 if (currentRole !== 'incharge') return;
-                pendingApprovalsList.innerHTML = '<div style="text-align:center;color:#5b7b96;font-style:italic;padding:12px;">Loading…</div>';
+                renderSkeletons(pendingApprovalsList, 3, 'row');
                 try {
                     const records = await fetchAllLogs();
                     const myDept = currentInchargeDept || '';
@@ -8004,7 +8405,7 @@ signInAnonymously(auth)
                     currentInchargeSignature = getInchargeSignatureCached(inchargeName);
                 }
                 if (!currentInchargeSignature) {
-                    alert('⚠️ Upload your in-charge signature first.');
+                    showStatus('⚠️ Upload your in-charge signature first.', false);
                     return false;
                 }
                 try {
@@ -8122,7 +8523,7 @@ signInAnonymously(auth)
             async function loadDepartmentInventory() {
                 const tbody = document.getElementById('inventoryTableBody');
                 const deptBadge = document.getElementById('invDeptBadge');
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#5b7b96;font-style:italic;padding:14px;">Loading…</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="padding:0;"><div class="skeleton skeleton-row" style="margin:8px;"></div><div class="skeleton skeleton-row" style="margin:8px;"></div><div class="skeleton skeleton-row" style="margin:8px;"></div></td></tr>';
                 const dept = currentInchargeDept;
                 if (!dept) {
                     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#b33a3a;padding:14px;">No department set.</td></tr>';
@@ -8520,7 +8921,7 @@ signInAnonymously(auth)
             async function renderInchargeEditor() {
                 const wrap = document.getElementById('inchargeEditorList');
                 if (!wrap) return;
-                wrap.innerHTML = '<div style="text-align:center;color:#5b7b96;font-style:italic;padding:12px;">Loading…</div>';
+                renderSkeletons(wrap, 3, 'row');
                 const users = await loadUsersFromFirestore();
                 const ic = {};
                 Object.keys(users).forEach(n => {
@@ -8591,7 +8992,7 @@ signInAnonymously(auth)
                 const t = n.trim();
                 if (!t) return;
                 const users = await loadUsersFromFirestore();
-                if (users[t]) { alert('Exists.'); return; }
+                if (users[t]) { showStatus('This name already exists.', false); return; }
                 await window.FB.setDoc(
                     window.FB.doc(window.FB.db, 'users', userDocId(t)),
                     { name: t, role: 'incharge', pin: '', dept: '', updatedAt: window.FB.serverTimestamp() },
@@ -8651,7 +9052,7 @@ signInAnonymously(auth)
             async function renderTechnicianEditor() {
                 const wrap = document.getElementById('technicianEditorList');
                 if (!wrap) return;
-                wrap.innerHTML = '<div style="text-align:center;color:#5b7b96;font-style:italic;padding:12px;">Loading…</div>';
+                renderSkeletons(wrap, 3, 'row');
                 const users = await loadUsersFromFirestore();
                 const techs = {};
                 Object.keys(users).forEach(n => {
@@ -8733,7 +9134,7 @@ signInAnonymously(auth)
                 const t = n.trim();
                 if (!t) return;
                 const users = await loadUsersFromFirestore();
-                if (users[t]) { alert('Exists.'); return; }
+                if (users[t]) { showStatus('This name already exists.', false); return; }
                 const dept = (prompt('Department (leave blank for All departments):') || '').trim();
                 const phone = prompt('Phone (optional):') || '';
                 const email = prompt('Email (optional):') || '';
@@ -8814,12 +9215,18 @@ signInAnonymously(auth)
                 supervisorOwnerFilter = this.value;
                 refreshSupervisorInventory();
             });
+            document.getElementById('supInvSearch')?.addEventListener('input', function () {
+                const q = this.value.toLowerCase().trim();
+                document.querySelectorAll('#supervisorInventoryTableBody tr').forEach(tr => {
+                    tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+                });
+            });
             async function refreshSupervisorInventory() {
                 const tbody = document.getElementById('supervisorInventoryTableBody');
                 const cnt = document.getElementById('supervisorInvCount');
                 const kpi = document.getElementById('supervisorKpiGrid');
                 if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#5b7b96;font-style:italic;padding:14px;">Loading…</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="padding:0;"><div class="skeleton skeleton-row" style="margin:8px;"></div><div class="skeleton skeleton-row" style="margin:8px;"></div><div class="skeleton skeleton-row" style="margin:8px;"></div></td></tr>';
                 const inv = await fetchAllInventory();
                 const records = await fetchAllLogs();
                 if (!inv.length) {
@@ -9211,6 +9618,13 @@ signInAnonymously(auth)
                     if (u >= 3) b.classList.add('pulse'); else b.classList.remove('pulse');
                 } else {
                     b.classList.remove('show', 'pulse');
+                }
+                const bell = document.getElementById('notifBell');
+                if (bell) {
+                    const unread = CURRENT_NOTIFICATIONS.filter(n => !n.read);
+                    bell.title = unread.length
+                        ? unread.length + ' unread\nLatest: ' + unread[0].title
+                        : 'Notifications';
                 }
             }
             async function renderNotificationList() {
@@ -9659,7 +10073,7 @@ signInAnonymously(auth)
                 const wrap = document.getElementById('escalatedCurativeList');
                 const cnt = document.getElementById('escalatedCount');
                 if (!wrap) return;
-                wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+                renderSkeletons(wrap, 3, 'card');
                 try {
                     const all = await fetchCurativeRequests({});
                     const esc = all.filter(c => c.escalated === true && c.escalationResolved !== true);
@@ -9755,7 +10169,7 @@ signInAnonymously(auth)
                 const wrap = document.getElementById('inchargeCurativeList');
                 const cnt = document.getElementById('curativeRaisedCount');
                 if (!wrap) return;
-                wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+                renderSkeletons(wrap, 3, 'card');
                 try {
                     const dept = currentInchargeDept || inferDepartmentFromIncharge(currentLoggedInName);
                     if (!dept) {
@@ -9838,7 +10252,7 @@ signInAnonymously(auth)
                 const wrap = document.getElementById('supervisorCurativeList');
                 const stats = document.getElementById('supervisorCurativeStats');
                 if (!wrap) return;
-                wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+                renderSkeletons(wrap, 3, 'card');
                 try {
                     const dF = document.getElementById('curativeDeptFilter')?.value || 'all';
                     const tF = document.getElementById('curativeTechFilter')?.value || 'all';
@@ -10057,7 +10471,7 @@ signInAnonymously(auth)
                 btn.innerHTML = o;
             }
             async function startCurativeJob(id) {
-                if (!id || !confirm('Start this curative job?')) return;
+                if (!id || !await smartConfirm('Start this curative job?', { title: '🔧 Take Curative Job', icon: '🔧', okText: 'Take Job', danger: false })) return;
                 const ok = await updateCurativeRequest(id, { status: 'in_progress', assignedTo: currentLoggedInName, startedAt: 'NOW' });
                 if (!ok) { showStatus('⚠️ Failed.', false); return; }
                 const all = await fetchCurativeRequests({});
@@ -10731,7 +11145,7 @@ signInAnonymously(auth)
                 const list = document.getElementById('amDisposalList');
                 const cnt = document.getElementById('amDisposalCount');
                 if (!list) return;
-                list.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+                renderSkeletons(list, 3, 'card');
                 try {
                     const all = await fetchDisposalRequests({});
                     let f = all;
@@ -10758,7 +11172,7 @@ signInAnonymously(auth)
                 const tbody = document.getElementById('amInventoryTableBody');
                 const cnt = document.getElementById('amInvCount');
                 if (!tbody) return;
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#5b7b96;font-style:italic;padding:14px;">Loading…</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="padding:0;"><div class="skeleton skeleton-row" style="margin:8px;"></div><div class="skeleton skeleton-row" style="margin:8px;"></div><div class="skeleton skeleton-row" style="margin:8px;"></div></td></tr>';
                 try {
                     const inv = await fetchAllInventory();
                     const records = await fetchAllLogs();
@@ -10796,7 +11210,7 @@ signInAnonymously(auth)
                         const k = b.getAttribute('data-am-del');
                         const item = inv.find(x => (x._docId || x.tag) === k);
                         if (!item) return;
-                        if (!confirm(`Delete ${item.tag} immediately?`)) return;
+                        if (!await smartConfirm('Delete ' + item.tag + ' immediately? This cannot be undone.', { danger: true, okText: '🗑️ Delete', title: '🗑️ Delete Equipment', icon: '🗑️' })) return;
                         try {
                             await removeInventoryItemInCloud(item, currentLoggedInName);
                             showStatus('🗑️ Deleted.', true);
@@ -12166,7 +12580,7 @@ signInAnonymously(auth)
                 const wrap = document.getElementById('ttTechList');
                 const cnt = document.getElementById('ttTechCount');
                 if (!wrap) return;
-                wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+                renderSkeletons(wrap, 3, 'card');
                 try {
                     const team = await fetchInfraTeamMembers();
                     if (cnt) cnt.textContent = team.length;
@@ -12360,7 +12774,7 @@ signInAnonymously(auth)
                     if (p) openPdfViewer(p);
                 }));
                 el.querySelectorAll('[data-pdf-del]').forEach(b => b.addEventListener('click', async () => {
-                    if (!confirm('Delete this PDF?')) return;
+                    if (!await smartConfirm('Delete this timetable PDF? This cannot be undone.', { danger: true, okText: '🗑️ Delete', title: '🗑️ Delete PDF', icon: '🗑️' })) return;
                     await deleteTimetablePDF(b.getAttribute('data-pdf-del'));
                     await renderPdfList(tech);
                 }));
@@ -12912,7 +13326,7 @@ signInAnonymously(auth)
             }
 
             async function startTask(id) {
-                if (!confirm('Start this task now?')) return;
+                if (!await smartConfirm('Start this task now?', { title: '🔧 Start Task', icon: '🔧', okText: 'Start', danger: false })) return;
                 const t = CURRENT_TASKS_CACHE.find(x => x._docId === id);
                 if (!t) return;
                 const ok = await updateTaskDoc(id, {
@@ -13135,7 +13549,7 @@ signInAnonymously(auth)
                 const wrap = document.getElementById('infraTaskList');
                 const stats = document.getElementById('infraTaskStats');
                 if (!wrap) return;
-                wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+                renderSkeletons(wrap, 3, 'card');
                 try {
                     const all = await fetchAllTasks({ dept: INFRA_DEPT_NAME });
                     CURRENT_TASKS_CACHE = all;
@@ -13180,7 +13594,7 @@ signInAnonymously(auth)
                 if (!wrapId) return;
                 const wrap = document.getElementById(wrapId);
                 if (!wrap) return;
-                wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+                renderSkeletons(wrap, 3, 'card');
 
                 try {
                     const all = await fetchAllTasks({ dept: INFRA_DEPT_NAME });
@@ -13448,7 +13862,7 @@ async function perfFetchAll() {
 async function perfRenderLeaderboard(wrapId, periodValue) {
     const wrap = document.getElementById(wrapId);
     if (!wrap) return;
-    wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+    renderSkeletons(wrap, 3, 'card');
     try {
         const { techs, tasks, curatives } = await perfFetchAll();
         if (!techs.length) {
@@ -13512,7 +13926,7 @@ async function perfRenderLeaderboard(wrapId, periodValue) {
 async function perfRenderQuarterHistory(wrapId) {
     const wrap = document.getElementById(wrapId);
     if (!wrap) return;
-    wrap.innerHTML = '<div class="info-loading" style="text-align:center;padding:20px;color:#9cb9d0;">⏳ Loading…</div>';
+    renderSkeletons(wrap, 3, 'card');
     try {
         const { techs, tasks, curatives } = await perfFetchAll();
         if (!techs.length) {
@@ -13742,8 +14156,8 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
                 pfxPasswordInput.value = '';
                 signatureModal.classList.remove('show');
             });
-            document.getElementById('sigRemove').addEventListener('click', () => {
-                if (!confirm('Forget signatures & cert?')) return;
+            document.getElementById('sigRemove').addEventListener('click', async () => {
+                if (!await smartConfirm('Forget all your signatures and digital certificate?', { danger: true, okText: '🗑️ Forget All', title: '🗑️ Forget Everything', icon: '🗑️' })) return;
                 saveSignatureFor(currentLoggedInName, '');
                 setInchargeSignatureCached(currentLoggedInName, '');
                 clearCert();
@@ -14042,6 +14456,10 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
             document.getElementById('loginInchargeDept')?.addEventListener('change', function () {
                 populateInchargeLoginList(this.value);
             });
+            setTimeout(() => {
+                const first = loginTechGroup.style.display !== 'none' ? loginTechSelect : loginInchargeName;
+                if (first) first.focus();
+            }, 100);
             function saveSession(p) {
                 try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ ...p, time: Date.now() })); } catch (e) { }
             }
@@ -14186,6 +14604,20 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
                             const lbl = myDepts.length ? myDepts.join(' + ') : 'own equipment';
                             showStatus('✅ ' + p.name + ' — ' + REF_INVENTORY.length + ' unit(s) in ' + lbl, true);
                             setTimeout(() => checkTechnicianRejections(p.name), 900);
+                            setTimeout(() => {
+                                const _draft = loadRefDraft();
+                                if (_draft && _draft.refTag) {
+                                    smartConfirm('A saved draft for ' + _draft.refTag + ' was found. Restore it?', {
+                                        title: '📝 Restore Draft',
+                                        icon: '📝',
+                                        okText: 'Restore',
+                                        danger: false
+                                    }).then(restore => {
+                                        if (restore) restoreRefDraft(_draft);
+                                        else clearRefDraft();
+                                    });
+                                }
+                            }, 1000);
                         } catch (e) {
                             REF_INVENTORY = loadCachedInventory(p.name) || [];
                             renderRefSelector();
@@ -14411,8 +14843,11 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                 btn.innerHTML = orig;
             });
 
-            logoutBtn.addEventListener('click', () => {
-                if (confirm('Log out?')) { lockApp(); showStatus('Logged out.', true); }
+            logoutBtn.addEventListener('click', async () => {
+                if (await smartConfirm('Are you sure you want to log out?', { title: '🚪 Log out', icon: '🚪', okText: 'Log out', danger: false })) {
+                    lockApp();
+                    showStatus('Logged out.', true);
+                }
             });
 
             /* ============================================================
@@ -15181,6 +15616,190 @@ document.getElementById('userGuideBtn')?.addEventListener('click', function () {
                 primeAudioContext();
                 document.removeEventListener('click', __onceUnlock);
             }, { once: true });
+
+            // ===== AUTO-HIDING INSPECTION CHECKLIST =====
+            function updateChecklistProgress() {
+                const groups = [
+                    { start: 1, end: 5, chip: 'chipClean', label: '🧼' },
+                    { start: 6, end: 10, chip: 'chipTemp', label: '🌡️' },
+                    { start: 11, end: 15, chip: 'chipDoor', label: '🚪' }
+                ];
+                let total = 0, done = 0;
+                groups.forEach(g => {
+                    let gDone = 0, gTotal = 0;
+                    for (let i = g.start; i <= g.end; i++) {
+                        const cb = document.getElementById('check' + i);
+                        if (cb) { gTotal++; if (cb.checked) { gDone++; done++; } }
+                    }
+                    total += gTotal;
+                    const chip = document.getElementById(g.chip);
+                    if (chip) {
+                        chip.textContent = `${g.label} ${gDone} / ${gTotal}`;
+                        chip.classList.remove('complete', 'partial');
+                        if (gDone === gTotal) chip.classList.add('complete');
+                        else if (gDone > 0) chip.classList.add('partial');
+                    }
+                });
+                const badge = document.getElementById('checklistProgressBadge');
+                if (badge) {
+                    badge.textContent = `${done} / ${total}`;
+                    badge.classList.remove('complete', 'partial');
+                    if (done === total && total > 0) badge.classList.add('complete');
+                    else if (done > 0) badge.classList.add('partial');
+                }
+                const text = document.getElementById('checklistProgressText');
+                if (text) text.textContent = `${done} / ${total} completed`;
+                const bar = document.getElementById('checklistProgressBar');
+                if (bar) bar.style.width = total > 0 ? Math.round((done / total) * 100) + '%' : '0%';
+            }
+
+            function setChecklistView(view) {
+                const preview = document.getElementById('checklistPreview');
+                const full = document.getElementById('checklistFull');
+                const caret = document.getElementById('checklistCaret');
+                if (!preview || !full) return;
+                if (view === 'full') {
+                    preview.style.display = 'none';
+                    full.style.display = 'block';
+                    if (caret) caret.style.transform = 'rotate(180deg)';
+                } else {
+                    preview.style.display = 'block';
+                    full.style.display = 'none';
+                    if (caret) caret.style.transform = 'rotate(0deg)';
+                }
+            }
+
+            function toggleChecklistView() {
+                const preview = document.getElementById('checklistPreview');
+                if (!preview) return;
+                setChecklistView(preview.style.display === 'none' ? 'preview' : 'full');
+            }
+
+            // Wire up buttons + header toggle
+            document.getElementById('startChecklistBtn')?.addEventListener('click', () => {
+                setChecklistView('full');
+                setTimeout(() => {
+                    document.getElementById('inspectionChecklistCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 60);
+            });
+            document.getElementById('hideChecklistBtn')?.addEventListener('click', () => setChecklistView('preview'));
+            document.getElementById('inspectionChecklistHeader')?.addEventListener('click', e => {
+                if (e.target.closest('button')) return;
+                toggleChecklistView();
+            });
+
+            // Live progress updates
+            document.querySelectorAll('.check-ref').forEach(cb => {
+                cb.addEventListener('change', updateChecklistProgress);
+            });
+
+            // Initial render: preview by default, expand if any box is pre-checked (draft restore)
+            setTimeout(() => {
+                updateChecklistProgress();
+                const anyChecked = document.querySelectorAll('.check-ref:checked').length > 0;
+                setChecklistView(anyChecked ? 'full' : 'preview');
+            }, 100);
+
+            // ===== Command Palette (⌘K / Ctrl+K) =====
+            (function initCommandPalette() {
+                const palette = document.getElementById('commandPalette');
+                const input = document.getElementById('cpInput');
+                const list = document.getElementById('cpList');
+                if (!palette) return;
+                function commands() {
+                    const c = [];
+                    if (currentRole === 'technician') {
+                        c.push({ icon: '➕', label: 'Add New Refrigerator', kbd: 'N', run: () => addRefBtn.click() });
+                        c.push({ icon: '📄', label: 'Export Current as PDF', run: () => pdfBtn.click() });
+                        c.push({ icon: '🔳', label: 'Print QR Sticker', run: () => document.getElementById('qrRefBtn')?.click() });
+                        c.push({ icon: '🖊️', label: 'Signature & Certificate', run: () => document.getElementById('signatureBtn')?.click() });
+                        c.push({ icon: '🖼️', label: 'Profile Picture', run: () => document.getElementById('profileBtn')?.click() });
+                        c.push({ icon: '🚪', label: 'Logout', run: () => document.getElementById('logoutBtn')?.click() });
+                    }
+                    if (currentRole === 'incharge') {
+                        c.push({ icon: '🚨', label: 'Raise Curative Request', run: () => document.getElementById('raiseCurativeBtn')?.click() });
+                        c.push({ icon: '➕', label: 'Add Equipment', run: () => document.getElementById('inchargeAddEquipBtn')?.click() });
+                        c.push({ icon: '🔄', label: 'Refresh Pending Approvals', run: () => refreshPendingApprovals() });
+                    }
+                    if (currentRole === 'supervisor') {
+                        c.push({ icon: '📊', label: 'Download Fleet Analysis', run: () => document.getElementById('supervisorDownloadAllAnalysisBtn')?.click() });
+                        c.push({ icon: '📦', label: 'Download Full Backup ZIP', run: () => document.getElementById('supervisorBackupZipBtn')?.click() });
+                        c.push({ icon: '🔄', label: 'Refresh Dashboard', run: () => renderSupervisorDashboard() });
+                    }
+                    if (currentRole === 'infra_manager') {
+                        c.push({ icon: '➕', label: 'Create Task', run: () => document.getElementById('createTaskBtn')?.click() });
+                        c.push({ icon: '🔄', label: 'Refresh Tasks', run: () => refreshInfraManagerTasks() });
+                    }
+                    c.push({ icon: '🌙', label: 'Toggle Dark Mode', run: () => document.getElementById('darkModeBtn')?.click() });
+                    return c;
+                }
+                let filtered = [];
+                let activeIdx = 0;
+                function render(q) {
+                    const all = commands();
+                    filtered = !q ? all : all.filter(c => (c.label + ' ' + (c.kbd || '')).toLowerCase().includes(q.toLowerCase()));
+                    activeIdx = 0;
+                    list.innerHTML = filtered.length
+                        ? filtered.map((c, i) =>
+                            `<div class="cp-item ${i === activeIdx ? 'active' : ''}" data-idx="${i}">
+                                <span>${c.icon}</span><span>${escapeHtml(c.label)}</span>
+                                ${c.kbd ? `<span class="cp-kbd">${c.kbd}</span>` : ''}
+                            </div>`).join('')
+                        : `<div style="padding:24px;text-align:center;color:#5b7b96;">No results</div>`;
+                    list.querySelectorAll('.cp-item').forEach(el => el.onclick = () => {
+                        const c = filtered[+el.getAttribute('data-idx')];
+                        close();
+                        if (c) setTimeout(c.run, 80);
+                    });
+                }
+                function open()  { palette.classList.add('show'); input.value = ''; render(''); setTimeout(() => input.focus(), 50); }
+                function close() { palette.classList.remove('show'); }
+                input.oninput = () => render(input.value);
+                input.onkeydown = e => {
+                    if (e.key === 'Escape') { close(); }
+                    else if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, filtered.length - 1); render(input.value); }
+                    else if (e.key === 'ArrowUp')   { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); render(input.value); }
+                    else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const c = filtered[activeIdx];
+                        if (c) { close(); setTimeout(c.run, 80); }
+                    }
+                };
+                palette.onclick = e => { if (e.target === palette) close(); };
+                document.addEventListener('keydown', e => {
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                        e.preventDefault(); open();
+                    }
+                });
+            })();
+
+            // ===== Dark mode init =====
+            (function initDarkMode() {
+                const saved = localStorage.getItem('chub_dark_mode');
+                if (saved === '1') document.body.classList.add('dark');
+                const btn = document.getElementById('darkModeBtn');
+                if (btn) {
+                    btn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+                    btn.addEventListener('click', () => {
+                        document.body.classList.toggle('dark');
+                        const on = document.body.classList.contains('dark');
+                        btn.textContent = on ? '☀️' : '🌙';
+                        localStorage.setItem('chub_dark_mode', on ? '1' : '0');
+                    });
+                }
+            })();
+
+            // Confirm before leaving with unsaved PM draft
+            window.addEventListener('beforeunload', e => {
+                if (currentRole === 'technician') {
+                    const draft = loadRefDraft();
+                    const anyChecked = document.querySelectorAll('.check-ref:checked').length > 0;
+                    if (anyChecked && draft) {
+                        e.preventDefault();
+                        e.returnValue = '';
+                    }
+                }
+            });
 
             window.__DEV = {
                 fetchAllLogs,
