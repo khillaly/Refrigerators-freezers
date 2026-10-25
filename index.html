@@ -7053,7 +7053,7 @@ const AC_PM_INTERVAL_MONTHS = 6;
         
         const q = window.FB.query(
             window.FB.collection(window.FB.db, 'equipment'),
-            window.FB.limit(500) // Adjust if you have more than 500 items
+            window.FB.limit(200) // Reduced to 200 to save reads
         );
         const snap = await window.FB.getDocs(q);
         
@@ -7443,27 +7443,40 @@ const AC_PM_INTERVAL_MONTHS = 6;
             let REF_INVENTORY = [];
             let REF_FILTERED = [];
             let ALL_INVENTORY = [];
-            // ===== FIRESTORE CACHE =====
-const FIRESTORE_CACHE = {
-    pmLogs: { data: null, timestamp: 0 },
-    equipment: { data: null, timestamp: 0 },
-    tasks: { data: null, timestamp: 0 },
-    curative: { data: null, timestamp: 0 },
-    notifications: { data: null, timestamp: 0 },
-    disposals: { data: null, timestamp: 0 }
-};
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes (adjust as needed)
+            // ===== FIRESTORE CACHE (PERSISTENT) =====
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_PREFIX = 'chub_fb_cache_';
 
 function getCached(key) {
-    const c = FIRESTORE_CACHE[key];
-    if (c.data && (Date.now() - c.timestamp < CACHE_TTL)) return c.data;
-    return null;
+    try {
+        const raw = localStorage.getItem(CACHE_PREFIX + key);
+        if (!raw) return null;
+        const c = JSON.parse(raw);
+        // Check if cache is still valid (less than 5 mins old)
+        if (c.data && c.timestamp && (Date.now() - c.timestamp < CACHE_TTL)) {
+            return c.data;
+        }
+        // If expired, clean it up
+        localStorage.removeItem(CACHE_PREFIX + key);
+        return null;
+    } catch (e) {
+        return null;
+    }
 }
+
 function setCached(key, data) {
-    FIRESTORE_CACHE[key] = { data, timestamp: Date.now() };
+    try {
+        const c = { data, timestamp: Date.now() };
+        localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(c));
+    } catch (e) {
+        console.warn('Cache save failed (likely storage full):', e);
+    }
 }
+
 function invalidateCache(key) {
-    FIRESTORE_CACHE[key] = { data: null, timestamp: 0 };
+    try {
+        localStorage.removeItem(CACHE_PREFIX + key);
+    } catch (e) {}
 }
             let refFilterMode = 'all';
                         let refCategoryMode = 'all';
