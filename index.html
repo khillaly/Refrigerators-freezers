@@ -18,6 +18,141 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+        <!-- ===== UPDATE NOTIFICATION SYSTEM (FREE) ===== -->
+    <script>
+    (function() {
+        'use strict';
+        const UPDATE = {
+            currentVersion: '1.0.1',        // ⬅️ CHANGE THIS each time you deploy new HTML
+            versionUrl: './version.json',
+            checkIntervalMs: 5 * 60 * 1000, // check every 5 minutes
+            notified: false,
+            apkNotified: false,
+
+            async check() {
+                try {
+                    const res = await fetch(this.versionUrl + '?t=' + Date.now(), { cache: 'no-store' });
+                    if (!res.ok) return;
+                    const data = await res.json();
+
+                    // 1) Web/PWA content update
+                    if (data.version && data.version !== this.currentVersion && !this.notified) {
+                        this.notified = true;
+                        this.showBanner(data);
+                        if (typeof toast === 'function') {
+                            toast('🚀 New version ' + data.version + ' available!', 'info');
+                        }
+                    }
+
+                    // 2) APK shell update (for users who installed the app)
+                    const installedApkVersion = localStorage.getItem('chub_apk_version') || '1.0.0';
+                    if (data.apk_version && data.apk_version !== installedApkVersion && !this.apkNotified && data.apk_url) {
+                        this.apkNotified = true;
+                        this.showApkBanner(data);
+                    }
+                } catch (e) {
+                    console.warn('[Update] check failed:', e);
+                }
+            },
+
+            showBanner(data) {
+                if (document.getElementById('chubUpdateBanner')) return;
+                const b = document.createElement('div');
+                b.id = 'chubUpdateBanner';
+                b.style.cssText = `
+                    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+                    background: linear-gradient(135deg, #1b6b3f, #2a8f5c); color: #fff;
+                    padding: 14px 20px; border-radius: 40px;
+                    box-shadow: 0 12px 32px rgba(0,0,0,.35); z-index: 999999;
+                    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+                    max-width: 92vw; font-weight: 600; font-size: .92rem;
+                    font-family: inherit; animation: chubSlideUp .4s ease;
+                `;
+                b.innerHTML = `
+                    <span>🚀 New version ${data.version} ready${data.release_notes ? ' — ' + data.release_notes : ''}</span>
+                    <button onclick="window.__CHUB_UPDATE_RELOAD()"
+                        style="background:#fff;color:#1b6b3f;border:none;padding:8px 18px;
+                               border-radius:40px;font-weight:800;cursor:pointer;font-size:.85rem;">Update Now</button>
+                    <button onclick="document.getElementById('chubUpdateBanner').remove()"
+                        style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);
+                               padding:8px 12px;border-radius:40px;cursor:pointer;font-size:.85rem;">Later</button>
+                `;
+                document.body.appendChild(b);
+
+                // Optional: browser notification if allowed
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    try {
+                        new Notification('🚀 CHUB App Update Available', {
+                            body: 'Version ' + data.version + '. ' + (data.release_notes || ''),
+                            icon: 'icon-192.png',
+                            tag: 'chub-update-' + data.version
+                        });
+                    } catch (e) {}
+                }
+            },
+
+            showApkBanner(data) {
+                if (document.getElementById('chubApkBanner')) return;
+                const b = document.createElement('div');
+                b.id = 'chubApkBanner';
+                b.style.cssText = `
+                    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+                    background: linear-gradient(135deg, #0b3d91, #1e4a6d); color: #fff;
+                    padding: 14px 20px; border-radius: 40px;
+                    box-shadow: 0 12px 32px rgba(0,0,0,.35); z-index: 999999;
+                    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+                    max-width: 92vw; font-weight: 600; font-size: .92rem;
+                `;
+                b.innerHTML = `
+                    <span>📱 App update ${data.apk_version} available</span>
+                    <button onclick="window.open('${data.apk_url}', '_blank'); localStorage.setItem('chub_apk_version','${data.apk_version}'); this.parentElement.remove();"
+                        style="background:#fff;color:#0b3d91;border:none;padding:8px 18px;
+                               border-radius:40px;font-weight:800;cursor:pointer;font-size:.85rem;">Download</button>
+                    <button onclick="document.getElementById('chubApkBanner').remove()"
+                        style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);
+                               padding:8px 12px;border-radius:40px;cursor:pointer;font-size:.85rem;">Later</button>
+                `;
+                document.body.appendChild(b);
+            },
+
+            start() {
+                setTimeout(() => this.check(), 8000);               // first check 8s after load
+                setInterval(() => this.check(), this.checkIntervalMs); // then every 5 min
+                document.addEventListener('visibilitychange', () => {   // re-check when tab returns
+                    if (!document.hidden) this.check();
+                });
+            }
+        };
+
+        window.__CHUB_UPDATE_RELOAD = function() {
+            // Clear service-worker caches so the fresh HTML loads
+            try {
+                if ('caches' in window) {
+                    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+                }
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(regs => {
+                        regs.forEach(r => r.update());
+                    });
+                }
+            } catch (e) {}
+            setTimeout(() => window.location.reload(), 400);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => UPDATE.start());
+        } else {
+            UPDATE.start();
+        }
+    })();
+    </script>
+    <style>
+    @keyframes chubSlideUp {
+        from { transform: translateX(-50%) translateY(120%); opacity: 0; }
+        to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+    }
+    </style>
+    <!-- ===== END UPDATE NOTIFICATION SYSTEM ===== -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script type="module">
@@ -28,6 +163,7 @@
             serverTimestamp, Timestamp
         } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
         // ✅ FIXED: Put your actual API keys back here
         const firebaseConfig = {
@@ -63,6 +199,61 @@ signInAnonymously(auth)
     .finally(() => {
         window.dispatchEvent(new Event('firebase-ready'));
     });
+
+// ==========================================
+// FIREBASE PUSH NOTIFICATIONS SETUP
+// ==========================================
+window.setupPushNotifications = async function() {
+    try {
+        const messaging = getMessaging(app);
+        
+        // Ask the user for permission
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            console.log('Notification permission denied.');
+            return;
+        }
+
+        // --- IMPORTANT ---
+        // Replace the string below with your actual VAPID Key from Firebase Console!
+        const VAPID_KEY = 'BNY_FRg4V6MzEuEaLiCZvFRFC7jrFh1d1HyREwCBZBCn4-Vd3hu-O_a2ykTeAynOs6vBCkqWLvttr20KkI1GtFM'; 
+
+        const currentToken = await getToken(messaging, { 
+            vapidKey: VAPID_KEY,
+            serviceWorkerRegistration: await navigator.serviceWorker.ready
+        });
+
+        if (currentToken) {
+            console.log('FCM Token:', currentToken);
+            
+            // Save this token to Firestore for the logged-in user
+            if (typeof currentLoggedInName !== 'undefined' && currentLoggedInName) {
+                await window.FB.setDoc(
+                    window.FB.doc(window.FB.db, 'users', userDocId(currentLoggedInName)), 
+                    { fcmToken: currentToken }, 
+                    { merge: true }
+                );
+                console.log('✅ FCM Token saved to user profile!');
+            }
+        }
+    } catch (err) {
+        console.error('Error getting FCM token: ', err);
+    }
+};
+
+// Listen for messages when the app is OPEN (foreground)
+try {
+    const messaging = getMessaging(app);
+    onMessage(messaging, (payload) => {
+        console.log('Foreground message received: ', payload);
+        // Show a toast if you have a toast function, otherwise alert
+        if (typeof toast === 'function') {
+            toast(payload.notification.title + ': ' + payload.notification.body, 'info');
+        } else {
+            alert(payload.notification.title + '\n' + payload.notification.body);
+        }
+    });
+} catch(e) {}
     </script>
     <style>
         * {
@@ -4199,6 +4390,23 @@ signInAnonymously(auth)
         <!-- ============ SUPERVISOR SECTION ============ -->
         <div id="supervisorSection" style="display:none;">
                         
+        <!-- ============ 📢 BROADCAST ALERT CARD ============ -->
+        <div class="card" style="margin-bottom:24px;border:2px solid #f4a300;">
+            <div class="card-header" style="background:#fff9ec;color:#7a5300;">
+                <span>📢</span> Broadcast Alert to All Technicians
+                <span style="margin-left:auto;font-size:.78rem;background:#f4a300;color:white;padding:3px 12px;border-radius:20px;font-weight:700;">Manager Only</span>
+            </div>
+            <div class="card-body">
+                <p style="font-size:.88rem;color:#7a5300;margin-bottom:14px;">
+                    Send an urgent message to <strong>every technician</strong> at once. They get a push notification, a bell-badge, and see it in the notification panel.
+                </p>
+                <button class="btn-primary" id="openBroadcastBtn" style="background:#f4a300;padding:12px 26px;">
+                    📢 Compose Broadcast
+                </button>
+                <div id="broadcastHistory" style="margin-top:16px;"></div>
+            </div>
+        </div>
+
         <div class="card" style="margin-bottom:24px;">
     <div class="card-header"><span>👥</span> Team Availability</div>
     <div class="card-body">
@@ -4614,6 +4822,34 @@ signInAnonymously(auth)
             <a href="https://buymeacoffee.com/khillaly" target="_blank"
                 style="display:inline-flex;align-items:center;gap:8px;background:#1e4a6d;color:white;padding:12px 24px;border-radius:40px;text-decoration:none;font-weight:600;font-size:.95rem;">☕
                 Buy me a coffee</a>
+                    <!-- ✅ ADD YOUR CATBOX APK LINK HERE -->
+    <a href="https://files.catbox.moe/kmyg3m.apk"
+       target="_blank" rel="noopener"
+       style="display:inline-flex;align-items:center;gap:8px;background:#1b6b3f;color:white;padding:12px 24px;border-radius:40px;text-decoration:none;font-weight:700;font-size:.95rem;">
+       📱 Download the App (APK)
+    </a>
+
+    <!-- QR code that encodes the SAME Catbox link -->
+    <div style="text-align:center;margin-top:8px;">
+        <div id="apkQrBox" style="display:inline-block;padding:10px;background:#fff;border:2px dashed #1b6b3f;border-radius:12px;"></div>
+        <div style="font-size:.72rem;color:#5b7b96;margin-top:6px;">📷 Scan to download the CHUB Maint Fleet app</div>
+    </div>
+
+    <script>
+    /* Build the QR that contains your Catbox APK link */
+    (function () {
+        var APK_URL = 'https://files.catbox.moe/kmyg3m.apk';  /* ← same URL */
+        var box = document.getElementById('apkQrBox');
+        if (box && typeof QRCode !== 'undefined') {
+            new QRCode(box, {
+                text: APK_URL,
+                width: 180, height: 180,
+                colorDark: '#1b6b3f', colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+    })();
+    </script>
         </div>
     </div>
     <!-- ============ 2FA SETUP MODAL ============ -->
@@ -5666,7 +5902,43 @@ signInAnonymously(auth)
             </div>
         </div>
     </div>
-
+    <!-- ============ BROADCAST ALERT MODAL ============ -->
+    <div class="modal-overlay" id="broadcastModal">
+        <div class="modal-box" style="max-width:520px;">
+            <h2>📢 Broadcast Alert</h2>
+            <p>Send a message to all technicians, in-charges and the infra manager instantly.</p>
+            <div class="field-group">
+                <label for="broadcastPriority">Priority *</label>
+                <select id="broadcastPriority">
+                    <option value="info">ℹ️ Info — general announcement</option>
+                    <option value="important">⚠️ Important — action needed</option>
+                    <option value="urgent">🚨 Urgent — emergency</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label for="broadcastTitle">Title *</label>
+                <input type="text" id="broadcastTitle" placeholder="e.g. Emergency generator maintenance tonight" maxlength="120">
+            </div>
+            <div class="field-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="margin:0;">Recipients *</label>
+                    <button type="button" id="broadcastSelectAllBtn" style="background:none; border:none; color:#0b3d91; font-size:0.75rem; font-weight:800; cursor:pointer; text-transform:uppercase;">Toggle All</button>
+                </div>
+                <div id="broadcastRecipientsList" style="max-height: 160px; overflow-y: auto; border: 1.5px solid #cfdfeb; border-radius: 12px; padding: 10px; background: transparent; display: flex; flex-direction: column; gap: 6px;">
+                    <div style="text-align:center; color:#9cb9d0; font-style:italic; font-size:0.85rem;">Loading users…</div>
+                </div>
+            </div>
+            <div class="field-group">
+                <label for="broadcastMessage">Message *</label>
+                <textarea id="broadcastMessage" class="remark-input" rows="4" placeholder="Type the full message technicians will receive…" maxlength="500"></textarea>
+            </div>
+            <div id="broadcastError" style="color:#b33a3a;font-size:.85rem;min-height:18px;"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="broadcastCancel">Cancel</button>
+                <button class="btn-go" id="broadcastSendBtn" style="background:#f4a300;">📢 Send to All</button>
+            </div>
+        </div>
+    </div>
     <!-- ============ SMART CONFIRM DIALOG ============ -->
     <div class="modal-overlay" id="smartConfirmModal">
         <div class="modal-box" style="max-width:420px;text-align:center;">
@@ -6772,18 +7044,31 @@ const AC_PM_INTERVAL_MONTHS = 6;
                     status: data.status || 'active'
                 };
             }
-            async function fetchAllInventory() {
-                try {
-                    if (!window.FB || !window.FB.ready) return [];
-                    const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'equipment'));
-                    const out = [];
-                    snap.forEach(doc => {
-                        const m = mapFirestoreEquipment(doc.id, doc.data());
-                        if (m) out.push(m);
-                    });
-                    return out;
-                } catch (e) { console.error('fetchAllInventory:', e); return []; }
-            }
+           async function fetchAllInventory() {
+    const cached = getCached('equipment');
+    if (cached) return cached;
+
+    try {
+        if (!window.FB || !window.FB.ready) return [];
+        
+        const q = window.FB.query(
+            window.FB.collection(window.FB.db, 'equipment'),
+            window.FB.limit(500) // Adjust if you have more than 500 items
+        );
+        const snap = await window.FB.getDocs(q);
+        
+        const out = [];
+        snap.forEach(doc => {
+            const m = mapFirestoreEquipment(doc.id, doc.data());
+            if (m) out.push(m);
+        });
+        setCached('equipment', out);
+        return out;
+    } catch (e) { 
+        console.error('fetchAllInventory error:', e);
+        return []; 
+    }
+}
             async function rememberLocation(dept, loc) {
                 if (!dept || !loc) return;
                 try {
@@ -6814,6 +7099,7 @@ const AC_PM_INTERVAL_MONTHS = 6;
                     status: 'active',
                     createdAt: now, updatedAt: now
                 });
+                invalidateCache('equipment');
                 return { id: ref.id, ok: true };
             }
             async function editInventoryItemInCloud(original, updated, tech) {
@@ -6844,6 +7130,7 @@ const AC_PM_INTERVAL_MONTHS = 6;
                     owner: updated.owner || original.owner || tech || '',
                     updatedAt: window.FB.serverTimestamp()
                 });
+                invalidateCache('equipment');
                 return { id: docId, ok: true };
             }
             async function removeInventoryItemInCloud(original, tech) {
@@ -6859,6 +7146,7 @@ const AC_PM_INTERVAL_MONTHS = 6;
                     docId = m.id;
                 }
                 await window.FB.deleteDoc(window.FB.doc(window.FB.db, 'equipment', docId));
+                invalidateCache('equipment');
                 return { id: docId, ok: true };
             }
             async function saveEquipmentPhoto(docId, dataUrl) {
@@ -6876,6 +7164,11 @@ const AC_PM_INTERVAL_MONTHS = 6;
                USERS
                ============================================================ */
             async function loadUsersFromFirestore() {
+                // ✅ OPTIMIZATION: Instantly return cached users if we already have them
+                if (USERS_CACHE && Object.keys(USERS_CACHE).length > 0) {
+                    return USERS_CACHE;
+                }
+
                 try {
                     if (!window.FB || !window.FB.ready) {
                         await new Promise(resolve => {
@@ -7065,18 +7358,36 @@ const AC_PM_INTERVAL_MONTHS = 6;
                 };
             }
             async function fetchAllLogs() {
-                try {
-                    if (!window.FB || !window.FB.ready) return [];
-                    const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'pmLogs'));
-                    const out = [];
-                    snap.forEach(doc => {
-                        const m = mapFirestorePmLog(doc.id, doc.data());
-                        if (m) out.push(m);
-                    });
-                    out.sort((a, b) => recordTime(b) - recordTime(a));
-                    return out;
-                } catch (e) { return []; }
-            }
+    // 1. Check cache first
+    const cached = getCached('pmLogs');
+    if (cached) return cached;
+
+    try {
+        if (!window.FB || !window.FB.ready) return [];
+        
+        // 2. Limit to last 200 records to save reads
+        const q = window.FB.query(
+            window.FB.collection(window.FB.db, 'pmLogs'),
+            window.FB.orderBy('timestamp', 'desc'),
+            window.FB.limit(200)
+        );
+        const snap = await window.FB.getDocs(q);
+        
+        const out = [];
+        snap.forEach(doc => {
+            const m = mapFirestorePmLog(doc.id, doc.data());
+            if (m) out.push(m);
+        });
+        out.sort((a, b) => recordTime(b) - recordTime(a));
+        
+        // 3. Save to cache
+        setCached('pmLogs', out);
+        return out;
+    } catch (e) { 
+        console.error('fetchAllLogs error:', e);
+        return []; 
+    }
+}
             async function checkRemoteDuplicate(refId, workDate) {
                 try {
                     if (!window.FB || !window.FB.ready) {
@@ -7132,6 +7443,28 @@ const AC_PM_INTERVAL_MONTHS = 6;
             let REF_INVENTORY = [];
             let REF_FILTERED = [];
             let ALL_INVENTORY = [];
+            // ===== FIRESTORE CACHE =====
+const FIRESTORE_CACHE = {
+    pmLogs: { data: null, timestamp: 0 },
+    equipment: { data: null, timestamp: 0 },
+    tasks: { data: null, timestamp: 0 },
+    curative: { data: null, timestamp: 0 },
+    notifications: { data: null, timestamp: 0 },
+    disposals: { data: null, timestamp: 0 }
+};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes (adjust as needed)
+
+function getCached(key) {
+    const c = FIRESTORE_CACHE[key];
+    if (c.data && (Date.now() - c.timestamp < CACHE_TTL)) return c.data;
+    return null;
+}
+function setCached(key, data) {
+    FIRESTORE_CACHE[key] = { data, timestamp: Date.now() };
+}
+function invalidateCache(key) {
+    FIRESTORE_CACHE[key] = { data: null, timestamp: 0 };
+}
             let refFilterMode = 'all';
                         let refCategoryMode = 'all';
             let currentInchargeSignature = '';
@@ -7380,6 +7713,7 @@ function smartConfirm(message, opts) {
                         inchargeReviewedBy: '',
                         technicianAcknowledgedRejection: false
                     });
+                    invalidateCache('pmLogs');
                     return true;
                 } catch (e) { console.error('sendToSheet:', e); return false; }
             }
@@ -8390,8 +8724,345 @@ function smartConfirm(message, opts) {
                 if (currentRole === 'technician') {
                     setTimeout(() => refreshTechnicianCurative(), 800);
                     setTimeout(() => refreshMyTasksForRole('technician'), 900);
+                }                if (isSup) {
+                    setTimeout(() => renderBroadcastHistory(), 1100);
                 }
             }
+                        /* ============================================================
+               📢 BROADCAST ALERT SYSTEM  (Manager → All users)
+               ============================================================ */
+            document.getElementById('openBroadcastBtn')?.addEventListener('click', async () => {
+                document.getElementById('broadcastTitle').value = '';
+                document.getElementById('broadcastMessage').value = '';
+                document.getElementById('broadcastPriority').value = 'info';
+                document.getElementById('broadcastError').textContent = '';
+                document.getElementById('broadcastError').style.color = '#b33a3a';
+                document.getElementById('broadcastModal').classList.add('show');
+                setTimeout(() => document.getElementById('broadcastTitle').focus(), 150);
+                
+                // Load users into the checklist
+                const list = document.getElementById('broadcastRecipientsList');
+                list.innerHTML = '<div style="text-align:center; color:#9cb9d0; font-style:italic; font-size:0.85rem; padding:8px;">⏳ Loading users…</div>';
+                try {
+                    const users = await loadUsersFromFirestore();
+                    const targets = Object.keys(users).filter(n => {
+                        const r = users[n].role;
+                        return r === 'technician' || r === 'incharge' || r === 'infra_manager' || r === 'assetsmanager';
+                    }).sort();
+
+                    if (!targets.length) {
+                        list.innerHTML = '<div style="text-align:center;color:#b33a3a;font-size:0.85rem;">No users found.</div>';
+                        return;
+                    }
+
+                    const roleIcons = { technician: '👨‍🔧', incharge: '👔', infra_manager: '🏗️', assetsmanager: '🗑️' };
+
+                    list.innerHTML = targets.map(n => {
+                        const u = users[n];
+                        return `<label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:6px 8px; border-radius:8px; transition:background 0.15s; border: 1px solid transparent;" onmouseover="this.style.background='rgba(30,74,109,0.05)'" onmouseout="this.style.background='transparent'">
+                            <input type="checkbox" class="broadcast-recipient-cb" value="${escapeHtml(n)}" checked style="width:18px; height:18px; accent-color:#f4a300; cursor:pointer;">
+                            <span style="font-size:0.9rem; color:inherit;">
+                                <strong>${escapeHtml(n)}</strong> 
+                                <span style="font-size:0.72rem; opacity:0.7; margin-left:4px;">(${roleIcons[u.role] || ''} ${u.role})</span>
+                            </span>
+                        </label>`;
+                    }).join('');
+                } catch (e) {
+                    list.innerHTML = `<div style="color:#b33a3a;font-size:0.85rem;">⚠️ Failed to load users.</div>`;
+                }
+            });
+
+            // Toggle All Checkboxes
+            document.getElementById('broadcastSelectAllBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                const cbs = document.querySelectorAll('.broadcast-recipient-cb');
+                const anyUnchecked = Array.from(cbs).some(cb => !cb.checked);
+                cbs.forEach(cb => cb.checked = anyUnchecked); 
+            });
+
+            document.getElementById('broadcastCancel')?.addEventListener('click',
+                () => document.getElementById('broadcastModal').classList.remove('show'));
+
+            document.getElementById('broadcastSendBtn')?.addEventListener('click', async function () {
+                const btn = this;
+                const errEl = document.getElementById('broadcastError');
+                errEl.style.color = '#b33a3a';
+                errEl.textContent = '';
+
+                const title    = (document.getElementById('broadcastTitle').value || '').trim();
+                const message  = (document.getElementById('broadcastMessage').value || '').trim();
+                const priority = document.getElementById('broadcastPriority').value || 'info';
+
+                if (!title)   { errEl.textContent = '⚠️ Title is required.'; return; }
+                if (!message) { errEl.textContent = '⚠️ Message is required.'; return; }
+
+                // Get selected recipients
+                const checkedBoxes = Array.from(document.querySelectorAll('.broadcast-recipient-cb:checked'));
+                const recipients = checkedBoxes.map(cb => cb.value);
+
+                if (!recipients.length) {
+                    errEl.textContent = '⚠️ Please select at least one recipient.';
+                    return;
+                }
+
+                if (priority === 'urgent') {
+                    if (!await smartConfirm(`Send an URGENT alert to ${recipients.length} user(s)?`, {
+                        title: '🚨 Send Urgent Broadcast',
+                        icon: '🚨',
+                        okText: 'Yes, send now',
+                        danger: true
+                    })) return;
+                }
+
+                const orig = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Sending…';
+
+                try {
+                    const iconMap = { info: '📢', important: '⚠️', urgent: '🚨' };
+                    const prefix  = iconMap[priority] || '📢';
+                    const fullTitle = prefix + ' BROADCAST: ' + title;
+
+                    let sent = 0, failed = 0;
+                    for (const r of recipients) {
+                        try {
+                            const id = await createNotification({
+                                recipient: r,
+                                type: 'broadcast_' + priority,
+                                title: fullTitle,
+                                message: message,
+                                relatedDocId: '',
+                                relatedTag: '',
+                                relatedDept: ''
+                            });
+                            if (id) sent++; else failed++;
+                        } catch (e) { failed++; }
+                    }
+
+                    // Save a permanent history entry
+                    try {
+                        await window.FB.addDoc(window.FB.collection(window.FB.db, 'broadcasts'), {
+                            title: title,
+                            message: message,
+                            priority: priority,
+                            sentBy: currentLoggedInName,
+                            sentAt: window.FB.serverTimestamp(),
+                            recipientsCount: sent,
+                            failedCount: failed
+                        });
+                    } catch (e) { console.warn('Broadcast history save failed:', e); }
+
+                    errEl.style.color = '#1b6b3f';
+                    errEl.textContent = '✅ Sent to ' + sent + ' user(s)' + (failed ? ' — ' + failed + ' failed.' : '.');
+                    showStatus('📢 Broadcast sent to ' + sent + ' user(s).', true);
+
+                    setTimeout(() => {
+                        document.getElementById('broadcastModal').classList.remove('show');
+                        renderBroadcastHistory();
+                    }, 1400);
+
+                } catch (e) {
+                    errEl.textContent = '⚠️ ' + (e.message || 'Failed to send.');
+                }
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            });
+
+            async function renderBroadcastHistory() {
+                const wrap = document.getElementById('broadcastHistory');
+                if (!wrap) return;
+                wrap.innerHTML = '<div style="text-align:center;color:#9cb9d0;font-style:italic;font-size:.85rem;padding:8px;">⏳ Loading history…</div>';
+                try {
+                    const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'broadcasts'));
+                    const list = [];
+                    snap.forEach(doc => {
+                        const d = doc.data() || {};
+                        list.push({
+                            _docId: doc.id,
+                            title: d.title || '',
+                            message: d.message || '',
+                            priority: d.priority || 'info',
+                            sentBy: d.sentBy || '',
+                            sentAt: d.sentAt && d.sentAt.toDate ? d.sentAt.toDate().toISOString() : (d.sentAt || ''),
+                            recipientsCount: d.recipientsCount || 0
+                        });
+                    });
+                    list.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+
+                    if (!list.length) {
+                        wrap.innerHTML = '<div style="text-align:center;color:#9cb9d0;font-style:italic;font-size:.85rem;padding:8px;">No broadcasts sent yet.</div>';
+                        return;
+                    }
+
+                    const iconMap = { info: '📢', important: '⚠️', urgent: '🚨' };
+                    const colorMap = { info: '#0b3d91', important: '#7a5300', urgent: '#b33a3a' };
+                    const bgMap    = { info: '#eef6fc', important: '#fff9ec', urgent: '#fff5f5' };
+
+                    wrap.innerHTML = '<h3 style="font-size:.9rem;color:#7a5300;margin-bottom:10px;">📋 Recent Broadcasts</h3>' +
+                        list.slice(0, 10).map(b => `
+                            <div style="padding:10px 12px;background:${bgMap[b.priority] || '#fffdf5'};border-left:4px solid ${colorMap[b.priority] || '#f4a300'};border-radius:10px;margin-bottom:8px;font-size:.85rem;">
+                                <div style="font-weight:700;color:${colorMap[b.priority] || '#7a5300'};">
+                                    ${iconMap[b.priority] || '📢'} ${escapeHtml(b.title)}
+                                </div>
+                                <div style="color:#3a6583;margin-top:4px;line-height:1.4;">
+                                    ${escapeHtml(b.message.length > 160 ? b.message.substring(0, 160) + '…' : b.message)}
+                                </div>
+                                <div style="font-size:.72rem;color:#9cb9d0;margin-top:6px;">
+                                    👤 ${escapeHtml(b.sentBy)} · 🕒 ${escapeHtml(timeAgo(b.sentAt))} · 👥 ${b.recipientsCount} recipient(s)
+                                </div>
+                            </div>
+                        `).join('');a
+                } catch (e) {
+                    wrap.innerHTML = '<div class="info-error">⚠️ ' + escapeHtml(e.message) + '</div>';
+                }
+            }
+
+            document.getElementById('broadcastCancel')?.addEventListener('click',
+                () => document.getElementById('broadcastModal').classList.remove('show'));
+
+            document.getElementById('broadcastSendBtn')?.addEventListener('click', async function () {
+                const btn = this;
+                const errEl = document.getElementById('broadcastError');
+                errEl.style.color = '#b33a3a';
+                errEl.textContent = '';
+
+                const title    = (document.getElementById('broadcastTitle').value || '').trim();
+                const message  = (document.getElementById('broadcastMessage').value || '').trim();
+                const priority = document.getElementById('broadcastPriority').value || 'info';
+
+                if (!title)   { errEl.textContent = '⚠️ Title is required.'; return; }
+                if (!message) { errEl.textContent = '⚠️ Message is required.'; return; }
+
+                // Confirm for urgent
+                if (priority === 'urgent') {
+                    if (!await smartConfirm('Send an URGENT alert to all technicians? They will be interrupted immediately.', {
+                        title: '🚨 Send Urgent Broadcast',
+                        icon: '🚨',
+                        okText: 'Yes, send now',
+                        danger: true
+                    })) return;
+                }
+
+                const orig = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Sending…';
+
+                try {
+                    const users = await loadUsersFromFirestore();
+                    // Send to every technician, in-charge, infra manager and assets manager
+                    const recipients = Object.keys(users).filter(n => {
+                        const u = users[n];
+                        return u.role === 'technician'
+                            || u.role === 'incharge'
+                            || u.role === 'infra_manager'
+                            || u.role === 'assetsmanager';
+                    });
+
+                    if (!recipients.length) {
+                        errEl.textContent = '⚠️ No users found to notify.';
+                        btn.disabled = false;
+                        btn.innerHTML = orig;
+                        return;
+                    }
+
+                    const iconMap = { info: '📢', important: '⚠️', urgent: '🚨' };
+                    const prefix  = iconMap[priority] || '📢';
+                    const fullTitle = prefix + ' BROADCAST: ' + title;
+
+                    let sent = 0, failed = 0;
+                    for (const r of recipients) {
+                        try {
+                            const id = await createNotification({
+                                recipient: r,
+                                type: 'broadcast_' + priority,
+                                title: fullTitle,
+                                message: message,
+                                relatedDocId: '',
+                                relatedTag: '',
+                                relatedDept: ''
+                            });
+                            if (id) sent++; else failed++;
+                        } catch (e) { failed++; }
+                    }
+
+                    // Save a permanent history entry
+                    try {
+                        await window.FB.addDoc(window.FB.collection(window.FB.db, 'broadcasts'), {
+                            title: title,
+                            message: message,
+                            priority: priority,
+                            sentBy: currentLoggedInName,
+                            sentAt: window.FB.serverTimestamp(),
+                            recipientsCount: sent,
+                            failedCount: failed
+                        });
+                    } catch (e) { console.warn('Broadcast history save failed:', e); }
+
+                    errEl.style.color = '#1b6b3f';
+                    errEl.textContent = '✅ Sent to ' + sent + ' user(s)' + (failed ? ' — ' + failed + ' failed.' : '.');
+                    showStatus('📢 Broadcast sent to ' + sent + ' user(s).', true);
+
+                    setTimeout(() => {
+                        document.getElementById('broadcastModal').classList.remove('show');
+                        renderBroadcastHistory();
+                    }, 1400);
+
+                } catch (e) {
+                    errEl.textContent = '⚠️ ' + (e.message || 'Failed to send.');
+                }
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            });
+
+            async function renderBroadcastHistory() {
+                const wrap = document.getElementById('broadcastHistory');
+                if (!wrap) return;
+                wrap.innerHTML = '<div style="text-align:center;color:#9cb9d0;font-style:italic;font-size:.85rem;padding:8px;">⏳ Loading history…</div>';
+                try {
+                    const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'broadcasts'));
+                    const list = [];
+                    snap.forEach(doc => {
+                        const d = doc.data() || {};
+                        list.push({
+                            _docId: doc.id,
+                            title: d.title || '',
+                            message: d.message || '',
+                            priority: d.priority || 'info',
+                            sentBy: d.sentBy || '',
+                            sentAt: d.sentAt && d.sentAt.toDate ? d.sentAt.toDate().toISOString() : (d.sentAt || ''),
+                            recipientsCount: d.recipientsCount || 0
+                        });
+                    });
+                    list.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+
+                    if (!list.length) {
+                        wrap.innerHTML = '<div style="text-align:center;color:#9cb9d0;font-style:italic;font-size:.85rem;padding:8px;">No broadcasts sent yet.</div>';
+                        return;
+                    }
+
+                    const iconMap = { info: '📢', important: '⚠️', urgent: '🚨' };
+                    const colorMap = { info: '#0b3d91', important: '#7a5300', urgent: '#b33a3a' };
+                    const bgMap    = { info: '#eef6fc', important: '#fff9ec', urgent: '#fff5f5' };
+
+                    wrap.innerHTML = '<h3 style="font-size:.9rem;color:#7a5300;margin-bottom:10px;">📋 Recent Broadcasts</h3>' +
+                        list.slice(0, 10).map(b => `
+                            <div style="padding:10px 12px;background:${bgMap[b.priority] || '#fffdf5'};border-left:4px solid ${colorMap[b.priority] || '#f4a300'};border-radius:10px;margin-bottom:8px;font-size:.85rem;">
+                                <div style="font-weight:700;color:${colorMap[b.priority] || '#7a5300'};">
+                                    ${iconMap[b.priority] || '📢'} ${escapeHtml(b.title)}
+                                </div>
+                                <div style="color:#3a6583;margin-top:4px;line-height:1.4;">
+                                    ${escapeHtml(b.message.length > 160 ? b.message.substring(0, 160) + '…' : b.message)}
+                                </div>
+                                <div style="font-size:.72rem;color:#9cb9d0;margin-top:6px;">
+                                    👤 ${escapeHtml(b.sentBy)} · 🕒 ${escapeHtml(timeAgo(b.sentAt))} · 👥 ${b.recipientsCount} recipient(s)
+                                </div>
+                            </div>
+                        `).join('');
+                } catch (e) {
+                    wrap.innerHTML = '<div class="info-error">⚠️ ' + escapeHtml(e.message) + '</div>';
+                }
+            }
+
 
             /* ============================================================
                QR STICKERS
@@ -10125,13 +10796,26 @@ const nd = getNextPmDateByType_(refTypeForPm, lw);
                         read: false,
                         createdAt: window.FB.serverTimestamp()
                     });
+                    invalidateCache('notifications');
                     return r.id;
                 } catch (e) { return null; }
             }
             async function fetchMyNotifications() {
-                if (!currentLoggedInName) return [];
-                try {
-                    const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'notifications'));
+    if (!currentLoggedInName) return [];
+    
+    const cached = getCached('notifications');
+    if (cached) {
+        // Filter cached by current user (since cache might be for a different user)
+        return cached.filter(n => normalizeText(n.recipient) === normalizeText(currentLoggedInName));
+    }
+
+    try  {
+                    const q = window.FB.query(
+                        window.FB.collection(window.FB.db, 'notifications'),
+                        window.FB.where('recipient', '==', currentLoggedInName),
+                        window.FB.limit(50)
+                    );
+                    const snap = await window.FB.getDocs(q);
                     const out = [];
                     snap.forEach(doc => {
                         const d = doc.data() || {};
@@ -10145,6 +10829,7 @@ const nd = getNextPmDateByType_(refTypeForPm, lw);
                         });
                     });
                     out.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    setCached('notifications', out);
                     return out;
                 } catch (e) { return []; }
             }
@@ -10169,7 +10854,7 @@ const nd = getNextPmDateByType_(refTypeForPm, lw);
                 showStatus('🗑️ Cleared.', true);
             }
             function notifIcon(t) {
-                return ({ pm_cosigned: '✅', pm_rejected: '❌', curative_request: '🚨', curative_started: '🔧', curative_completed: '📸', curative_verified: '🎉', curative_rejected: '↩️', curative_escalated: '⚠️', curative_reassigned: '🔁', disposal_requested: '🗑️', disposal_incharge_approved: '👔', disposal_am_approved: '✅', disposal_rejected: '❌', task_assigned: '📋', task_started: '🔧', task_completed: '📸', task_verified: '🎉', task_rejected: '↩️', task_delegated: '🔁', task_escalated: '⚠️', task_delegated_info: 'ℹ️' })[t] || '🔔';
+                return ({ pm_cosigned: '✅', pm_rejected: '❌', curative_request: '🚨', curative_started: '🔧', curative_completed: '📸', curative_verified: '🎉', curative_rejected: '↩️', curative_escalated: '⚠️', curative_reassigned: '🔁', disposal_requested: '🗑️', disposal_incharge_approved: '👔', disposal_am_approved: '✅', disposal_rejected: '❌', task_assigned: '📋', task_started: '🔧', task_completed: '📸', task_verified: '🎉', task_rejected: '↩️', task_delegated: '🔁', task_escalated: '⚠️', task_delegated_info: 'ℹ️', broadcast_info: '📢', broadcast_important: '⚠️', broadcast_urgent: '🚨' })[t] || '🔔';
             }
             function notifColor(t) {
                 return ({ pm_cosigned: '#1b6b3f', pm_rejected: '#b33a3a', curative_request: '#b33a3a', curative_started: '#1e4a6d', curative_completed: '#0b3d91', curative_verified: '#1b6b3f', curative_rejected: '#b33a3a', curative_escalated: '#b33a3a', curative_reassigned: '#1e4a6d', disposal_requested: '#7a5300', disposal_incharge_approved: '#1b6b3f', disposal_am_approved: '#1b6b3f', disposal_rejected: '#b33a3a' })[t] || '#1e4a6d';
@@ -10307,13 +10992,28 @@ const nd = getNextPmDateByType_(refTypeForPm, lw);
             /* ============================================================
                CURATIVE REQUESTS
                ============================================================ */
-            async function fetchCurativeRequests(opts) {
-                opts = opts || {};
-                try {
-                    if (!window.FB || !window.FB.ready) return [];
-                    const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'curativeRequests'));
-                    const out = [];
-                    snap.forEach(doc => {
+           async function fetchCurativeRequests(opts) {
+    opts = opts || {};
+    const cached = getCached('curative');
+    if (cached && !opts.forceRefresh) {
+        let out = cached;
+        if (opts.dept && opts.dept !== 'all') out = out.filter(c => normalizeText(c.dept) === normalizeText(opts.dept));
+        if (opts.status && opts.status !== 'all') out = out.filter(c => c.status === opts.status);
+        if (opts.assignedTo && opts.assignedTo !== 'all') out = out.filter(c => normalizeText(c.assignedTo) === normalizeText(opts.assignedTo));
+        if (opts.quarterKey && opts.quarterKey !== 'all') out = out.filter(c => c.quarterKey === opts.quarterKey);
+        return out;
+    }
+
+    try {
+        if (!window.FB || !window.FB.ready) return [];
+        
+        const q = window.FB.query(
+            window.FB.collection(window.FB.db, 'curativeRequests'),
+            window.FB.limit(200)
+        );
+        const snap = await window.FB.getDocs(q);
+        const out = [];
+        snap.forEach(doc => {
                         const d = doc.data() || {};
                         const r = {
                             _docId: doc.id, tag: d.tag || '', dept: d.dept || '', loc: d.loc || '',
@@ -10349,16 +11049,20 @@ const nd = getNextPmDateByType_(refTypeForPm, lw);
                             reassignedAt: d.reassignedAt && d.reassignedAt.toDate ? d.reassignedAt.toDate().toISOString() : (d.reassignedAt || ''),
                             escalationHistory: Array.isArray(d.escalationHistory) ? d.escalationHistory : []
                         };
-                        if (opts.dept && opts.dept !== 'all' && normalizeText(r.dept) !== normalizeText(opts.dept)) return;
-                        if (opts.status && opts.status !== 'all' && r.status !== opts.status) return;
-                        if (opts.quarterKey && opts.quarterKey !== 'all' && r.quarterKey !== opts.quarterKey) return;
-                        if (opts.assignedTo && opts.assignedTo !== 'all' && normalizeText(r.assignedTo) !== normalizeText(opts.assignedTo)) return;
                         out.push(r);
-                    });
-                    out.sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
-                    return out;
-                } catch (e) { return []; }
-            }
+        });
+        out.sort((a, b) => new Date(b.reportedAt) - new Date(a.reportedAt));
+        setCached('curative', out);
+        
+        // Apply client-side filters AFTER caching the full dataset
+        let filtered = out;
+        if (opts.dept && opts.dept !== 'all') filtered = filtered.filter(c => normalizeText(c.dept) === normalizeText(opts.dept));
+        if (opts.status && opts.status !== 'all') filtered = filtered.filter(c => c.status === opts.status);
+        if (opts.assignedTo && opts.assignedTo !== 'all') filtered = filtered.filter(c => normalizeText(c.assignedTo) === normalizeText(opts.assignedTo));
+        if (opts.quarterKey && opts.quarterKey !== 'all') filtered = filtered.filter(c => c.quarterKey === opts.quarterKey);
+        return filtered;
+    } catch (e) { return []; }
+}
             async function createCurativeRequest(p) {
                 const ref = await window.FB.addDoc(window.FB.collection(window.FB.db, 'curativeRequests'), {
                     tag: p.tag, dept: p.dept, loc: p.loc,
@@ -10391,6 +11095,7 @@ const nd = getNextPmDateByType_(refTypeForPm, lw);
                 if (u.reassignedAt === 'NOW') f.reassignedAt = window.FB.serverTimestamp();
                 try {
                     await window.FB.updateDoc(window.FB.doc(window.FB.db, 'curativeRequests', id), f);
+                    invalidateCache('curative');
                     return true;
                 } catch (e) { return false; }
             }
@@ -13825,9 +14530,24 @@ let y = drawChubHeader(doc, {
 
             async function fetchAllTasks(opts) {
                 opts = opts || {};
+                const cached = getCached('tasks');
+                if (cached && !opts.forceRefresh) {
+                    // Apply filters client-side on cached data
+                    let out = cached;
+                    if (opts.dept && opts.dept !== 'all') out = out.filter(t => normalizeText(t.dept) === normalizeText(opts.dept));
+                    if (opts.status && opts.status !== 'all') out = out.filter(t => t.status === opts.status);
+                    if (opts.assignedTo && opts.assignedTo !== 'all') out = out.filter(t => normalizeText(t.assignedTo) === normalizeText(opts.assignedTo));
+                    return out;
+                }
+
                 try {
                     if (!window.FB || !window.FB.ready) return [];
-                    const snap = await window.FB.getDocs(window.FB.collection(window.FB.db, 'tasks'));
+                    
+                    const q = window.FB.query(
+                        window.FB.collection(window.FB.db, 'tasks'),
+                        window.FB.limit(300)
+                    );
+                    const snap = await window.FB.getDocs(q);
                     const out = [];
                     snap.forEach(doc => {
                         const d = doc.data() || {};
@@ -13875,11 +14595,16 @@ let y = drawChubHeader(doc, {
                         out.push(t);
                     });
                     out.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                    return out;
-                } catch (e) {
-                    console.error('fetchAllTasks:', e);
-                    return [];
-                }
+                    
+                    setCached('tasks', out);
+                    
+                    // Apply filters client-side after fetching
+                    let filtered = out;
+                    if (opts.dept && opts.dept !== 'all') filtered = filtered.filter(t => normalizeText(t.dept) === normalizeText(opts.dept));
+                    if (opts.status && opts.status !== 'all') filtered = filtered.filter(t => t.status === opts.status);
+                    if (opts.assignedTo && opts.assignedTo !== 'all') filtered = filtered.filter(t => normalizeText(t.assignedTo) === normalizeText(opts.assignedTo));
+                    return filtered;
+                } catch (e) { return []; }
             }
 
             async function createTaskDoc(p) {
@@ -13928,6 +14653,7 @@ let y = drawChubHeader(doc, {
                 if (u.escalatedAt === 'NOW') f.escalatedAt = window.FB.serverTimestamp();
                 try {
                     await window.FB.updateDoc(window.FB.doc(window.FB.db, 'tasks', id), f);
+                    invalidateCache('tasks');
                     return true;
                 } catch (e) { return false; }
             }
@@ -15465,6 +16191,11 @@ document.getElementById('imPerfExportBtn')?.addEventListener('click', perfExport
                     refreshHeaderAvatar().catch(() => { });
                     renderNotificationBell().catch(() => { });
 
+                    // 🔔 Trigger Push Notification Permission Setup
+                    if (window.setupPushNotifications) {
+                        window.setupPushNotifications();
+                    }
+
                     initNotificationPoller();
 
                     if (currentRole === 'incharge') {
@@ -16487,7 +17218,7 @@ if (_ugBtn) _ugBtn.style.display = 'none';
                     const existing = await fetchMyNotifications();
                     __seenNotifIds = new Set(existing.map(n => n._docId));
                 } catch (e) { }
-                __notifPollTimer = setInterval(pollNotifications, 15000);
+                __notifPollTimer = setInterval(pollNotifications, 300000);
                 if (!__focusListenerBound) {
                     window.addEventListener('focus', pollNotifications);
                     __focusListenerBound = true;
